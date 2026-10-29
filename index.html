@@ -169,6 +169,7 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .bsteps{margin:8px 0 0;padding-left:20px;font-size:13px}
 .bsteps li{padding:4px 0}
 .pill.ordered{background:var(--sel);color:var(--sel-ink)}
+.pill.oos{background:var(--out);color:#fff}
 .ordcard .btn.sel{margin:10px 0 2px}
 .steps-bar{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;position:relative}
 .steps-bar::before{content:"";position:absolute;left:12.5%;right:12.5%;top:7px;height:1px;background:var(--line)}
@@ -358,7 +359,7 @@ var ING = [
   {id:'sour', name:'TPA Sour', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#A8BD3A', warn:2, url:'https://vapable.com/product/sour-perfumers-apprentice-flavour-concentrate/', vap:{pid:8616, vid:8621, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'grape', name:'Grape Juice TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#7B3FA0', warn:5, url:'https://vapable.com/product/grape-juice-perfumers-apprentice-flavour-concentrate/', vap:{pid:19554, vid:19555, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'black', name:'Blackberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4A2A63', warn:5, url:'https://vapable.com/product/blackberry-natural-flavor-west-concentrate/', vap:{pid:67552, vid:67554, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'ws5', name:'WS-5 cooling agent', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4FC3D6', warn:2, url:'https://vapable.com/product/cooling-agent-ws-5-flavour-concentrate/', vap:{pid:195690, vid:195691, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'ws5', name:'WS-5 cooling agent', shop:'Vapable', size:10, price:1.27, multi:1.17, col:'#4FC3D6', warn:2, url:'https://vapable.com/product/cooling-agent-ws-5-flavour-concentrate/', vap:{pid:195690, vid:195691, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'sweet', name:'Sweetener', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E3BD3A', warn:2, note:'Perfumer\u2019s Apprentice (TPA) Sweetener', url:'https://vapable.com/product/sweetener-perfumers-apprentice-flavour-concentrate/', vap:{pid:61605, vid:61607, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'cherry', name:'Cherry Berry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#8E1B2E', warn:5, url:'https://vapable.com/product/cherry-berry-flavor-west-concentrate/', vap:{pid:24558, vid:24560, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'brasp', name:'Blue Raspberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#2E7BD6', warn:3, url:'https://vapable.com/product/blue-raspberry-flavor-west-concentrate-copy/?attribute_pa_bottle_size_filter=10ml', vap:{pid:311103, vid:311105, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
@@ -419,7 +420,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}};
 }
 function migrate(s){
   var b = blank();
@@ -438,7 +439,7 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -453,6 +454,9 @@ function repair(b){
   if (b.prices.vg && b.prices.vg.price === 4.49) b.prices.vg.price = 6.99;
   /* PG is now bought as 1 litre bottles at £9.49: the old 500ml price no longer applies (stock is kept in ml, so what you have left is unchanged) */
   if (b.prices.pg && +b.prices.pg.price === 6.49) b.prices.pg.price = 9.49;
+  /* WS-5 is on clearance at \u00a31.27, or \u00a31.17 each for 3 or more: the old standard prices no longer apply */
+  if (b.prices.ws5 && +b.prices.ws5.price === 1.69) b.prices.ws5.price = 1.27;
+  if (b.prices.ws5 && +b.prices.ws5.multi === 1.55) b.prices.ws5.multi = 1.17;
   /* no ingredient has a bigger bottle any more, so leftover big-bottle prices are never used */
   for (var q in b.prices){ var pp = b.prices[q]; if (pp && typeof pp === 'object') delete pp.bigPrice; }
   /* 20mg is no longer offered: a recipe set to 20mg in Plan becomes 15mg (saved batches keep what they were made with) */
@@ -676,7 +680,7 @@ function batchDetailHtml(b){
 
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
-var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos'];
 var SYNC_VALS = ['nicBase','vgr','mix'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
@@ -1147,7 +1151,8 @@ function shopList(){
     if (!short && !low && !typed && !onOrder[id]) return;
     var n = typed ? Math.max(0, Math.round(+cart[id] || 0)) : sugg;
     if (onOrder[id]) n = onOrder[id];
-    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, typed:typed, onOrder:onOrder[id] || 0, unit:unitOf(id), cost:onOrder[id] ? 0 : lineCost(id, n), tip:onOrder[id] ? '' : packTip(id, n)});
+    var oos = isOos(id);
+    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, typed:typed, onOrder:onOrder[id] || 0, oos:oos, unit:unitOf(id), cost:(onOrder[id] || oos) ? 0 : lineCost(id, n), tip:(onOrder[id] || oos) ? '' : packTip(id, n)});
   });
   var total = 0;
   var shops = SHOPS.map(function(shop){
@@ -1160,6 +1165,10 @@ function shopList(){
   });
   return {rows:rows, shops:shops, total:Math.round(total * 100) / 100, sh:sh};
 }
+/* items the shop has run out of (you mark them, or the laptop reads it from the product page): kept on the list, left out of the order */
+function isOos(id){ return !!(state.oos && state.oos[id]); }
+function setOos(id, on){ state.oos = state.oos || {}; if (on) state.oos[id] = true; else delete state.oos[id]; }
+function oosTag(r){ return r.oos ? '<span class="pill oos">Out of stock</span>' : ''; }
 function listShop(L, shop){ return L.shops.filter(function(g){ return g.shop === shop; })[0]; }
 function sizeLabel(id){ var s = sizeOf(id); return s >= 1000 ? mlShort(s / 1000) + ' litre' : mlShort(s) + 'ml'; }
 function shopDelText(g){
@@ -1171,7 +1180,7 @@ function shopDelText(g){
 /* the Vapable lines that can go straight into the basket, and the ones that can't (no IDs yet) */
 function basketItems(L){
   var g = listShop(L, 'Vapable'), ok = [], miss = [];
-  (g ? g.rows : []).forEach(function(r){ if (!(r.n > 0) || r.onOrder) return; var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
+  (g ? g.rows : []).forEach(function(r){ if (!(r.n > 0) || r.onOrder || r.oos) return; var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
   return {ok:ok, miss:miss};
 }
 /* one Vapable tab, stepped through each add-to-cart link 1.5 seconds apart, then the basket. You log in and check out yourself. */
@@ -1202,7 +1211,7 @@ function idsText(id){ var c = vapIds(id); if (!c) return 'Not set'; return 'Prod
 function paintShopList(root){
   root = root || document; var L = shopList(), q = function(s){ return root.querySelector(s); };
   L.rows.forEach(function(r){
-    var c = q('[data-cost="' + r.id + '"]'); if (c) c.textContent = gbp(r.cost);
+    var c = q('[data-cost="' + r.id + '"]'); if (c) c.textContent = r.oos ? '-' : gbp(r.cost);
     var p = q('[data-lp="' + r.id + '"]'); if (p && p !== document.activeElement) p.value = r.unit.toFixed(2);
     var t = q('[data-tip="' + r.id + '"]'); if (t) t.textContent = r.tip;
     var g = q('[data-sugg="' + r.id + '"]'); if (g) g.textContent = r.typed && r.n !== r.sugg ? 'Suggested: ' + r.sugg : '';
@@ -1214,7 +1223,7 @@ function paintShopList(root){
   });
   var tt = q('[data-total]'); if (tt) tt.textContent = gbp(L.total);
   var b = basketItems(L), st = q('[data-bsteps]'); if (st) st.innerHTML = basketStepsHtml(b.ok, b.miss, nicOnList(L));
-  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.onOrder; });
+  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.onOrder && !r.oos; });
   return L;
 }
 function setQty(id, v){
@@ -1232,13 +1241,13 @@ function saveIds(id, o){ state.cartIds = state.cartIds || {}; state.cartIds[id] 
 /* ---------- order flow: Order now, "Ordered?" when you come back, then Delivered ---------- */
 var ASK_KEY = 'mixbench.orderAsk', askShowing = false;
 function onOrderQty(){ var q = {}; state.orders.forEach(function(o){ if (o.pending && !isDelivered(o)) for (var k in (o.qty || {})) q[k] = (q[k] || 0) + (+o.qty[k] || 0); }); return q; }
-function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.onOrder) n += r.n; }); return n; }
+function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.onOrder && !r.oos) n += r.n; }); return n; }
 /* exactly what you chose, per shop, at the moment you pressed Order now */
 function orderSnapshot(L){
   var snap = {t:Date.now(), shops:{}};
   L.shops.forEach(function(g){
     var q = {}, any = false, sub = 0;
-    g.rows.forEach(function(r){ if (r.n > 0 && !r.onOrder) { q[r.id] = r.n; sub += r.cost; any = true; } });
+    g.rows.forEach(function(r){ if (r.n > 0 && !r.onOrder && !r.oos) { q[r.id] = r.n; sub += r.cost; any = true; } });
     if (any) snap.shops[g.shop] = {q:q, total:Math.round((g.sub + g.post) * 100) / 100};
   });
   return snap;
@@ -2118,10 +2127,12 @@ function shopRowHtml(r){
   if (r.onOrder) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + r.onOrder + ' \u00d7 ' + (nicItem ? '10ml shot' : sizeLabel(r.id)) + ' on order. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
   return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a>' +
     '<div class="have">' + esc(r.ing.shop) + ' · ' + (nicItem ? '10ml shot' : sizeLabel(r.id) + ' bottle') + '</div>' +
-    '<div class="have num">' + (r.need > 0 ? 'Need ' + ml2(r.need) + ' ml, have ' : 'Have ') + ml2(r.have) + ' ml</div></div>' + tag + '</div>' +
+    '<div class="have num">' + (r.need > 0 ? 'Need ' + ml2(r.need) + ' ml, have ' : 'Have ') + ml2(r.have) + ' ml</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + tag + oosTag(r) + '</div></div>' +
     '<div class="qrow"><label><span>£ each</span><input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-lp="' + r.id + '" value="' + r.unit.toFixed(2) + '" aria-label="Price per ' + (nicItem ? 'shot' : 'bottle') + ' for ' + esc(r.ing.name) + '"></label>' +
     '<span class="x" aria-hidden="true">×</span><label><span>' + (nicItem ? 'Shots' : 'Bottles') + '</span><input class="num" inputmode="numeric" type="number" min="0" step="1" data-q="' + r.id + '" value="' + r.n + '" aria-label="How many ' + (nicItem ? 'shots' : 'bottles') + ' of ' + esc(r.ing.name) + ' to order"></label>' +
-    '<b class="num qcost" data-cost="' + r.id + '">' + gbp(r.cost) + '</b></div>' +
+    '<b class="num qcost" data-cost="' + r.id + '">' + (r.oos ? '-' : gbp(r.cost)) + '</b></div>' +
+    (r.oos ? '<div class="have" style="color:var(--out);font-weight:600">Out of stock at ' + esc(r.ing.shop) + ', so it\u2019s left out of the order.</div>' : '') +
+    '<button class="linkbtn" data-oos="' + r.id + '">' + (r.oos ? 'It\u2019s back in stock' : 'Mark out of stock') + '</button>' +
     (m > 0 && !packsOf(r.id) ? '<div class="have">' + gbp(m) + ' each for 3 or more</div>' : '') +
     '<div class="have tip" data-tip="' + r.id + '">' + esc(r.tip) + '</div><div class="have" data-sugg="' + r.id + '">' + (r.typed && r.n !== r.sugg ? 'Suggested: ' + r.sugg : '') + '</div>' +
     (r.typed && !r.short && !r.low ? '<button class="linkbtn" data-unlist="' + r.id + '">Take off the list</button>' : '') + '</li>';
@@ -2155,7 +2166,7 @@ function viewShop(){
   }).join('');
   var spare = ING.filter(function(i){ return !L.rows.some(function(r){ return r.id === i.id; }); });
   var add = spare.length ? '<section class="card"><label class="f" for="additem" style="margin-top:0">Add something else to the list</label><select id="additem" class="field" data-additem><option value="">Choose an item</option>' + spare.map(function(i){ return '<option value="' + i.id + '">' + esc(i.name) + ' (' + esc(i.shop) + ')</option>'; }).join('') + '</select></section>' : '';
-  var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.onOrder; });
+  var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.onOrder && !r.oos; });
   var total = L.rows.length ? '<section class="card"><div class="total"><span>Total to order</span><span class="num" data-total>' + gbp(L.total) + '</span></div>' +
     '<div class="stat" style="margin-top:10px">' + L.shops.filter(function(g){ return g.rows.length; }).map(function(g){ return '<span class="muted">' + esc(g.shop) + ', with postage</span><span class="v num" data-shopline="' + esc(g.shop) + '">' + gbp(g.sub + g.post) + '</span>'; }).join('') + '</div>' +
     (anyTyped ? '<button class="linkbtn" data-cartreset>Go back to the suggested amounts</button>' : '') +
@@ -2206,6 +2217,7 @@ function bindShop(){
   if (ai) ai.onchange = function(){ if (!ai.value) return; state.cart = state.cart || {}; state.cart[ai.value] = 1; save(); keepY(); toast(ingById[ai.value].name + ' added to the list.'); };
   var cr = root.querySelector('[data-cartreset]');
   if (cr) cr.onclick = function(){ state.cart = {}; save(); keepY(); toast('Back to the suggested amounts.'); };
+  Array.prototype.forEach.call(root.querySelectorAll('[data-oos]'), function(b){ b.onclick = function(){ var id = b.getAttribute('data-oos'), on = !isOos(id); setOos(id, on); save(); keepY(); toast(on ? ingById[id].name + ' marked out of stock. It\u2019s left out of the order.' : ingById[id].name + ' is back on the order.'); }; });
   var on = root.querySelector('[data-ordernow]');
   if (on) on.onclick = function(){ orderNow(function(){ openBox['shop:steps'] = true; }); };
   var ro = root.querySelector('[data-recordorder]');
