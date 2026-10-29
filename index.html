@@ -202,6 +202,18 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .prevord[open] > summary.prevsum{margin-bottom:8px}
 .steepsum{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .steepsum .btn{width:auto}
+/* Plan rows: orange band, bold black text, black arrow; neon lights get a thin black outline so they stand out on orange */
+.steepsum{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.steepsum b{font-weight:700}
+.steepsum .muted{color:var(--sel-ink)}
+.steepsum .btn.secondary{background:var(--sel-ink);color:var(--sel)}
+.onorange .lamp.green{box-shadow:0 0 0 1.5px #000,0 0 6px 1px rgba(57,255,20,.7)}
+.onorange .lamp.amber{box-shadow:0 0 0 1.5px #000,0 0 6px 1px rgba(255,176,0,.7)}
+.onorange .lamp.red{box-shadow:0 0 0 1.5px #000,0 0 6px 1px rgba(255,23,68,.65)}
+.card > details[data-box] > summary.recsum{background:var(--sel);color:var(--sel-ink);font-weight:700;margin:-14px;padding:14px;border-radius:13px}
+.card > details[data-box][open] > summary.recsum{border-radius:13px 13px 0 0;margin-bottom:12px}
+.card > details[data-box] > summary.recsum::after{border-color:var(--sel-ink);border-width:0 2px 2px 0}
+.card > details[data-box] > summary.recsum .sub{color:var(--sel-ink);font-weight:600}
 .led{display:flex;align-items:flex-start;justify-content:center;gap:4px;flex-wrap:wrap;background:#000;color:var(--sel);border-radius:12px;padding:12px 10px 10px;margin:10px 0 8px;font-family:'Share Tech Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;text-shadow:0 0 8px rgba(242,140,40,.55);box-shadow:inset 0 0 0 1px #1d1d20;font-variant-numeric:tabular-nums}
 .led-u{display:flex;flex-direction:column;align-items:center;min-width:0}
 .led-d{font-size:clamp(28px,9vw,46px);line-height:1;letter-spacing:.04em}
@@ -893,7 +905,7 @@ function initSteepTools(){
 function steepSummaryHtml(){
   var list = steeping(); if (!list.length) return '';
   var ready = readyBatches().length, next = list.filter(function(b){ return Date.now() < b.t + STEEP_READY; }).sort(function(a, b){ return a.t - b.t; })[0];
-  return '<div class="card steepsum"><div style="min-width:0"><b>Steeping</b><div class="small muted">' + list.length + (list.length === 1 ? ' batch' : ' batches') + (ready ? ' \u00b7 ' + ready + ' ready to try' : '') + (next ? ' \u00b7 next ready in ' + left(next.t + STEEP_READY - Date.now()) : '') + '</div></div><button type="button" class="btn secondary sm" data-gosteep>Open</button></div>';
+  return '<div class="card steepsum onorange"><div style="min-width:0"><b>Steeping</b><div class="small muted">' + list.length + (list.length === 1 ? ' batch' : ' batches') + (ready ? ' \u00b7 ' + ready + ' ready to try' : '') + (next ? ' \u00b7 next ready in ' + left(next.t + STEEP_READY - Date.now()) : '') + '</div></div><button type="button" class="btn secondary sm" data-gosteep>Open</button></div>';
 }
 function orderSupplier(o){
   var shops = (o.shops && o.shops.length) ? o.shops.slice() : [];
@@ -1566,7 +1578,7 @@ function viewPlan(){
     var ml = state.plan[r.id]||0, empty = !r.parts.length, key = 'r:' + r.id;
     var title = r.custom ? 'Make your own mix' + (empty ? '' : ': ' + esc(r.name)) : esc(r.name);
     return '<section class="card" data-rec="' + r.id + '"><details data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '>' +
-      '<summary class="recsum"><span class="row" style="gap:10px">' + (empty ? '' : '<span class="lamp ' + L[r.id].col + '" data-lamp="' + r.id + '" role="img" aria-label="' + ({green:'In stock', amber:'Low stock', red:'No stock'})[L[r.id].col] + '"></span>') + '<span>' + title + '</span></span><span class="sub">' + subText(r) + '</span></summary>' +
+      '<summary class="recsum onorange"><span class="row" style="gap:10px">' + (empty ? '' : '<span class="lamp ' + L[r.id].col + '" data-lamp="' + r.id + '" role="img" aria-label="' + ({green:'In stock', amber:'Low stock', red:'No stock'})[L[r.id].col] + '"></span>') + '<span>' + title + '</span></span><span class="sub">' + subText(r) + '</span></summary>' +
       (r.custom ? '<label class="f" for="mixname" style="margin-top:0">Name your mix</label><input id="mixname" class="field" data-mixname value="' + esc(r.name) + '" aria-label="Name of your mix" style="font-weight:700;margin-bottom:6px">' + mixPicker() : '') +
       (empty ? '' : '<div class="light ' + L[r.id].col + '" data-light="' + r.id + '" role="status">' + lightHtml(L[r.id]) + '</div>') +
       feedbackHtml(r.id) +
