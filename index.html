@@ -231,6 +231,50 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .steepcard .pill.ready,.pill.ready{background:var(--ok);color:#fff}
 
 @media (prefers-reduced-motion: no-preference){ .sheet{animation:up .2s ease-out} @keyframes up{from{transform:translateY(6px);opacity:.5}to{transform:none;opacity:1}} }
+/* motion: short, light, off with Reduce Motion */
+:root{--bottle-edge:#2b2b2f}
+.view-in{animation:viewIn .2s ease-out}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.confetti{position:fixed;width:0;height:0;pointer-events:none;z-index:60}
+.confetti i{position:absolute;left:-3px;top:-5px;width:7px;height:10px;border-radius:2px;animation:cf .95s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes cf{from{transform:translate(0,0) rotate(0);opacity:1}to{transform:translate(var(--x),calc(var(--y) + 60px)) rotate(var(--r));opacity:0}}
+.led-d{display:inline-block;transform-origin:50% 50%}
+.led-d.flip{animation:ledFlip .32s ease-out}
+@keyframes ledFlip{0%{transform:perspective(220px) rotateX(-85deg);opacity:.25}100%{transform:none;opacity:1}}
+.led.running{animation:ledPulse 1.2s ease-in-out infinite}
+@keyframes ledPulse{0%,100%{box-shadow:inset 0 0 0 1px #1d1d20,0 0 0 0 rgba(242,140,40,0)}50%{box-shadow:inset 0 0 0 1px #1d1d20,0 0 18px 4px rgba(242,140,40,.55)}}
+.led.glow,.led-ready{animation:ledGlow 1.4s ease-out 2}
+@keyframes ledGlow{0%{text-shadow:0 0 8px rgba(242,140,40,.55)}40%{text-shadow:0 0 22px rgba(242,140,40,1),0 0 4px #fff}100%{text-shadow:0 0 8px rgba(242,140,40,.55)}}
+/* "How to make" progress rail */
+.steps.railed{position:relative}
+.steps.railed::before,.steps.railed::after{content:"";position:absolute;left:calc(var(--rx) - 1.5px);top:var(--rt);width:3px;border-radius:2px;pointer-events:none;z-index:0}
+.steps.railed::before{height:var(--rh);background:var(--muted);opacity:.45}
+.steps.railed::after{height:var(--rf,0px);background:var(--sel);transition:height .38s cubic-bezier(.3,.7,.2,1)}
+.tick input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin:1px 0 0;flex:none;border:2px solid var(--muted);border-radius:6px;background:var(--card);display:inline-grid;place-content:center;position:relative;z-index:1;cursor:pointer;transition:background .15s,border-color .15s}
+.tick input[type=checkbox]::after{content:"";width:6px;height:11px;border:solid #0A0A0B;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) scale(0);margin-top:-3px;transition:transform .15s ease-out}
+.tick input[type=checkbox]:checked{background:var(--sel);border-color:var(--sel)}
+.tick input[type=checkbox]:checked::after{transform:rotate(45deg) scale(1)}
+.tick input[type=checkbox].pop{animation:tickPop .3s ease-out}
+@keyframes tickPop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
+.tick input[type=checkbox]:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+[data-made]:not(:disabled),[data-act="made"]:not(:disabled){background:var(--sel);color:var(--sel-ink)}
+.madepulse{animation:madePulse .9s ease-out 1}
+@keyframes madePulse{0%{box-shadow:0 0 0 0 rgba(242,140,40,.75);transform:scale(1)}35%{transform:scale(1.04)}100%{box-shadow:0 0 0 16px rgba(242,140,40,0);transform:scale(1)}}
+/* stock as mini bottles */
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;align-items:start}
+.bcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 8px 10px;text-align:center;cursor:pointer;min-width:0}
+.bcard:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.bottle{display:block;width:56px;height:110px;margin:0 auto 8px;overflow:visible}
+.liq{transition:transform 1s cubic-bezier(.25,.8,.25,1)}
+.slosh .wave{animation:slosh .9s linear 2}
+@keyframes slosh{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+.bname{font-weight:600;font-size:12.5px;line-height:1.25;overflow-wrap:anywhere}
+.bamt{font-weight:700;font-size:13.5px;margin-top:3px}
+.bamt .warn{color:var(--out);font-size:11px;font-weight:700;margin-left:4px}
+.bpct{font-size:11.5px;color:var(--muted)}
+.bdet{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35}
+.bdet .linkbtn{font-size:12px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -777,6 +821,7 @@ function stockBar(id, st){
   var none = !st.ordered[id] && !st.used[id] && !st.adj[id];
   var pct = full > 0 ? Math.max(0, Math.min(100, left / full * 100)) : 0;
   return {left:left, pct:pct, none:none, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
+    amt:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml'),
     text:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml') + ' \u00b7 ' + Math.round(pct) + '% left'};
 }
 /* ---------- shared: steeping clocks, shake timer, stopwatch, 1pm shake reminder ---------- */
@@ -852,20 +897,23 @@ function beep(){
 }
 function paintTimers(){
   var a = document.querySelector('[data-tmshake]'), d = document.querySelector('[data-tmdone]');
-  if (a) a.textContent = mmss(Math.ceil(shakeLeft() / 1000) * 1000);
+  if (a) { a.textContent = mmss(Math.ceil(shakeLeft() / 1000) * 1000); a.classList.toggle('running', TM.shake.run && !REDUCED); }
   if (d) d.hidden = !TM.shake.done;
   var set = function(sel, dis){ var el = document.querySelector(sel); if (el) el.disabled = dis; };
   set('[data-tm="shake-start"]', TM.shake.run); set('[data-tm="shake-pause"]', !TM.shake.run); set('[data-tm="shake-reset"]', !TM.shake.run && TM.shake.left === TM.shake.dur && !TM.shake.done);
 }
 function timerTick(){
-  if (TM.shake.run && Date.now() >= TM.shake.end) { TM.shake.run = false; TM.shake.left = 0; TM.shake.done = true; beep(); toast('Done, stop shaking.'); }
+  if (TM.shake.run && Date.now() >= TM.shake.end) { TM.shake.run = false; TM.shake.left = 0; TM.shake.done = true; beep(); toast('Done, stop shaking.'); var a = document.querySelector('[data-tmshake]'); paintTimers(); confetti(a); replay(a, 'glow'); }
   paintTimers();
 }
 function clockTick(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-cd]'), function(el){
-    var left = +el.getAttribute('data-cd') - Date.now();
-    el.innerHTML = ledInner(left);
-    if (left <= 0 && !el.hasAttribute('data-was-ready')) { el.setAttribute('data-was-ready', ''); if (left > -1500) softRender(); }
+    var left = +el.getAttribute('data-cd') - Date.now(), digits = el.querySelectorAll('.led-d');
+    if (left > 0 && digits.length === 4) {
+      var s = Math.ceil(left / 1000), p = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60].map(two);
+      Array.prototype.forEach.call(digits, function(d, i){ if (d.textContent !== p[i]) { d.textContent = p[i]; replay(d, 'flip'); } });
+    } else el.innerHTML = ledInner(left);
+    if (left <= 0 && !el.hasAttribute('data-was-ready')) { el.setAttribute('data-was-ready', ''); if (left > -1500) { var t = el.getAttribute('data-cd'); softRender(); var n = document.querySelector('[data-cd="' + t + '"]'); confetti(n); replay(n, 'glow'); } }
   });
 }
 function softRender(){
@@ -919,6 +967,107 @@ function stockBarHtml(id, st){
   return '<div class="sbar' + (s.low || s.out ? ' low' : '') + '" role="img" aria-label="' + esc(ingById[id].name) + ': ' + esc(s.text) + ' left' + (s.out ? ', out' : (s.low ? ', low' : '')) + '"><span style="width:' + s.pct + '%"></span></div>';
 }
 
+
+/* ---------- shared: motion. Short and light; everything switches off with the phone's Reduce Motion setting ---------- */
+var REDUCED = false; try { REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+var fx = {view:'', bottles:{}, rails:{}, ticked:{}, ready:{}};
+function confetti(anchor){
+  if (REDUCED || !anchor || !anchor.getBoundingClientRect) return;
+  var r = anchor.getBoundingClientRect(), box = document.createElement('div');
+  box.className = 'confetti'; box.style.left = (r.left + r.width / 2) + 'px'; box.style.top = (r.top + r.height / 2) + 'px';
+  for (var i = 0; i < 26; i++){
+    var p = document.createElement('i'), a = Math.PI * 2 * i / 26 + Math.random() * 0.4, d = 55 + Math.random() * 70;
+    p.style.setProperty('--x', (Math.cos(a) * d).toFixed(1) + 'px'); p.style.setProperty('--y', (Math.sin(a) * d - 30).toFixed(1) + 'px');
+    p.style.setProperty('--r', Math.round(Math.random() * 540 - 270) + 'deg'); p.style.background = i % 3 ? 'var(--sel)' : '#0A0A0B';
+    p.style.animationDelay = Math.round(Math.random() * 60) + 'ms'; box.appendChild(p);
+  }
+  document.body.appendChild(box); setTimeout(function(){ box.remove(); }, 1300);
+}
+function replay(el, cls){ if (REDUCED || !el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+/* recipe rows and previous orders slide open and closed */
+function smoothDetails(root){
+  if (REDUCED) return;
+  Array.prototype.forEach.call((root || document).querySelectorAll('details[data-box] > summary'), function(s){
+    if (s.__fx) return; s.__fx = true;
+    s.addEventListener('click', function(e){
+      var d = s.parentNode; e.preventDefault(); if (d.__anim) return;
+      var from = d.offsetHeight, to;
+      if (d.open) { d.open = false; to = d.offsetHeight; d.open = true; } else { d.open = true; to = d.offsetHeight; }
+      var closing = to < from;
+      d.style.clipPath = 'inset(-24px -24px 0 -24px)';
+      if (!d.animate) { if (closing) d.open = false; d.style.clipPath = ''; return; }
+      d.__anim = d.animate([{height:from + 'px'}, {height:to + 'px'}], {duration:220, easing:'cubic-bezier(.3,.7,.2,1)'});
+      d.__anim.onfinish = d.__anim.oncancel = function(){ d.__anim = null; d.style.clipPath = ''; if (closing) d.open = false; };
+    });
+  });
+}
+/* "How to make": an orange fill runs down the line to the furthest ticked step; boxes pop; the button pulses when everything is ticked */
+function stepFx(root, instant){
+  Array.prototype.forEach.call((root || document).querySelectorAll('ol.steps'), function(ol){
+    var boxes = ol.querySelectorAll('.tick input[type=checkbox]'); if (!boxes.length) return;
+    var or = ol.getBoundingClientRect(), f = boxes[0].getBoundingClientRect(), l = boxes[boxes.length - 1].getBoundingClientRect();
+    if (!f.height) return;
+    var last = -1, key = '';
+    Array.prototype.forEach.call(boxes, function(b, i){
+      var k = b.getAttribute('data-tick') || (b.getAttribute('data-id') + ':' + b.getAttribute('data-k')); if (!i) key = k.split(':')[0];
+      if (b.checked) { last = i; if (!instant && fx.ticked[k] === false) replay(b, 'pop'); }
+      fx.ticked[k] = b.checked;
+    });
+    var fill = last < 0 ? 0 : boxes[last].getBoundingClientRect().top - f.top;
+    ol.classList.add('railed');
+    ol.style.setProperty('--rx', (f.left - or.left + f.width / 2).toFixed(1) + 'px');
+    ol.style.setProperty('--rt', (f.top - or.top + f.height / 2).toFixed(1) + 'px');
+    ol.style.setProperty('--rh', Math.max(0, l.top - f.top).toFixed(1) + 'px');
+    var prev = fx.rails[key];
+    if (!instant && !REDUCED && prev !== undefined && prev !== fill) {
+      ol.style.setProperty('--rf', prev + 'px'); void ol.offsetHeight;
+      requestAnimationFrame(function(){ ol.style.setProperty('--rf', fill + 'px'); });
+    } else ol.style.setProperty('--rf', fill + 'px');
+    fx.rails[key] = fill;
+  });
+  Array.prototype.forEach.call((root || document).querySelectorAll('[data-made],[data-act="made"]'), function(b){
+    var id = b.getAttribute('data-made') || b.getAttribute('data-id'), ok = !b.disabled;
+    if (ok && fx.ready[id] === false && !instant) replay(b, 'madepulse');
+    fx.ready[id] = ok;
+  });
+}
+/* a mini vape bottle whose orange liquid shows the % left */
+var BOTTLE_H = 76;
+function bottleSvg(id, s){
+  var lvl = (BOTTLE_H * (1 - s.pct / 100)).toFixed(1), c = 'b' + id.replace(/[^a-z0-9]/gi, '');
+  return '<svg class="bottle" viewBox="0 0 60 118" aria-hidden="true" focusable="false"><defs><clipPath id="' + c + '"><rect x="11.5" y="35.5" width="37" height="75" rx="8.5"/></clipPath></defs>' +
+    '<rect x="25" y="1" width="10" height="15" rx="3" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
+    '<path d="M20 16h20l3 10H17z" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
+    '<rect x="15" y="25" width="30" height="9" rx="2.5" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
+    '<rect x="10" y="34" width="40" height="78" rx="10" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1.5"/>' +
+    '<g clip-path="url(#' + c + ')"><g class="liq" data-liq="' + id + '" data-lvl="' + lvl + '" style="transform:translateY(' + lvl + 'px)"><path class="wave" d="M-30 36 q7.5 -3.5 15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0 V116 H-30 Z" fill="' + (s.low || s.out ? 'var(--out)' : 'var(--sel)') + '"/></g></g>' +
+    '<rect x="15" y="42" width="3.5" height="44" rx="1.75" fill="#fff" opacity=".14"/></svg>';
+}
+function bottleInnerHtml(id, s){
+  var name = ingById[id].name;
+  return bottleSvg(id, s) + '<div class="bname">' + esc(name) + '</div>' +
+    '<div class="bamt num"' + (s.none ? ' style="color:var(--muted)"' : '') + '>' + esc(s.amt) + (s.out ? '<span class="warn">Out</span>' : (s.low ? '<span class="warn">Low</span>' : '')) + '</div>' +
+    (s.none ? '' : '<div class="bpct num">' + Math.round(s.pct) + '% left</div>');
+}
+/* fill up from empty when Stock opens; afterwards changes slide from the old level */
+function animateBottles(root, opening){
+  Array.prototype.forEach.call((root || document).querySelectorAll('.liq'), function(g){
+    var id = g.getAttribute('data-liq'), to = +g.getAttribute('data-lvl'), from = opening ? BOTTLE_H : fx.bottles[id];
+    fx.bottles[id] = to;
+    if (REDUCED || from === undefined || from === to) return;
+    g.style.transition = 'none'; g.style.transform = 'translateY(' + from + 'px)'; void g.getBoundingClientRect();
+    requestAnimationFrame(function(){ g.style.transition = ''; g.style.transform = 'translateY(' + to + 'px)'; g.parentNode.parentNode.classList.add('slosh'); });
+  });
+}
+/* after every render: gentle screen change, sliding rows, rails, bottles */
+function afterRender(view, el){
+  var changed = view !== fx.view;
+  if (changed && fx.view && el) replay(el, 'view-in');
+  fx.view = view;
+  smoothDetails(el); stepFx(el, changed); animateBottles(el, changed && view === 'stock');
+}
+document.addEventListener('toggle', function(e){ var d = e.target; if (d && d.open && d.querySelector) stepFx(d, true); }, true);
+window.addEventListener('resize', function(){ stepFx(document, true); });
 
 /* ---------- saving: this phone + your Claude account ---------- */
 var cloud = {ref:null, mode:'phone', saving:false, again:false, timer:null, db:null, base:''};
@@ -1422,6 +1571,7 @@ function render(){
   ({plan:bindPlan, steep:bindSteepTab, shop:bindShop, stock:bindStock, log:bindLog, more:bindMore})[current]();
   bindParcels();
   renderTabs();
+  afterRender(current, app);
 }
 
 /* ---------- Plan ---------- */
@@ -1689,14 +1839,14 @@ function bindPlan(){
       var total = 0; RECIPES.forEach(function(r){ total += state.plan[r.id]||0; });
       document.querySelector('[data-total]').textContent = mlShort(total) + ' ml';
       updateMade();
-      updateLights(); renderTabs();
+      updateLights(); renderTabs(); stepFx(card, true);
     }
     input.addEventListener('input', function(){ set(input.value, false); });
     card.addEventListener('change', function(e){
       var c = e.target.closest && e.target.closest('[data-tick]'); if (!c) return;
       var p = c.getAttribute('data-tick').split(':');
       setTick(id, +p[1], c.checked); c.closest('li').classList.toggle('done', c.checked);
-      card.querySelector('.recsum .sub').textContent = subText(recById[id]); updateMade();
+      card.querySelector('.recsum .sub').textContent = subText(recById[id]); updateMade(); stepFx(card, false);
     });
     card.querySelector('[data-inc]').onclick = function(){ set((state.plan[id]||0) + 10, true); };
     card.querySelector('[data-dec]').onclick = function(){ set(Math.max(0,(state.plan[id]||0) - 10), true); };
@@ -1792,17 +1942,17 @@ function bindShop(){
 var stockOpen = {}, stockAll = false;
 function viewStock(){
   var st = stockNow();
-  var rows = ING.map(function(i){
+  var cards = ING.map(function(i){
     var b = stockBar(i.id, st), open = stockAll || stockOpen[i.id];
-    return '<div class="srow" role="button" tabindex="0" data-sopen="' + i.id + '" aria-expanded="' + (open ? 'true' : 'false') + '"><div class="row between"><span style="font-weight:600">' + esc(i.name) + '</span><span class="amt num"' + (b.none ? ' style="color:var(--muted)"' : '') + '>' + esc(b.text) + (b.out ? '<span class="warn">Out</span>' : (b.low ? '<span class="warn">Low</span>' : '')) + '</span></div>' + stockBarHtml(i.id, st) +
-      (open ? '<div class="sdet"><span class="num">Ordered ' + mlShort(st.ordered[i.id]) + ' ml · used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? ' · adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '</span><button class="linkbtn" data-adj="' + i.id + '">Spill or extra</button></div>' : '') + '</div>';
+    return '<div class="bcard" role="button" tabindex="0" data-sopen="' + i.id + '" aria-expanded="' + (open ? 'true' : 'false') + '" aria-label="' + esc(i.name) + ': ' + esc(b.text) + '">' + bottleInnerHtml(i.id, b) +
+      (open ? '<div class="bdet num">Ordered ' + mlShort(st.ordered[i.id]) + ' ml<br>used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? '<br>adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '<br><button class="linkbtn" data-adj="' + i.id + '">Spill or extra</button></div>' : '') + '</div>';
   }).join('');
   var any = ING.some(function(i){ return !stockBar(i.id, st).none; });
-  return '<div class="row between" style="align-items:flex-start"><div><h1>Stock</h1><p class="lede">What you have left. Tap an item for ordered and used.</p></div><button class="linkbtn" data-sall style="margin-top:14px;white-space:nowrap">' + (stockAll ? 'Hide details' : 'Show details') + '</button></div>' +
+  return '<div class="row between" style="align-items:flex-start"><div><h1>Stock</h1><p class="lede">What you have left. Tap a bottle for ordered and used.</p></div><button class="linkbtn" data-sall style="margin-top:14px;white-space:nowrap">' + (stockAll ? 'Hide details' : 'Show details') + '</button></div>' +
     (any ? '' : '<div class="card empty">No stock yet. It appears once you log an order or a batch.</div>') +
-    '<section class="card" style="padding-top:4px;padding-bottom:4px">' + rows + '</section>' +
-    '<p class="muted small" style="margin:0 2px">% left is what’s left out of everything you’ve bought or added. Spills count as used. The bar turns red when it’s nearly empty.</p>' +
-    (any ? '' : '<button class="btn secondary" data-adj-any>Already have some stock? Add it</button>');
+    '<div class="bgrid">' + cards + '</div>' +
+    '<p class="muted small" style="margin:12px 2px 0">% left is what’s left out of everything you’ve bought or added. Spills count as used. The liquid turns red when it’s nearly empty.</p>' +
+    (any ? '' : '<button class="btn secondary" data-adj-any style="margin-top:12px">Already have some stock? Add it</button>');
 }
 function adjustSheet(ingId){
   var opts = ING.map(function(i){ return '<option value="' + i.id + '"' + (i.id===ingId?' selected':'') + '>' + esc(i.name) + '</option>'; }).join('');
