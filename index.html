@@ -439,7 +439,7 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -681,7 +681,7 @@ function batchDetailHtml(b){
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
 var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos'];
-var SYNC_VALS = ['nicBase','vgr','mix'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -1169,6 +1169,9 @@ function shopList(){
 function isOos(id){ return !!(state.oos && state.oos[id]); }
 function setOos(id, on){ state.oos = state.oos || {}; if (on) state.oos[id] = true; else delete state.oos[id]; }
 function oosTag(r){ return r.oos ? '<span class="pill oos">Out of stock</span>' : ''; }
+/* sale or clearance price read from Vapable by the laptop's Update prices */
+function wasText(id){ var p = state.prices[id]; return (p && +p.was > priceOf(id) + 0.004) ? 'On sale, was ' + gbp(+p.was) : ''; }
+function pricesUpdatedText(){ var u = state.pricesUpdated; return (u && u.t) ? 'Prices last updated from Vapable ' + when(u.t) + '.' : 'Prices haven\u2019t been updated from Vapable yet.'; }
 function listShop(L, shop){ return L.shops.filter(function(g){ return g.shop === shop; })[0]; }
 function sizeLabel(id){ var s = sizeOf(id); return s >= 1000 ? mlShort(s / 1000) + ' litre' : mlShort(s) + 'ml'; }
 function shopDelText(g){
@@ -2134,6 +2137,7 @@ function shopRowHtml(r){
     (r.oos ? '<div class="have" style="color:var(--out);font-weight:600">Out of stock at ' + esc(r.ing.shop) + ', so it\u2019s left out of the order.</div>' : '') +
     '<button class="linkbtn" data-oos="' + r.id + '">' + (r.oos ? 'It\u2019s back in stock' : 'Mark out of stock') + '</button>' +
     (m > 0 && !packsOf(r.id) ? '<div class="have">' + gbp(m) + ' each for 3 or more</div>' : '') +
+    (wasText(r.id) ? '<div class="have" style="color:var(--ok);font-weight:600">' + esc(wasText(r.id)) + '</div>' : '') +
     '<div class="have tip" data-tip="' + r.id + '">' + esc(r.tip) + '</div><div class="have" data-sugg="' + r.id + '">' + (r.typed && r.n !== r.sugg ? 'Suggested: ' + r.sugg : '') + '</div>' +
     (r.typed && !r.short && !r.low ? '<button class="linkbtn" data-unlist="' + r.id + '">Take off the list</button>' : '') + '</li>';
 }
@@ -2369,7 +2373,7 @@ function settingsHtml(){
   }).join('');
   var sync = cloud.mode === 'cloud' ? 'Saved to your Claude account and on this phone. Only you can see it.' : 'Saved on this phone only. Use the backup below now and then.';
   return '<div class="sect">Prices, delivery and data</div><p class="muted small" style="margin-top:-4px">' + sync + '</p>' +
-    '<h2>Prices and bottle sizes</h2><section class="card"><details data-box="shop:prices"' + (openBox['shop:prices'] ? ' open' : '') + '><summary>Show every item\u2019s price</summary><p class="muted small">Bottle sizes are fixed: PG 1 litre, VG 1 litre, everything else 10ml. You can also change a price on the list above.</p><div class="price-row small muted" style="padding-top:0"><span>Item</span><span style="text-align:center">Size (ml)</span><span style="text-align:center">Price (\u00a3)</span></div>' + rows + '</details></section>' +
+    '<h2>Prices and bottle sizes</h2><section class="card"><p class="small muted" style="margin:0 0 6px">' + esc(pricesUpdatedText()) + ' Vapable prices are updated on the laptop and arrive here through sync.</p><details data-box="shop:prices"' + (openBox['shop:prices'] ? ' open' : '') + '><summary>Show every item\u2019s price</summary><p class="muted small">Bottle sizes are fixed: PG 1 litre, VG 1 litre, everything else 10ml. You can also change a price on the list above.</p><div class="price-row small muted" style="padding-top:0"><span>Item</span><span style="text-align:center">Size (ml)</span><span style="text-align:center">Price (\u00a3)</span></div>' + rows + '</details></section>' +
     '<h2>Vapable product IDs</h2><section class="card"><details data-box="shop:ids"' + (openBox['shop:ids'] ? ' open' : '') + '><summary>Show the IDs used for the basket</summary><p class="muted small">The basket button needs each item\u2019s product and option ID. They were read from the product links saved in the app. To change one, paste an add-to-cart link or type the IDs.</p>' + vapIdsHtml() + '</details></section>' +
     '<h2>Delivery</h2><section class="card"><div class="price-row small muted" style="padding-top:0"><span>Shop</span><span style="text-align:center">Free over (\u00a3)</span><span style="text-align:center">Postage (\u00a3)</span></div>' +
       SHOPS.map(function(sp){ var d = delOf(sp);
