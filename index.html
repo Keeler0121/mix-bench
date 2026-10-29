@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mix Bench">
+<meta name="theme-color" content="#0A0A0B">
+<meta name="description" content="Plan, mix, steep and track your DIY e-liquid stock.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<title>Mix Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow column, flat white cards on a light grey ground. Black for actions, orange for whatever is selected, neon traffic lights. */
+:root{
+  --sel:#F28C28; --sel-ink:#0A0A0B; --neon-g:#39FF14; --neon-a:#FFB000; --neon-r:#FF1744; --lamp-ring:rgba(0,0,0,.35);
+  --bg:#F4F4F5; --card:#FFFFFF; --ink:#0A0A0B; --muted:#6E6E73; --line:#E6E6E8; --soft:#F0F0F2;
+  --accent:#0A0A0B; --accent-ink:#FFFFFF; --ok:#1E8A4F; --low:#C2620E; --out:#C62F3E; --amber:#D99A0B;
+  --font:'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bar-empty:#000;
+    --bg:#0A0A0B; --card:#141416; --ink:#F2F2F3; --muted:#8E8E93; --line:#26262A; --soft:#1D1D20;
+    --lamp-ring:rgba(0,0,0,.6);
+    --accent:#F2F2F3; --accent-ink:#0A0A0B; --ok:#4CC08A; --low:#E98B4E; --out:#F0606F; --amber:#F2C14E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bar-empty:#000;
+  --bg:#0A0A0B; --card:#141416; --ink:#F2F2F3; --muted:#8E8E93; --line:#26262A; --soft:#1D1D20;
+  --lamp-ring:rgba(0,0,0,.6);
+  --accent:#F2F2F3; --accent-ink:#0A0A0B; --ok:#4CC08A; --low:#E98B4E; --out:#F0606F; --amber:#F2C14E;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{min-height:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+main{max-width:520px;margin:0 auto;padding:20px 16px calc(84px + env(safe-area-inset-bottom,0px))}
+h1{font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-0.025em;margin:6px 0 4px}
+.lede{color:var(--muted);margin:0 0 16px;font-size:13px}
+h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+a{color:var(--ink);text-decoration-color:var(--line);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--ink)}
+
+.rlist{display:grid;gap:3px;margin:8px 0 2px;font-size:13px}
+.recipe-name{font-weight:600;font-size:15px;line-height:1.25}
+.mix-list{display:grid;gap:4px}
+.starbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.starbtn.on{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.mix-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:13px}
+.mix-row.on{background:var(--soft)}
+.zero-tick{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;font-weight:500;cursor:pointer}
+.zero-tick input{width:18px;height:18px;accent-color:var(--sel);margin:0}
+.light{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;font-weight:500}
+.lamp{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
+.lamp.green{background:var(--neon-g);box-shadow:0 0 0 1px var(--lamp-ring),0 0 6px 1px rgba(57,255,20,.7)}
+.lamp.amber{background:var(--neon-a);box-shadow:0 0 0 1px var(--lamp-ring),0 0 6px 1px rgba(255,176,0,.7)}
+.lamp.red{background:var(--neon-r);box-shadow:0 0 0 1px var(--lamp-ring),0 0 6px 1px rgba(255,23,68,.65)}
+.light.green{color:var(--ok)} .light.amber{color:var(--low)} .light.red{color:var(--out)}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.stepper button{width:38px;height:38px;border:0;background:transparent;font-size:18px;font-weight:500;cursor:pointer}
+.stepper input{width:60px;height:38px;border:0;background:transparent;text-align:center;font-weight:600;font-size:16px;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.unit{color:var(--muted);font-size:12px;margin-left:-4px;margin-right:4px}
+details summary{cursor:pointer;color:var(--ink);font-weight:500;font-size:13px;margin-top:6px;list-style:none;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:6px}
+.recsum{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;font-size:15px;font-weight:600;color:var(--ink);padding:2px 0;text-decoration:none}
+.recsum::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin:-3px 4px 0 4px;flex:none}
+details[open] > .recsum::after{transform:rotate(-135deg);margin-top:3px}
+.recsum .sub{margin-left:auto;white-space:nowrap;font-size:12px;font-weight:500;color:var(--muted)}
+details[open] > summary.recsum{margin-bottom:10px}
+.steps{margin:0;padding-left:20px;font-size:15px;line-height:1.5}
+.steps li{padding:5px 0}
+.steps li.note{color:var(--muted);font-size:13px;padding-top:8px}
+.tick{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.tick input{width:22px;height:22px;margin:1px 0 0;flex:none;accent-color:var(--sel)}
+input[type=checkbox]{accent-color:var(--sel)}
+.tick span{min-width:0}
+.steps li.done .tick span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.steps b{font-variant-numeric:tabular-nums}
+
+.btn{display:block;width:100%;border:0;border-radius:10px;padding:11px 14px;font-weight:600;font-size:13px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.secondary{background:var(--soft);color:var(--ink)}
+.btn.danger{background:var(--out);color:#fff}
+.btn:disabled{opacity:.35;cursor:default}
+.btn + .btn{margin-top:8px}
+.grid2 > .btn,[style*="grid-template-columns"] > .btn{margin-top:0}
+.linkbtn{border:0;background:none;color:var(--ink);font-weight:500;padding:5px 0;cursor:pointer;font-size:12px;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+
+.list{list-style:none;margin:0;padding:0}
+.list li{padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;flex:none;background:var(--muted)!important}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--ok)} .pill.low{color:var(--low)} .pill.out{color:var(--out)}
+.shop-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
+.shop-head h3{margin:0;font-size:14px;font-weight:600}
+.buy{font-weight:600;font-size:13px}
+.have{color:var(--muted);font-size:12px}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:18px;letter-spacing:-0.01em}
+.stat{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13px}
+.stat .v{text-align:right;font-weight:600}
+.save{color:var(--ok)}
+.left{font-weight:600;font-size:14px;text-align:right}
+.meter{height:3px;border-radius:2px;background:var(--soft);overflow:hidden;margin-top:7px}
+.meter span{display:block;height:100%;background:var(--ink)!important}
+
+label.f{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);font-size:16px}
+textarea.field{min-height:100px;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid2 > *{min-width:0}
+input.field[type=date],input.field[type=number]{display:block;width:100%;min-width:0;max-width:100%;height:42px;padding:0 12px;-webkit-appearance:none;appearance:none;text-align:left;font-size:14px}
+input.field[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+input.field[type=date]::-webkit-calendar-picker-indicator{opacity:.5}
+.price-row{display:grid;grid-template-columns:1fr 78px 78px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.price-row:last-child{border-bottom:0}
+.price-row input,.mix-row input[type=number]{width:78px;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:var(--bg);text-align:center;font-size:16px}
+.price-row input{width:100%}
+.price-row input:disabled{background:var(--soft);color:var(--muted);border-color:transparent;opacity:1;-webkit-text-fill-color:var(--muted)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb, var(--card) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:10}
+nav.tabs .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+nav.tabs button{border:0;background:none;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer}
+nav.tabs button svg{width:21px;height:21px}
+nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);border-radius:10px}
+.badge{position:relative}
+.badge[data-n]:not([data-n="0"])::after{content:attr(data-n);position:absolute;top:-4px;right:-9px;background:var(--ink);color:var(--bg);font-size:9px;font-weight:700;border-radius:999px;padding:1px 5px}
+
+.sheet-wrap{margin:10px 0;scroll-margin:80px}
+.sheet{background:var(--card);border:1px solid var(--ink);border-radius:14px;padding:16px}
+.sheet h3{margin:0 0 6px;font-size:16px;font-weight:600}
+.sheet .list li{padding:7px 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-weight:500;font-size:13px;z-index:30;max-width:90vw;text-align:center}
+.empty{color:var(--muted);text-align:center;padding:16px 0}
+.steps-bar{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;position:relative}
+.steps-bar::before{content:"";position:absolute;left:12.5%;right:12.5%;top:7px;height:1px;background:var(--line)}
+.stp{position:relative;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;text-align:center}
+.stp .pip{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);position:relative;z-index:1}
+.stp.on .pip{background:var(--sel);border-color:var(--sel)}
+.stp.cur{color:var(--ink)}
+.stp.cur .pip{box-shadow:0 0 0 3px var(--soft)}
+.hist-item{display:flex;gap:10px;align-items:flex-start}
+.hist-item .x{margin-left:auto;border:0;background:var(--soft);border-radius:8px;width:30px;height:30px;flex:none;cursor:pointer;font-size:14px;color:var(--muted)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+:root{--bar-fill:var(--sel);--bar-empty:#0A0A0B}
+.sbar{height:8px;border-radius:4px;background:var(--bar-empty);overflow:hidden;margin-top:8px;box-shadow:inset 0 0 0 1px var(--line)}
+.sbar span{display:block;height:100%;background:var(--bar-fill);border-radius:4px 0 0 4px}
+.sbar.low span{background:var(--out)}
+.srow{display:block;width:100%;border:0;background:none;padding:12px 0;text-align:left;cursor:pointer;border-bottom:1px solid var(--line)}
+.srow:last-child{border-bottom:0}
+.srow .amt{font-weight:700;font-size:14px}
+.srow .warn{color:var(--out);font-size:12px;font-weight:600;margin-left:6px}
+.sdet{font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tstars{display:flex;gap:4px;margin:6px 0 8px}
+.tstar{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--line);padding:2px}
+.tstar.on{color:var(--bar-fill)}
+.trow{display:grid;gap:4px;margin:8px 0}
+.trow > span{font-size:12px;color:var(--muted);font-weight:600}
+.tchips{display:flex;flex-wrap:wrap;gap:4px}
+.tchip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink)}
+.tchip.on{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.taste{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.taste-h{font-weight:700}
+.fb{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.fb-h{font-weight:700;font-size:13px}
+.fb .stars,.stars{color:var(--bar-fill);letter-spacing:1px}
+.fb-btns{display:flex;gap:6px;margin-top:8px}
+.btn.sm{padding:7px 10px;font-size:12px;width:auto;display:inline-block}
+.mgseg{display:flex;gap:4px;margin-top:6px}
+.mgseg button{flex:1;border:0;border-radius:8px;padding:7px 0;font-size:12px;font-weight:600;background:var(--soft);color:var(--ink);cursor:pointer}
+.mgseg button.on{background:var(--sel);color:var(--sel-ink)}
+.mgseg button:disabled{opacity:.35;cursor:default}
+.pill.ready{background:var(--ok);color:#fff}
+.card > h2:first-child{margin-top:0}
+.prevord{border-bottom:1px solid var(--line);padding:10px 0}
+.prevord:last-child{border-bottom:0}
+.prevord > summary.prevsum{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;color:var(--ink);text-decoration:none;font-size:14px;font-weight:400;margin:0}
+.prevord > summary.prevsum::-webkit-details-marker{display:none}
+.prevord > summary.prevsum::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin:-3px 4px 0 4px;flex:none}
+.prevord[open] > summary.prevsum::after{transform:rotate(-135deg);margin-top:3px}
+.prevord[open] > summary.prevsum{margin-bottom:8px}
+.steepsum{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.steepsum .btn{width:auto}
+.led{display:flex;align-items:flex-start;justify-content:center;gap:4px;flex-wrap:wrap;background:#000;color:var(--sel);border-radius:12px;padding:12px 10px 10px;margin:10px 0 8px;font-family:'Share Tech Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;text-shadow:0 0 8px rgba(242,140,40,.55);box-shadow:inset 0 0 0 1px #1d1d20;font-variant-numeric:tabular-nums}
+.led-u{display:flex;flex-direction:column;align-items:center;min-width:0}
+.led-d{font-size:clamp(28px,9vw,46px);line-height:1;letter-spacing:.04em}
+.led-l{font-size:9px;letter-spacing:.14em;opacity:.7;margin-top:4px;font-family:var(--font)}
+.led-c{font-size:clamp(24px,8vw,40px);line-height:1;opacity:.8}
+.led-ready{font-size:clamp(22px,7vw,34px);letter-spacing:.08em;padding:6px 0}
+.led-sm{font-size:clamp(32px,10vw,48px);line-height:1;letter-spacing:.06em;padding:14px 10px}
+.tm-done{margin:2px 0 8px;padding:8px 10px;border-radius:8px;background:var(--sel);color:var(--sel-ink);font-weight:700;text-align:center}
+.tbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tbtns .btn{width:100%;margin:0}
+.tbtns2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbtns2 .btn{width:auto;margin:0}
+.shake-banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--sel);color:var(--sel-ink);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.shake-banner .btn.secondary{background:rgba(0,0,0,.12);color:var(--sel-ink)}
+.steepcard .pill.ready,.pill.ready{background:var(--ok);color:#fff}
+
+@media (prefers-reduced-motion: no-preference){ .sheet{animation:up .2s ease-out} @keyframes up{from{transform:translateY(6px);opacity:.5}to{transform:none;opacity:1}} }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+<nav class="tabs" aria-label="Sections"><div class="in" id="tabs"></div></nav>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- fixed data ---------- */
+var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
+var SHOPS = ['Vapable','Vape and Go'];
+var COURIERS = {
+  rm:   {name:'Royal Mail', url:'https://apps.apple.com/app/id1435168829', app:true},
+  evri: {name:'Evri', url:'https://www.evri.com/track-a-parcel'},
+  dpd:  {name:'DPD', url:'https://track.dpd.co.uk/'},
+  other:{name:'Other', url:''}
+};
+var STEPS = [['ordered','Ordered'],['dispatched','Dispatched'],['out','Out for delivery'],['delivered','Delivered']];
+function stepIdx(o){ for (var i=0;i<STEPS.length;i++) if (STEPS[i][0] === (o.status || 'ordered')) return i; return 0; }
+function parcelHtml(o, compact){
+  var i = stepIdx(o), tr = o.track || {}, c = COURIERS[tr.courier];
+  var bar = '<div class="steps-bar" role="group" aria-label="Delivery progress">' + STEPS.map(function(st, j){
+    return '<button class="stp' + (j <= i ? ' on' : '') + (j === i ? ' cur' : '') + '" data-step="' + o.id + ':' + st[0] + '" aria-pressed="' + (j===i) + '"><span class="pip"></span><span class="lab">' + st[1] + '</span></button>';
+  }).join('') + '</div>';
+  var info = tr.number ? '<div class="small" style="margin-top:6px"><b>' + esc(c ? c.name : 'Courier') + '</b> <span class="num">' + esc(tr.number) + '</span></div>' : '';
+  var btns = '<div class="row" style="gap:14px;flex-wrap:wrap">' +
+    (tr.number && c && c.url ? '<a class="linkbtn" style="text-decoration:none" href="' + esc(c.url) + '" target="_blank" rel="noopener" data-track="' + o.id + '">Track on ' + esc(c.name) + '</a>' : '') +
+    (compact ? '' : '<button class="linkbtn" data-trackedit="' + o.id + '">' + (tr.number ? 'Edit tracking' : 'Add tracking') + '</button>') +
+    (mail.api && (o.status || 'ordered') !== 'delivered' ? '<button class="linkbtn" data-mailcheck>Check Gmail now</button>' : '') + '</div>';
+  var note = mail.api && (o.status || 'ordered') !== 'delivered' ? '<div class="small muted" data-mailnote style="' + (mail.noteKind === 'warn' ? 'color:var(--low)' : '') + '">' + esc(mail.note || 'Updates itself from Vapable, Vape and Go and Royal Mail emails in your Gmail.') + '</div>' : '';
+  return bar + info + btns + note;
+}
+/* free delivery threshold and postage below it (fee null = not known yet) */
+var DELIVERY = {
+  'Vapable': {free:30, fee:4.95, note:'Standard delivery \u00a34.95 under \u00a330. DPD 1 to 3 days (order before 2pm) \u00a38.95. Same-day dispatch on weekdays if ordered by 3pm (not DPD).'},
+  'Vape and Go': {free:35, fee:2.99, note:''}
+};
+function delOf(shop){
+  var d = DELIVERY[shop] || {free:0, fee:null}, o = (state.ship || {})[shop] || {};
+  return { free: (o.free !== undefined && o.free !== null && +o.free >= 0) ? +o.free : d.free,
+           fee: (o.fee !== undefined && o.fee !== null && o.fee !== '' && +o.fee >= 0) ? +o.fee : d.fee };
+}
+function shopSubs(sh){
+  var out = {};
+  SHOPS.forEach(function(shop){
+    var sub = sh.rows.filter(function(r){ return r.ing.shop === shop; }).reduce(function(a,r){ return a + r.cost; }, 0);
+    var d = delOf(shop), post = 0, st = 'none';
+    if (sub > 0){
+      if (sub >= d.free - 0.001) st = 'free';
+      else if (d.fee !== null) { post = d.fee; st = 'fee'; }
+      else st = 'unknown';
+    }
+    out[shop] = {sub:sub, d:d, post:post, st:st};
+  });
+  return out;
+}
+var ING = [
+  {id:'straw', name:'Strawberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E0445A', warn:5, url:'https://vapable.com/product/strawberry-flavor-west-concentrate/'},
+  {id:'rasp', name:'Raspberry', shop:'Vapable', size:10, price:1.49, multi:1.37, col:'#C2185B', warn:5, url:'https://vapable.com/product/raspberry-flavour-concentrate-10ml/'},
+  {id:'blue', name:'Blueberry Wild TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4B5BD6', warn:5, url:'https://vapable.com/product/blueberry-wild-perfumers-apprentice-flavour-concentrate/'},
+  {id:'melon', name:'Watermelon TPA', shop:'Vapable', size:10, price:1.69, multi:1.65, col:'#FF6F86', warn:5, url:'https://vapable.com/product/watermelon-perfumers-apprentice-flavour-concentrate-copy/'},
+  {id:'sour', name:'TPA Sour', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#A8BD3A', warn:2, url:'https://vapable.com/product/sour-perfumers-apprentice-flavour-concentrate/'},
+  {id:'grape', name:'Grape Juice TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#7B3FA0', warn:5, url:'https://vapable.com/product/grape-juice-perfumers-apprentice-flavour-concentrate/'},
+  {id:'black', name:'Blackberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4A2A63', warn:5, url:'https://vapable.com/product/blackberry-natural-flavor-west-concentrate/'},
+  {id:'ws5', name:'WS-5 cooling agent', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4FC3D6', warn:2, url:'https://vapable.com/product/cooling-agent-ws-5-flavour-concentrate/'},
+  {id:'sweet', name:'Sweetener', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E3BD3A', warn:2, note:'Perfumer\u2019s Apprentice (TPA) Sweetener', url:'https://vapable.com/product/sweetener-perfumers-apprentice-flavour-concentrate/'},
+  {id:'cherry', name:'Cherry Berry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#8E1B2E', warn:5, url:'https://vapable.com/product/cherry-berry-flavor-west-concentrate/'},
+  {id:'brasp', name:'Blue Raspberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#2E7BD6', warn:3, url:'https://vapable.com/?s=blue+raspberry+flavor+west&post_type=product'},
+  {id:'lemon', name:'Lemonade (Natural) FW', shop:'Vapable', size:10, price:1.89, col:'#E8D44D', warn:3, url:'https://vapable.com/product/lemonade-flavor-west-concentrate/'},
+  {id:'rainbow', name:'Rainbow Candy FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#C94BD1', warn:3, url:'https://vapable.com/product/rainbow-candy-flavor-west-concentrate/'},
+  {id:'pg', name:'PG base', shop:'Vapable', size:500, price:6.49, col:'#9FB0BD', warn:50, url:'https://vapable.com/product-tag/propylene-glycol/'},
+  {id:'vg', name:'VG base', shop:'Vapable', size:1000, price:6.99, col:'#CBD6DF', warn:50, url:'https://vapable.com/product/vegetable-glycerine-1-litre/'},
+  {id:'nic', name:'Nic Nic 20mg (50 PG / 50 VG)', shop:'Vape and Go', size:10, price:0.99, packs:[[1,0.99]], col:'#D9913A', warn:50, note:'Nic Nic 20mg 50VG salt booster, not the Ice one', url:'https://www.vapeandgo.co.uk/product/nic-20mg-50vg-10ml-nicotine-salt-booster/'},
+  {id:'nicvg', name:'Vapable 20mg (100 VG)', shop:'Vapable', size:10, price:1.10, packs:[[1,1.10],[10,1.05],[20,1.00],[50,0.9498]], col:'#B8702A', warn:50, note:'20mg Nicotine Salt Shot, pick 100% VG and the pack size shown', url:'https://vapable.com/product/20mg-nicotine-salt-shot-10ml/'}
+];
+var RECIPES = [
+  {id:'srb', name:'Strawberry Raspberry Blueberry', parts:[['straw',6],['rasp',6],['blue',6],['sweet',0.5]]},
+  {id:'cb',  name:'Cherry Berry', parts:[['cherry',15],['sweet',1]]},
+  {id:'ssr', name:'Strawberry Sour Raspberry', parts:[['straw',7],['rasp',9],['sour',0.5],['sweet',0.5]]},
+  {id:'gbi', name:'Grape Blueberry Ice', parts:[['grape',6],['blue',8],['ws5',1],['sweet',1]]},
+  {id:'br',  name:'Blackberry Raspberry', parts:[['black',7.5],['rasp',7.5],['sweet',1]]},
+  {id:'bw',  name:'Blueberry Watermelon', parts:[['blue',8],['melon',5],['sweet',1]]},
+  {id:'brl', name:'Blue Razz Lemonade', parts:[['brasp',7],['lemon',5.5],['rasp',2.5]]},
+  {id:'rc',  name:'Rainbow Candy', parts:[['rainbow',10.5],['straw',3],['sour',0.5],['sweet',1]]}
+];
+var KIT = [
+  ['10ml bottles','https://vapable.com/product-category/diy/bottles/'],
+  ['Syringes (1ml and 10ml)','https://vapable.com/product-category/diy/bottles/'],
+  ['Nitrile gloves','https://vapable.com/product/powder-free-nitrile-gloves/'],
+  ['60ml empty bottle, for mixing batches up to 50ml','https://vapable.com/product-category/diy/bottles/']
+];
+var ingById = {}; ING.forEach(function(i){ ingById[i.id]=i; });
+var recById = {}; RECIPES.forEach(function(r){ recById[r.id]=r; });
+var BASE_RECIPES = RECIPES.slice();
+/* usual single-flavour strength (%), used to share out a mix automatically */
+var SOLO = {straw:14, rasp:16, blue:12, melon:10, grape:10, black:15, cherry:15, brasp:15, lemon:12, rainbow:13};
+var ADDITIVE = {sweet:0.5, sour:0.5, ws5:0.5};
+function mixFlavours(){ return ING.filter(function(i){ return i.id !== 'pg' && i.id !== 'vg' && i.id !== 'nic' && i.id !== 'nicvg'; }); }
+function r05(x){ return Math.round(x*2)/2; }
+var STRENGTH = {light:10, med:14, strong:18};
+function mixParts(){
+  var m = state.mix || {picks:{}}, picks = m.picks || {}, main = m.main || {}, total = STRENGTH[m.strength] || STRENGTH.med, out = [];
+  var flav = mixFlavours().filter(function(i){ return (i.id in picks) && !(i.id in ADDITIVE); });
+  var anyMain = flav.some(function(i){ return main[i.id]; });
+  var w = function(i){ return (anyMain && main[i.id]) ? 2 : 1; };
+  var wsum = flav.reduce(function(a, i){ return a + w(i); }, 0) || 1;
+  flav.forEach(function(i){ var v = picks[i.id]; out.push([i.id, (v !== null && v !== undefined && +v >= 0) ? +v : Math.max(0.5, r05(total * w(i) / wsum))]); });
+  mixFlavours().forEach(function(i){ if ((i.id in picks) && (i.id in ADDITIVE)) { var v = picks[i.id]; out.push([i.id, (v !== null && v !== undefined && +v >= 0) ? +v : ADDITIVE[i.id]]); } });
+  return out.filter(function(p){ return p[1] > 0; });
+}
+function syncRecipes(){
+  RECIPES.length = 0;
+  var ed = state.recipeEdits || {}, okParts = function(p){ return Array.isArray(p) && p.length && p.every(function(x){ return Array.isArray(x) && ingById[x[0]] && +x[1] > 0; }); };
+  BASE_RECIPES.forEach(function(r){ RECIPES.push(okParts(ed[r.id]) ? {id:r.id, name:r.name, parts:ed[r.id], edited:true} : r); });
+  (state.myRecipes || []).forEach(function(r){ RECIPES.push({id:r.id, name:r.name, parts:okParts(ed[r.id]) ? ed[r.id] : r.parts, user:true}); });
+  RECIPES.push({id:'mix', name:(state.mix && state.mix.name) || 'My mix', parts:mixParts(), custom:true});
+  for (var k in recById) delete recById[k];
+  RECIPES.forEach(function(r){ recById[r.id] = r; if (!(r.id in state.plan)) state.plan[r.id] = 0; });
+  RATE_CACHE = {};
+}
+
+/* ---------- state ---------- */
+var LS_KEY = 'mixbench.v1';
+function blank(){
+  var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}};
+}
+function migrate(s){
+  var b = blank();
+  if (!s || typeof s !== 'object') return b;
+  b.savedAt = +s.savedAt || 0;
+  RECIPES.forEach(function(r){ b.plan[r.id] = Math.max(0, +((s.plan||{})[r.id]) || 0); });
+  if (s.plan && typeof s.plan === 'object') for (var pk in s.plan) if (!(pk in b.plan)) b.plan[pk] = Math.max(0, +s.plan[pk] || 0);
+  if (s.mix && typeof s.mix === 'object' && s.mix.picks && typeof s.mix.picks === 'object') b.mix = {name: String(s.mix.name || 'My mix').slice(0,40), picks: s.mix.picks, strength: ['light','med','strong'].indexOf(s.mix.strength) >= 0 ? s.mix.strength : 'med', main: (s.mix.main && typeof s.mix.main === 'object') ? s.mix.main : {}};
+  if (Array.isArray(s.myRecipes)) b.myRecipes = s.myRecipes.filter(function(r){ return r && r.id && Array.isArray(r.parts); });
+  b.prices = (s.prices && typeof s.prices === 'object') ? s.prices : {};
+  b.orders = Array.isArray(s.orders) ? s.orders : [];
+  b.batches = Array.isArray(s.batches) ? s.batches : [];
+  b.adjust = Array.isArray(s.adjust) ? s.adjust : [];
+  if (s.nicBase === 'vg' || s.nicBase === '5050') b.nicBase = s.nicBase;
+  if (!s.split && s.nicSrc === 'vap') b.orders.forEach(function(o){ if (o.items && o.items.nic){ o.items.nicvg = (o.items.nicvg || 0) + o.items.nic; delete o.items.nic; } });
+  if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
+  if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
+  if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
+  ['mgs','recipeEdits','fbSeen','syncTimes'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
+  if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
+  if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
+  if (+s.syncBase > 0) b.syncBase = +s.syncBase;
+  b.syncOn = !!s.syncOn;
+  repair(b);
+  return b;
+}
+/* Repairs to stock saved by older versions. Safe to run every time: each step only touches the one entry it names. */
+function repair(b){
+  for (var k in b.prices){ var p = b.prices[k]; if (p && typeof p === 'object'){ delete p.size; delete p.bigSize; } }
+  if (b.prices.vg && b.prices.vg.price === 4.49) b.prices.vg.price = 6.99;
+  /* no ingredient has a bigger bottle any more, so leftover big-bottle prices are never used */
+  for (var q in b.prices){ var pp = b.prices[q]; if (pp && typeof pp === 'object') delete pp.bigPrice; }
+  /* 20mg is no longer offered: a recipe set to 20mg in Plan becomes 15mg (saved batches keep what they were made with) */
+  for (var mk in (b.mgs || {})) if (+b.mgs[mk] === 20) b.mgs[mk] = 15;
+  /* batches logged before recipes were saved with them: keep the recipe as it was, so editing it later can't change stock */
+  var base = {}; BASE_RECIPES.forEach(function(r){ base[r.id] = r; });
+  b.batches.forEach(function(x){ if (x && !Array.isArray(x.parts) && !x.amounts && base[x.recipe]) x.parts = base[x.recipe].parts.map(function(p){ return [p[0], p[1]]; }); });
+}
+var state = blank();
+try { var raw = localStorage.getItem(LS_KEY); if (raw) state = migrate(JSON.parse(raw)); } catch (e) {}
+
+/* ---------- maths ---------- */
+function r4(x){ return Math.round(x*10000)/10000; }
+function sizeOf(id){ return ingById[id].size; }
+function priceOf(id){ var p=state.prices[id]; return (p && p.price!==undefined && +p.price>=0) ? +p.price : ingById[id].price; }
+function multiOf(id){ var p=state.prices[id]; if (p && p.multi!==undefined) return +p.multi>0 ? +p.multi : 0; return ingById[id].multi || 0; }
+/* cheapest way to buy n or more standard bottles, using the 3+ price when it applies */
+function cheapestSmall(id, rest){
+  var s = sizeOf(id), n0 = rest>0 ? Math.ceil(rest/s - 1e-9) : 0, m = multiOf(id), sp = priceOf(id), best = null;
+  for (var n = n0; n <= n0 + (m>0 && n0>0 ? 2 : 0); n++){
+    var c = n * ((m>0 && n>=3) ? m : sp);
+    if (!best || c < best.cost - 0.001) best = {n:n, cost:Math.round(c*100)/100};
+  }
+  return best;
+}
+function bigSizeOf(id){ return ingById[id].bigSize || 0; }
+function bigPriceOf(id){ var p=state.prices[id]; if (p && p.bigPrice!==undefined) return +p.bigPrice>=0 ? +p.bigPrice : 0; return ingById[id].bigPrice || 0; }
+/* cheapest mix of small and big bottles that covers the shortfall */
+/* per-shot price for each pack size, e.g. [[1,1.10],[10,1.05],[20,1.00],[50,0.95]] */
+function packsOf(id){
+  var base = ingById[id].packs; if (!base) return null;
+  var o = (state.prices[id] || {}).packs || {};
+  return base.map(function(p){ var v = o[p[0]]; return [p[0], (v !== undefined && v !== null && +v >= 0) ? +v : p[1]]; });
+}
+function packBuy(id, short){
+  var pk = packsOf(id), unit = sizeOf(id), need = short>0 ? Math.ceil(short/unit - 1e-9) : 0;
+  if (!need) return {nS:0, nB:0, cost:0, ml:0, packs:{}};
+  var cost = pk.map(function(p){ return Math.round(p[0]*p[1]*100)/100; });
+  var top = need + Math.max.apply(null, pk.map(function(p){ return p[0]; }));
+  var best = [0], pick = [null];
+  for (var u=1; u<=top; u++){
+    best[u] = Infinity;
+    for (var j=0; j<pk.length; j++) if (pk[j][0] <= u && best[u-pk[j][0]] + cost[j] < best[u] - 1e-9){ best[u] = best[u-pk[j][0]] + cost[j]; pick[u] = j; }
+  }
+  var at = need; for (u=need; u<=top; u++) if (best[u] < best[at] - 1e-9) at = u;
+  var counts = {}, n = 0, left = at;
+  while (left > 0){ var j2 = pick[left]; counts[pk[j2][0]] = (counts[pk[j2][0]]||0) + 1; n++; left -= pk[j2][0]; }
+  return {nS:n, nB:0, cost:Math.round(best[at]*100)/100, ml:at*unit, packs:counts, shots:at};
+}
+function bestBuy(id, short){
+  if (packsOf(id)) return packBuy(id, short);
+  var s = sizeOf(id), b = bigSizeOf(id), bp = bigPriceOf(id);
+  var cs = cheapestSmall(id, short), best = {nS: cs.n, nB: 0, cost: cs.cost, ml: cs.n*s};
+  if (short>0 && b>0 && bp>0){
+    for (var nB=1; nB<=Math.ceil(short/b - 1e-9); nB++){
+      var rest = Math.max(0, short - nB*b), cr = cheapestSmall(id, rest), nS = cr.n;
+      var cost = nB*bp + cr.cost, ml = nB*b + nS*s;
+      if (cost < best.cost - 0.001 || (Math.abs(cost-best.cost) <= 0.001 && ml > best.ml)) best = {nS:nS, nB:nB, cost:cost, ml:ml};
+    }
+  }
+  return best;
+}
+function bigFrom(id){
+  var b = bigSizeOf(id); if (!(b>0) || !(bigPriceOf(id)>0)) return 0;
+  for (var m = 1; m <= b*2; m += 1){ if (bestBuy(id, m).nB > 0) return Math.round(m*100)/100; }
+  return 0;
+}
+function bottleText(id, bb){
+  var parts = [];
+  if (bb.packs){
+    var pk = packsOf(id);
+    if (pk.length === 1) return bb.shots + ' shot' + (bb.shots===1?'':'s');
+    Object.keys(bb.packs).map(Number).sort(function(a,b){ return b-a; }).forEach(function(n){
+      var c = bb.packs[n];
+      parts.push(n === 1 ? c + ' single' + (c===1?'':'s') : c + ' &times; ' + n + ' pack');
+    });
+    return parts.join(' + ');
+  }
+  if (bb.nB) parts.push(bb.nB + ' &times; ' + mlShort(bigSizeOf(id)) + 'ml');
+  if (bb.nS) parts.push(bb.nS + ' &times; ' + mlShort(sizeOf(id)) + 'ml');
+  return parts.join(' + ');
+}
+/* nb = what the nic shot is made of: '5050' (50 PG / 50 VG) or 'vg' (100 VG). */
+var RATIO_SHORT = {};
+function rates(rec, nb, vgr, mg){
+  mg = (mg === undefined || mg === null) ? SETTINGS.finalNic : +mg;
+  var out = {}, flav = 0, vgLow = false, nicFrac = mg/SETTINGS.shotNic, VG = (vgr || 50)/100, PG = 1 - VG;
+  rec.parts.forEach(function(p){ out[p[0]] = (out[p[0]]||0) + p[1]/100; flav += p[1]/100; });
+  var nk = nb === 'vg' ? 'nicvg' : 'nic';
+  out[nk] = nicFrac;
+  if (nb === 'zero') { delete out.nic; delete out.nicvg; out.pg = PG - flav; out.vg = VG; }
+  else if (nb === 'vg') { if (VG < nicFrac - 1e-9) { out.pg = 1 - nicFrac - flav; out.vg = 0; vgLow = true; } else { out.pg = PG - flav; out.vg = VG - nicFrac; } }
+  else { out.pg = PG - nicFrac*0.5 - flav; out.vg = VG - nicFrac*0.5; }
+  /* not enough room for the PG this ratio needs: drop PG to zero and let VG fill the gap */
+  var k = rec.id + '|' + nb + '|' + (vgr || 50) + '|' + mg;
+  /* the shots alone leave no room for this much flavour */
+  if (nb !== 'zero' && flav + nicFrac > 1 + 1e-9) { RATIO_SHORT[k] = 'full'; out.pg = 0; out.vg = 0; return out; }
+  if (out.pg < -1e-9) { out.vg = Math.max(0, out.vg + out.pg); out.pg = 0; RATIO_SHORT[k] = true; } else if (vgLow) RATIO_SHORT[k] = 'vg'; else delete RATIO_SHORT[k];
+  if (out.vg < 1e-9) out.vg = 0;
+  return out;
+}
+var RATE_CACHE = {};
+function planNb(rid){ return (state.zero && state.zero[rid]) ? 'zero' : (state.nicBase || '5050'); }
+var MG_STEPS = [5, 10, 15];
+function planMg(rid){ var v = state.mgs && +state.mgs[rid]; return MG_STEPS.indexOf(v) >= 0 ? v : SETTINGS.finalNic; }
+function RT(recId, nb, vgr, mg){ nb = nb || planNb(recId); vgr = vgr || state.vgr || 50; mg = (mg === undefined || mg === null) ? planMg(recId) : mg; var k = recId + '|' + nb + '|' + vgr + '|' + mg; if (!RATE_CACHE[k]) RATE_CACHE[k] = rates(recById[recId], nb, vgr, mg); return RATE_CACHE[k]; }
+function ratioShort(recId){ RT(recId); return RATIO_SHORT[recId + '|' + planNb(recId) + '|' + (state.vgr || 50) + '|' + planMg(recId)] || false; }
+function fits(recId){ return ratioShort(recId) !== 'full'; }
+function ratioNote(recId){
+  var f = ratioShort(recId); if (!f) return '';
+  if (f === 'full') { var fl = 0; recById[recId].parts.forEach(function(p){ fl += p[1]; }); var mg = planMg(recId);
+    return '<p class="small" style="color:var(--out);margin:8px 0 0;font-weight:600">' + mg + 'mg won\u2019t fit: 20mg shots would fill ' + mlShort(mg / SETTINGS.shotNic * 100) + '% of the bottle, leaving no room for this recipe\u2019s ' + mlShort(fl) + '% flavour. Pick a lower strength.</p>'; }
+  var v = state.vgr || 50, i = mixInfo(RT(recId)), real = i ? pgvg(i.vg) : '';
+  return '<p class="small" style="color:var(--low);margin:8px 0 0">' + (f === 'vg'
+    ? 'Vapable 20mg (100 VG) shots can\u2019t make it thinner than 50 PG / 50 VG, so this will come out at about ' + real + ', not ' + pgvg(v) + '.'
+    : 'Not enough room for ' + pgvg(v) + ' with this much flavour. It will come out lower in VG (higher in PG), at about ' + real + '.') + '</p>';
+}
+function mlFor(recId, ml, nb, vgr, mg){ var o={}, rt=RT(recId, nb, vgr, mg); for (var k in rt) o[k]=r4(rt[k]*ml); return o; }
+function planNeed(){
+  var need = {}; ING.forEach(function(i){ need[i.id]=0; });
+  RECIPES.forEach(function(r){ var ml=state.plan[r.id]||0; if(!ml || !r.parts.length || !fits(r.id)) return; var m=mlFor(r.id,ml); for (var k in m) need[k]+=m[k]; });
+  for (var k in need) need[k]=r4(need[k]);
+  return need;
+}
+function stockNow(){
+  var s = {ordered:{}, used:{}, adj:{}, left:{}};
+  ING.forEach(function(i){ s.ordered[i.id]=0; s.used[i.id]=0; s.adj[i.id]=0; });
+  state.orders.forEach(function(o){ for (var k in o.items) if (k in s.ordered) s.ordered[k]+= +o.items[k]||0; });
+  state.batches.forEach(function(b){
+    var m = batchAmounts(b); if (!m) return;
+    for (var k in m) if (k in s.used) s.used[k]+=m[k];
+  });
+  state.adjust.forEach(function(a){ if (a.ing in s.adj) s.adj[a.ing]+= +a.ml||0; });
+  ING.forEach(function(i){ var id=i.id; s.ordered[id]=r4(s.ordered[id]); s.used[id]=r4(s.used[id]); s.adj[id]=r4(s.adj[id]); s.left[id]=r4(s.ordered[id]-s.used[id]+s.adj[id]); });
+  return s;
+}
+function shopping(){
+  var need = planNeed(), st = stockNow(), rows = [], total = 0, ingCost = 0;
+  ING.forEach(function(i){
+    var have = Math.max(0, st.left[i.id]), short = r4(Math.max(0, need[i.id]-have));
+    var bb = bestBuy(i.id, short), cost = bb.cost;
+    var perMl = bb.ml>0 ? cost/bb.ml : priceOf(i.id)/sizeOf(i.id);
+    total += cost; ingCost += need[i.id]*perMl;
+    rows.push({ing:i, need:need[i.id], have:have, bottles:bb.nS+bb.nB, bb:bb, buy:bb.ml, cost:cost});
+  });
+  var planned = 0; RECIPES.forEach(function(r){ planned += state.plan[r.id]||0; });
+  return {rows:rows, total:total, ingCost:ingCost, planned:planned};
+}
+function status(id, st){
+  if (!st.ordered[id] && !st.used[id] && !st.adj[id]) return ['-',''];
+  var left = st.left[id];
+  if (left <= 0.0001) return ['Out','out'];
+  if (left < ingById[id].warn) return ['Low','low'];
+  return ['OK','ok'];
+}
+
+/* ---------- formatting ---------- */
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function ml2(x){ return (Math.round(x*100)/100).toFixed(2); }
+function mlShort(x){ var v=Math.round(x*100)/100; return (v%1===0 ? v.toFixed(0) : v.toFixed(2).replace(/0$/,'')); }
+function gbp(x){ return '£' + (Math.round(x*100)/100).toFixed(2); }
+function when(t){ var d=new Date(t); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ', ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---------- shared: batch details (phone and laptop use the same code) ---------- */
+var NIC_VG = {nic:0.5, nicvg:1};
+/* what a batch took from stock, in ml: the saved amounts, or worked out exactly as Stock always has */
+function batchAmounts(b){
+  if (b.amounts && typeof b.amounts === 'object') return b.amounts;
+  var m = {}, rt, k;
+  var mg = b.mg >= 5 ? b.mg : SETTINGS.finalNic;
+  if (Array.isArray(b.parts)) { rt = rates({id:'b_' + b.id, parts:b.parts}, b.nb || '5050', b.vgr || 50, mg); for (k in rt) m[k] = r4(rt[k] * (+b.ml || 0)); return m; }
+  if (!recById[b.recipe]) return null;
+  return mlFor(b.recipe, +b.ml || 0, b.nb || '5050', b.vgr || 50, mg);
+}
+/* the finished liquid from the amounts used: flavours are PG-based, nic shots bring their own PG and VG */
+function mixInfo(m){
+  var total = 0, vg = 0, nicMl = 0, flav = [], k, v;
+  for (k in m){ v = +m[k] || 0; if (!(v > 0)) continue; total += v;
+    if (k === 'vg') vg += v; else if (k in NIC_VG) { vg += v * NIC_VG[k]; nicMl += v; } else if (k !== 'pg') flav.push([k, v]); }
+  if (!(total > 0)) return null;
+  var vgp = vg / total * 100;
+  return {total:total, vg:vgp, pg:100 - vgp, mg:Math.round(nicMl * SETTINGS.shotNic / total * 10) / 10, nicMl:nicMl, flav:flav, amounts:m};
+}
+/* every ratio is shown PG first, then VG, e.g. "55 PG / 45 VG"; the stored setting stays the VG percentage */
+function r1(x){ return Math.round(x * 10 + 1e-6) / 10; }
+function pgvg(vgPct){ var vg = r1(vgPct), pg = r1(100 - vg); return pg + ' PG / ' + vg + ' VG'; }
+function ratioName(vgPct){ return pgvg(vgPct) + (vgPct < 50 ? ' (thinner)' : (vgPct > 50 ? ' (thicker)' : '')); }
+var NIC_NAME = {'5050':'Nic Nic 20mg (50 PG / 50 VG)', vg:'Vapable 20mg (100 VG)'};
+function ratioLabel(i){ return pgvg(i.vg); }
+/* a batch made before ratios were saved: Stock assumed 50/50, so the ratio is only what was assumed */
+function batchRecorded(b){ return !!(b.amounts || b.vgr); }
+function batchInfo(b){ var m = batchAmounts(b); return m ? mixInfo(m) : null; }
+function batchLine(b){
+  var i = batchInfo(b), s = mlShort(b.ml) + ' ml';
+  var extra = (b.taste && b.taste.stars ? ' \u00b7 ' + starsText(b.taste.stars) : '') + (b.finished ? ' \u00b7 finished ' + new Date(b.finished).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : '');
+  if (!i) return s + ' · ratio unknown' + extra;
+  return s + ' · ' + (batchRecorded(b) ? ratioLabel(i) : 'ratio not saved') + ' · ' + mlShort(i.mg) + 'mg' + extra;
+}
+function newBatch(rec, ml, nb, vgr, t, mg){
+  mg = nb === 'zero' ? 0 : (mg || SETTINGS.finalNic);
+  var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg), m = {}, k;
+  for (k in rt) if (rt[k] > 0) m[k] = r4(rt[k] * ml);
+  var i = mixInfo(m);
+  return {id:uid(), t:t, recipe:rec.id, name:rec.name, parts:rec.parts.map(function(p){ return [p[0], p[1]]; }), ml:ml, nb:nb, vgr:vgr,
+    amounts:m, mg:nb === 'zero' ? 0 : mg, ratio:i ? {pg:Math.round(i.pg * 10) / 10, vg:Math.round(i.vg * 10) / 10} : null};
+}
+function batchDetailHtml(b){
+  var i = batchInfo(b);
+  if (!i) return '<p class="muted" style="margin:0">This batch’s recipe no longer exists, so its amounts can’t be worked out.</p>';
+  var row = function(a, ml, extra){ return '<tr><td style="padding:6px 0">' + a + '</td><td class="num" style="text-align:right;padding:6px 0 6px 12px">' + mlShort(ml) + ' ml' + (extra || '') + '</td><td class="num muted" style="text-align:right;padding:6px 0 6px 12px">' + mlShort(Math.round(ml / i.total * 1000) / 10) + '%</td></tr>'; };
+  var h = '<table style="width:100%;border-collapse:collapse;font-size:14px"><tbody>';
+  i.flav.forEach(function(f){ h += row(esc(ingById[f[0]] ? ingById[f[0]].name : f[0]), f[1]); });
+  ['nic','nicvg'].forEach(function(id){ var v = +i.amounts[id] || 0; if (v > 0) { var sh = Math.round(v / 10 * 100) / 100; h += row(esc(ingById[id].name), v, ' (' + mlShort(sh) + (sh === 1 ? ' shot)' : ' shots)')); } });
+  ['pg','vg'].forEach(function(id){ var v = +i.amounts[id] || 0; if (v > 0) h += row(id === 'pg' ? 'PG' : 'VG', v); });
+  h += '<tr><td style="padding:8px 0;border-top:1px solid var(--line);font-weight:700">Total</td><td class="num" style="text-align:right;padding:8px 0 8px 12px;border-top:1px solid var(--line);font-weight:700">' + mlShort(Math.round(i.total * 100) / 100) + ' ml</td><td style="border-top:1px solid var(--line)"></td></tr></tbody></table>';
+  h += '<p style="margin:12px 0 0;font-weight:600">' + (batchRecorded(b) ? 'Finished ratio: ' : 'Worked out from stock: ') + ratioLabel(i) + ' · ' + mlShort(i.mg) + 'mg</p>';
+  if (!batchRecorded(b)) h += '<p class="muted small" style="margin:6px 0 0">This batch was logged before ratios were saved, so Stock assumed 50 PG / 50 VG for it. The real ratio wasn’t recorded.</p>';
+  return h;
+}
+
+/* ---------- shared: change tracking and two-way merge ---------- */
+var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen'];
+var SYNC_VALS = ['nicBase','vgr','mix'];
+function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
+/* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
+function trackChanges(prev, cur, now){
+  if (!prev) return;
+  cur.stamps = cur.stamps || {}; cur.deleted = cur.deleted || {};
+  SYNC_COLS.forEach(function(c){
+    var old = {}, seen = {}, id;
+    (prev[c] || []).forEach(function(r){ if (r && r.id) old[r.id] = bare(r); });
+    (cur[c] || []).forEach(function(r){ if (!r || !r.id) return; seen[r.id] = 1; if (old[r.id] !== bare(r)) r.u = now; });
+    for (id in old) if (!seen[id]) cur.deleted[id] = now;
+  });
+  SYNC_MAPS.forEach(function(m){
+    var a = prev[m] || {}, b = cur[m] || {}, keys = {}, k;
+    for (k in a) keys[k] = 1; for (k in b) keys[k] = 1;
+    for (k in keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) cur.stamps[m + '.' + k] = now;
+  });
+  SYNC_VALS.forEach(function(v){ if (JSON.stringify(prev[v]) !== JSON.stringify(cur[v])) cur.stamps[v] = now; });
+}
+function stampOf(s, key){ return (s.stamps && s.stamps[key]) || s.syncBase || s.savedAt || 0; }
+function recStamp(s, r){ return r.u || s.syncBase || s.savedAt || 0; }
+/* newest change wins; on a tie the device that saved last wins, then a fixed order, so both devices always agree */
+function pickSide(ls, lv, lt, rs, rv, rt){
+  if (lt !== rt) return lt > rt ? 'l' : 'r';
+  var la = ls.savedAt || 0, ra = rs.savedAt || 0;
+  if (la !== ra) return la > ra ? 'l' : 'r';
+  return JSON.stringify(lv) >= JSON.stringify(rv) ? 'l' : 'r';
+}
+/* combine two devices' data without either overwriting the other: everything logged on either side is kept, edits and deletions go by time */
+function mergeStates(local, remote){
+  var out = jcopy(local), rdel = remote.deleted || {}, id;
+  out.stamps = out.stamps || {}; out.deleted = out.deleted || {};
+  for (id in rdel) if (!(out.deleted[id] >= rdel[id])) out.deleted[id] = rdel[id];
+  SYNC_COLS.forEach(function(c){
+    var lmap = {}, rmap = {}, order = [];
+    (local[c] || []).forEach(function(r){ if (r && r.id && !lmap[r.id]) { lmap[r.id] = r; order.push(r.id); } });
+    (remote[c] || []).forEach(function(r){ if (r && r.id && !rmap[r.id]) { rmap[r.id] = r; if (!lmap[r.id]) order.push(r.id); } });
+    out[c] = [];
+    order.forEach(function(id){
+      var l = lmap[id], r = rmap[id], win, wt;
+      if (l && r) { var lt = recStamp(local, l), rt = recStamp(remote, r); if (pickSide(local, l, lt, remote, r, rt) === 'l') { win = l; wt = lt; } else { win = r; wt = rt; } }
+      else if (l) { win = l; wt = recStamp(local, l); }
+      else { win = r; wt = recStamp(remote, r); }
+      if (out.deleted[id] && out.deleted[id] >= wt) return;
+      out[c].push(jcopy(win));
+    });
+  });
+  var one = function(key, lv, rv){
+    var lt = stampOf(local, key), rt = stampOf(remote, key);
+    if (JSON.stringify(lv) === JSON.stringify(rv)) return {v:lv, t:Math.max(lt, rt)};
+    return pickSide(local, lv, lt, remote, rv, rt) === 'l' ? {v:lv, t:Math.max(lt, rt)} : {v:rv, t:Math.max(lt, rt)};
+  };
+  SYNC_MAPS.forEach(function(m){
+    var a = local[m] || {}, b = remote[m] || {}, keys = {}, k, w;
+    for (k in a) keys[k] = 1; for (k in b) keys[k] = 1;
+    out[m] = {};
+    for (k in keys){ w = one(m + '.' + k, a[k], b[k]); if (w.v !== undefined) out[m][k] = jcopy(w.v); out.stamps[m + '.' + k] = w.t; }
+  });
+  SYNC_VALS.forEach(function(v){ var w = one(v, local[v], remote[v]); if (w.v !== undefined) out[v] = jcopy(w.v); out.stamps[v] = w.t; });
+  return out;
+}
+function dataKey(s){ var c = jcopy(s); delete c.savedAt; delete c.syncTimes; return JSON.stringify(c); }
+/* ---------- shared: tasting feedback, suggestions, make again ---------- */
+var TASTE_FLAV = [['strong','Too strong'],['right','Just right'],['weak','Too weak']];
+var TASTE_SWEET = [['too','Too sweet'],['right','Just right'],['low','Not sweet enough']];
+var TASTE_HARSH = [['harsh','Too harsh'],['right','Just right'],['smooth','Too smooth']];
+var SHOT_SHORT = {'5050':'Nic Nic shots', vg:'Vapable shots', zero:'no nicotine'};
+function starsText(n){ n = Math.max(0, Math.min(5, +n || 0)); return n ? new Array(n + 1).join('★') + new Array(6 - n).join('☆') : ''; }
+function hasTaste(t){ return !!(t && (t.stars || t.notes || t.sweet || t.harsh || (t.flav && Object.keys(t.flav).length))); }
+function batchFlavIds(b){ var i = batchInfo(b); return i ? i.flav.map(function(f){ return f[0]; }) : (b.parts || []).map(function(p){ return p[0]; }); }
+function chips(kind, list, cur, key){
+  return '<div class="tchips">' + list.map(function(o){ return '<button type="button" class="tchip' + (cur === o[0] ? ' on' : '') + '" data-' + kind + '="' + (key ? key + ':' : '') + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>';
+}
+function tasteFormHtml(b){
+  var t = b.taste || {}, f = t.flav || {}, h = '<div class="taste" data-taste="' + b.id + '"><div class="taste-h">How was it?</div><div class="tstars">';
+  for (var n = 1; n <= 5; n++) h += '<button type="button" class="tstar' + (n <= (t.stars || 0) ? ' on' : '') + '" data-tstar="' + n + '" aria-label="' + n + ' star' + (n === 1 ? '' : 's') + '">★</button>';
+  h += '</div>';
+  batchFlavIds(b).filter(function(id){ return id !== 'sweet'; }).forEach(function(id){ h += '<div class="trow"><span>' + esc(ingById[id] ? ingById[id].name : id) + '</span>' + chips('tflav', TASTE_FLAV, f[id], id) + '</div>'; });
+  h += '<div class="trow"><span>Sweetness</span>' + chips('tsweet', TASTE_SWEET, t.sweet) + '</div><div class="trow"><span>Throat hit</span>' + chips('tharsh', TASTE_HARSH, t.harsh) + '</div>';
+  h += '<label class="f" for="tn-' + b.id + '">Notes</label><textarea id="tn-' + b.id + '" class="field" data-tnotes rows="3" placeholder="e.g. lovely after 5 days, raspberry a bit loud">' + esc(t.notes || '') + '</textarea>';
+  return h + '<p class="muted small" style="margin:6px 0 0">Saved as you go. Plan uses this next time you make the recipe.</p></div>';
+}
+/* apply one tap or typed note to the batch; returns the batch when something changed */
+function tasteApply(el){
+  var box = el.closest && el.closest('[data-taste]'); if (!box) return null;
+  var b = state.batches.filter(function(x){ return x.id === box.getAttribute('data-taste'); })[0]; if (!b) return null;
+  var t = b.taste ? jcopy(b.taste) : {}, v;
+  if ((v = el.getAttribute('data-tstar'))) t.stars = (+v === t.stars) ? 0 : +v;
+  else if ((v = el.getAttribute('data-tflav'))) { var p = v.split(':'); t.flav = t.flav || {}; if (t.flav[p[0]] === p[1]) delete t.flav[p[0]]; else t.flav[p[0]] = p[1]; }
+  else if ((v = el.getAttribute('data-tsweet'))) t.sweet = t.sweet === v ? '' : v;
+  else if ((v = el.getAttribute('data-tharsh'))) t.harsh = t.harsh === v ? '' : v;
+  else if (el.hasAttribute('data-tnotes')) t.notes = String(el.value || '').slice(0, 1000);
+  else return null;
+  t.t = Date.now(); b.taste = t; return b;
+}
+function lastTaste(rid){
+  return state.batches.filter(function(b){ return b.recipe === rid && hasTaste(b.taste); }).sort(function(a, b){ return b.t - a.t; })[0] || null;
+}
+function suggestFor(rid){
+  var b = lastTaste(rid), r = recById[rid]; if (!b || !r || !r.parts.length) return null;
+  var t = b.taste, f = t.flav || {}, parts = r.parts.map(function(p){ return [p[0], p[1]]; }), changes = [], words = [];
+  var move = function(p, dir){ var step = Math.max(0.5, r05(p * 0.1)); return Math.max(0.5, r05(p + dir * step)); };
+  parts.forEach(function(p){
+    var v = f[p[0]], n = p[1], nm = ingById[p[0]] ? ingById[p[0]].name : p[0];
+    if (v === 'strong') { n = move(p[1], -1); words.push(nm + ' too strong'); }
+    else if (v === 'weak') { n = move(p[1], 1); words.push(nm + ' too weak'); }
+    else if (v === 'right') words.push(nm + ' just right');
+    if (n !== p[1]) { changes.push([p[0], p[1], n]); p[1] = n; }
+  });
+  var si = -1; parts.forEach(function(p, i){ if (p[0] === 'sweet') si = i; });
+  if (t.sweet === 'too') { words.push('too sweet'); if (si >= 0) { var ns = Math.max(0, r05(parts[si][1] - 0.5)); changes.push(['sweet', parts[si][1], ns]); if (ns > 0) parts[si][1] = ns; else parts.splice(si, 1); } }
+  else if (t.sweet === 'low') { words.push('not sweet enough'); if (si >= 0) { changes.push(['sweet', parts[si][1], parts[si][1] + 0.5]); parts[si][1] += 0.5; } else { changes.push(['sweet', 0, 0.5]); parts.push(['sweet', 0.5]); } }
+  else if (t.sweet === 'right') words.push('sweetness just right');
+  var steps = [40,45,50,55,60,70], cur = state.vgr || 50, idx = steps.indexOf(cur), hint = '';
+  if (t.harsh === 'harsh') { words.push('too harsh'); if (idx < steps.length - 1) hint = 'It felt harsh: try a thicker ratio, e.g. ' + pgvg(steps[idx + 1]) + ', or a lower nic strength.'; }
+  else if (t.harsh === 'smooth') { words.push('too smooth'); if (idx > 0) hint = 'It felt too smooth: try a thinner ratio, e.g. ' + pgvg(steps[idx - 1]) + '.'; }
+  return {b:b, t:t, parts:parts, changes:changes, hint:hint, words:words, seen:!!(state.fbSeen && state.fbSeen[rid] === b.id)};
+}
+function feedbackHtml(rid){
+  var s = suggestFor(rid); if (!s) return '';
+  var h = '<div class="fb"><div class="fb-h">Last time' + (s.t.stars ? ' <span class="stars">' + starsText(s.t.stars) + '</span>' : '') + ' <span class="muted small">' + esc(whenShort(s.b.t)) + '</span></div>';
+  if (s.words.length) h += '<div class="small">' + esc(s.words.join(', ').replace(/^./, function(c){ return c.toUpperCase(); })) + '.</div>';
+  if (s.t.notes) h += '<div class="small muted" style="margin-top:4px">“' + esc(s.t.notes) + '”</div>';
+  if (s.changes.length && !s.seen) {
+    h += '<div class="small" style="margin-top:8px"><b>Suggested:</b> ' + s.changes.map(function(c){ return esc(ingById[c[0]] ? ingById[c[0]].name : c[0]) + ' ' + mlShort(c[1]) + '% → ' + mlShort(c[2]) + '%'; }).join(', ') + '</div>' +
+      '<div class="fb-btns"><button type="button" class="btn sm" data-taccept="' + rid + '">Use these amounts</button><button type="button" class="btn secondary sm" data-tignore="' + rid + '">Ignore</button></div>';
+  } else if (s.changes.length && s.seen) h += '<div class="small muted" style="margin-top:6px">You’ve already dealt with these suggestions.</div>';
+  if (s.hint) h += '<div class="small" style="margin-top:6px">' + esc(s.hint) + '</div>';
+  return h + '</div>';
+}
+function acceptSuggestion(rid){
+  var s = suggestFor(rid); if (!s) return false;
+  if (rid === 'mix') { state.mix.picks = state.mix.picks || {}; s.changes.forEach(function(c){ if (c[2] > 0) state.mix.picks[c[0]] = c[2]; else delete state.mix.picks[c[0]]; }); }
+  else { state.recipeEdits = state.recipeEdits || {}; state.recipeEdits[rid] = s.parts; }
+  state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; return true;
+}
+function ignoreSuggestion(rid){ var s = suggestFor(rid); if (!s) return; state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; }
+/* put a past batch's recipe, amount, ratio, shot type and strength back into Plan */
+function makeAgain(b){
+  var r = recById[b.recipe]; if (!r) return null;
+  state.plan[r.id] = +b.ml || 0; if (b.vgr) state.vgr = b.vgr;
+  state.zero = state.zero || {}; state.mgs = state.mgs || {};
+  if (b.nb === 'zero') state.zero[r.id] = true; else { delete state.zero[r.id]; if (b.nb) state.nicBase = b.nb; if (b.mg >= 5) state.mgs[r.id] = Math.round(b.mg); }
+  return r;
+}
+function batchSummary(rec, ml, nb, vgr, mg){
+  var i = mixInfo(rates({id:'b_sum', parts:rec.parts}, nb, vgr, mg));
+  return mlShort(ml) + ' ml · ' + (i ? pgvg(i.vg) : pgvg(vgr)) + ' · ' + (nb === 'zero' ? '0mg' : mg + 'mg') + ' · ' + SHOT_SHORT[nb || '5050'];
+}
+function syncTimesHtml(){
+  var t = state.syncTimes || {}, now = Date.now();
+  var line = function(lbl, v){ var old = !v || now - v > DAY; return '<div class="small" style="margin:2px 0;' + (old ? 'color:var(--low);font-weight:600' : '') + '">' + lbl + ' last synced: ' + (v ? esc(whenShort(v)) : 'not yet') + (v && old ? ' (over 24 hours ago)' : '') + '</div>'; };
+  return '<div style="margin:0 0 10px">' + line('Phone', t.phone) + line('Laptop', t.laptop) + '</div>';
+}
+function readyBatches(){ return steeping().filter(function(b){ return Date.now() - b.t >= STEEP_READY; }); }
+/* stock bar: what's left out of everything you've had of it (bought, plus extras you added). Spills count as used, so they lower what's left, not what you had. Same for every item. */
+function extrasOf(id){ var t = 0; state.adjust.forEach(function(a){ if (a.ing === id && +a.ml > 0) t += +a.ml; }); return t; }
+function stockBar(id, st){
+  var left = Math.max(0, st.left[id]), full = st.ordered[id] + extrasOf(id);
+  var none = !st.ordered[id] && !st.used[id] && !st.adj[id];
+  var pct = full > 0 ? Math.max(0, Math.min(100, left / full * 100)) : 0;
+  return {left:left, pct:pct, none:none, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
+    text:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml') + ' \u00b7 ' + Math.round(pct) + '% left'};
+}
+/* ---------- shared: steeping clocks, shake timer, stopwatch, 1pm shake reminder ---------- */
+var LONDON = (function(){ try { return new Intl.DateTimeFormat('en-GB', {timeZone:'Europe/London', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'}); } catch (e) { return null; } })();
+function londonParts(t){ var o = {}; if (!LONDON) { var d = new Date(t); return {year:String(d.getFullYear()), month:String(d.getMonth() + 1).padStart(2, '0'), day:String(d.getDate()).padStart(2, '0'), hour:String(d.getHours())}; } LONDON.formatToParts(new Date(t)).forEach(function(p){ o[p.type] = p.value; }); return o; }
+function londonDay(t){ var o = londonParts(t); return o.year + '-' + o.month + '-' + o.day; }
+/* a batch counts as shaken today if it was made today or has a shake logged today (UK date) */
+function shakenOn(b, day){ return londonDay(b.t) === day || (b.shakes || []).some(function(t){ return londonDay(t) === day; }); }
+function shakeDue(now){
+  now = now || Date.now(); var list = steeping(); if (!list.length || +londonParts(now).hour < 13) return false;
+  var day = londonDay(now); return list.some(function(b){ return !shakenOn(b, day); });
+}
+function markShaken(){ var now = Date.now(); steeping().forEach(function(b){ b.shakes = (b.shakes || []).concat([now]).slice(-30); }); }
+function lastShake(b){ var s = b.shakes || []; return s.length ? s[s.length - 1] : 0; }
+function shakeBannerHtml(){
+  if (!shakeDue()) return '';
+  return '<div class="shake-banner" role="status"><div><b>Time to shake your steeping bottles</b><div class="small">Give each one 2 min 30 sec. It’s past 1pm and they haven’t been shaken today.</div></div><div class="tbtns2"><button type="button" class="btn sm" data-shaken>Shaken today</button><button type="button" class="btn secondary sm" data-gosteep>Shake timer</button></div></div>';
+}
+function two(n){ return String(n).padStart(2, '0'); }
+function ledInner(ms){
+  if (ms <= 0) return '<div class="led-ready">READY TO TRY</div>';
+  var s = Math.ceil(ms / 1000), p = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60];
+  return ['DAYS','HRS','MIN','SEC'].map(function(l, i){ return '<div class="led-u"><span class="led-d">' + two(p[i]) + '</span><span class="led-l">' + l + '</span></div>'; }).join('<span class="led-c">:</span>');
+}
+function steepCardsHtml(){
+  var list = steeping();
+  if (!list.length) return '<div class="card empty">Nothing steeping. Batches appear here when you tap “I’ve made this”.</div>';
+  var day = londonDay(Date.now());
+  return list.map(function(b){
+    var ready = b.t + STEEP_READY, best = b.t + STEEP_BEST, nm = b.name || (recById[b.recipe] || {}).name || 'Batch', ls = lastShake(b);
+    return '<div class="card steepcard"><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><button class="linkbtn" style="font-size:15px;font-weight:700;padding:0;text-align:left;text-decoration:none" data-bdetail="' + b.id + '">' + esc(nm) + (b.nb === 'zero' ? ' (no nicotine)' : '') + ' ›</button><div class="small muted num">' + esc(batchLine(b)) + '</div></div>' +
+      (Date.now() >= ready ? '<span class="pill ready">Ready to try</span>' : '') + '</div>' +
+      '<div class="led" data-cd="' + ready + '" role="timer" aria-label="Time until ' + esc(nm) + ' is ready">' + ledInner(ready - Date.now()) + '</div>' +
+      '<div class="small muted">Mixed ' + esc(whenShort(b.t)) + ' · ready ' + esc(whenShort(ready)) + ' · best from ' + esc(whenShort(best)) + '</div>' +
+      '<div class="row between" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="small' + (shakenOn(b, day) ? '' : ' muted') + '">' + (shakenOn(b, day) ? 'Shaken today' + (ls && londonDay(ls) === day ? ' at ' + new Date(ls).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : ' (made today)') : (ls ? 'Last shaken ' + esc(whenShort(ls)) : 'Not shaken yet')) + '</span>' +
+      '<button class="linkbtn" data-steepdone="' + b.id + '">Done</button></div></div>';
+  }).join('');
+}
+var TM = {shake:{dur:150000, left:150000, end:0, run:false, done:false}, audio:null};
+function mmss(ms, tenths){ var s = Math.max(0, ms) / 1000, m = Math.floor(s / 60), r = Math.floor(s % 60); return two(m) + ':' + two(r) + (tenths ? '.' + Math.floor((s * 10) % 10) : ''); }
+function shakeLeft(){ return TM.shake.run ? Math.max(0, TM.shake.end - Date.now()) : TM.shake.left; }
+function timerCardsHtml(){
+  return '<div class="card"><h2>Shake timer</h2><div class="led led-sm" data-tmshake role="timer" aria-label="Shake timer">' + mmss(Math.ceil(shakeLeft() / 1000) * 1000) + '</div>' +
+    '<div class="tm-done" data-tmdone' + (TM.shake.done ? '' : ' hidden') + '>Done, stop shaking</div>' +
+    '<div class="tbtns"><button type="button" class="btn" data-tm="shake-start">Start</button><button type="button" class="btn secondary" data-tm="shake-pause">Pause</button><button type="button" class="btn secondary" data-tm="shake-reset">Reset</button></div>' +
+    '<p class="muted small" style="margin:8px 0 0">2 min 30 sec. It beeps (and vibrates where the device allows) when it’s done.</p></div>';
+}
+/* on iPhone home-screen apps notifications must go through the service worker; elsewhere a plain Notification works */
+var NOTIFY_HINT = '';
+function showReminder(){
+  var body = 'Time to shake your steeping bottles for 2 min 30 sec.';
+  try { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(r){ r.showNotification('Mix Bench', {body:body, icon:'icons/icon-192.png', tag:'shake'}); }); return; } } catch (e) {}
+  try { new Notification('Mix Bench', {body:body}); } catch (e) {}
+}
+function canNotify(){ try { return 'Notification' in window && window.isSecureContext && window.top === window; } catch (e) { return false; } }
+function reminderCardHtml(){
+  var due = shakeDue(), list = steeping(), day = londonDay(Date.now()), all = list.length && list.every(function(b){ return shakenOn(b, day); });
+  var notif = '';
+  if (canNotify()) {
+    if (Notification.permission === 'default') notif = '<button type="button" class="btn secondary sm" data-notify>Allow 1pm notifications</button>';
+    else if (Notification.permission === 'granted') notif = '<span class="small muted">Notifications on while Mix Bench is open.</span>';
+    else notif = '<span class="small muted">Notifications are blocked in this browser, so the reminder shows here instead.</span>';
+  } else if (NOTIFY_HINT) notif = '<span class="small muted">' + NOTIFY_HINT + '</span>';
+  return '<div class="card"><h2>Daily shake</h2><p class="small" style="margin:0 0 8px">Shake each steeping bottle for 2 min 30 sec every day. Reminder at 1:00pm UK time.</p>' +
+    '<p class="small" style="margin:0 0 10px;font-weight:600;color:' + (due ? 'var(--low)' : 'var(--ok)') + '">' + (!list.length ? 'Nothing steeping right now.' : (due ? 'Not shaken yet today.' : (all ? 'All shaken today.' : 'Due at 1:00pm.'))) + '</p>' +
+    '<div class="tbtns2">' + (list.length ? '<button type="button" class="btn" data-shaken' + (all ? ' disabled' : '') + '>Shaken today</button>' : '') + notif + '</div></div>';
+}
+function beep(){
+  try { var a = TM.audio; if (!a) return; var t = a.currentTime;
+    [0, 0.45, 0.9].forEach(function(o){ var g = a.createGain(), v = a.createOscillator(); v.type = 'square'; v.frequency.value = 880; g.gain.setValueAtTime(0.0001, t + o); g.gain.exponentialRampToValueAtTime(0.25, t + o + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + o + 0.3); v.connect(g); g.connect(a.destination); v.start(t + o); v.stop(t + o + 0.32); });
+  } catch (e) {}
+  try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]); } catch (e) {}
+}
+function paintTimers(){
+  var a = document.querySelector('[data-tmshake]'), d = document.querySelector('[data-tmdone]');
+  if (a) a.textContent = mmss(Math.ceil(shakeLeft() / 1000) * 1000);
+  if (d) d.hidden = !TM.shake.done;
+  var set = function(sel, dis){ var el = document.querySelector(sel); if (el) el.disabled = dis; };
+  set('[data-tm="shake-start"]', TM.shake.run); set('[data-tm="shake-pause"]', !TM.shake.run); set('[data-tm="shake-reset"]', !TM.shake.run && TM.shake.left === TM.shake.dur && !TM.shake.done);
+}
+function timerTick(){
+  if (TM.shake.run && Date.now() >= TM.shake.end) { TM.shake.run = false; TM.shake.left = 0; TM.shake.done = true; beep(); toast('Done, stop shaking.'); }
+  paintTimers();
+}
+function clockTick(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cd]'), function(el){
+    var left = +el.getAttribute('data-cd') - Date.now();
+    el.innerHTML = ledInner(left);
+    if (left <= 0 && !el.hasAttribute('data-was-ready')) { el.setAttribute('data-was-ready', ''); if (left > -1500) softRender(); }
+  });
+}
+function softRender(){
+  if (document.querySelector('.sheet-wrap, dialog[open]')) return;
+  var e = document.activeElement; if (e && /INPUT|TEXTAREA|SELECT/.test(e.tagName)) return;
+  var y = window.scrollY; render(); window.scrollTo(0, y);
+}
+var shakeWasDue = null;
+function reminderTick(){
+  var due = shakeDue();
+  if (shakeWasDue !== null && due !== shakeWasDue) softRender();
+  shakeWasDue = due;
+  if (due && canNotify() && Notification.permission === 'granted') {
+    var day = londonDay(Date.now()), seen = ''; try { seen = localStorage.getItem('mixbench.notified') || ''; } catch (e) {}
+    if (seen !== day) { try { localStorage.setItem('mixbench.notified', day); showReminder(); } catch (e) {} }
+  }
+}
+function initSteepTools(){
+  document.addEventListener('click', function(e){
+    var t = e.target.closest && e.target.closest('[data-tm],[data-shaken],[data-gosteep],[data-notify]'); if (!t || t.disabled) return;
+    if (t.hasAttribute('data-shaken')) { markShaken(); save(); softRender(); toast('Shake recorded on every steeping batch.'); return; }
+    if (t.hasAttribute('data-gosteep')) { goSteep(); return; }
+    if (t.hasAttribute('data-notify')) { try { Notification.requestPermission().then(function(){ softRender(); }); } catch (x) {} return; }
+    var a = t.getAttribute('data-tm');
+    if (!TM.audio) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) TM.audio = new AC(); } catch (x) {} }
+    if (TM.audio && TM.audio.state === 'suspended') { try { TM.audio.resume(); } catch (x) {} }
+    if (a === 'shake-start') { if (TM.shake.left <= 0) TM.shake.left = TM.shake.dur; TM.shake.done = false; TM.shake.end = Date.now() + TM.shake.left; TM.shake.run = true; }
+    else if (a === 'shake-pause') { TM.shake.left = Math.max(0, TM.shake.end - Date.now()); TM.shake.run = false; }
+    else if (a === 'shake-reset') { TM.shake.run = false; TM.shake.left = TM.shake.dur; TM.shake.done = false; }
+    paintTimers();
+  });
+  setInterval(clockTick, 1000);
+  setInterval(timerTick, 200);
+  setInterval(reminderTick, 30000);
+  reminderTick();
+}
+function steepSummaryHtml(){
+  var list = steeping(); if (!list.length) return '';
+  var ready = readyBatches().length, next = list.filter(function(b){ return Date.now() < b.t + STEEP_READY; }).sort(function(a, b){ return a.t - b.t; })[0];
+  return '<div class="card steepsum"><div style="min-width:0"><b>Steeping</b><div class="small muted">' + list.length + (list.length === 1 ? ' batch' : ' batches') + (ready ? ' \u00b7 ' + ready + ' ready to try' : '') + (next ? ' \u00b7 next ready in ' + left(next.t + STEEP_READY - Date.now()) : '') + '</div></div><button type="button" class="btn secondary sm" data-gosteep>Open</button></div>';
+}
+function orderSupplier(o){
+  var shops = (o.shops && o.shops.length) ? o.shops.slice() : [];
+  if (!shops.length) for (var k in (o.items || {})) if (ingById[k] && shops.indexOf(ingById[k].shop) < 0) shops.push(ingById[k].shop);
+  return shops.join(' & ') || 'Order';
+}
+function orderItemsText(o){ var parts = []; for (var k in (o.items || {})) if (ingById[k]) parts.push(ingById[k].name + ' ' + mlShort(o.items[k]) + 'ml'); return parts.join(', '); }
+function isDelivered(o){ return (o.status || 'ordered') === 'delivered'; }
+function stockBarHtml(id, st){
+  var s = stockBar(id, st);
+  return '<div class="sbar' + (s.low || s.out ? ' low' : '') + '" role="img" aria-label="' + esc(ingById[id].name) + ': ' + esc(s.text) + ' left' + (s.out ? ', out' : (s.low ? ', low' : '')) + '"><span style="width:' + s.pct + '%"></span></div>';
+}
+
+
+/* ---------- saving: this phone + your Claude account ---------- */
+var cloud = {ref:null, mode:'phone', saving:false, again:false, timer:null, db:null, base:''};
+function save(){
+  var now = Date.now();
+  if (!state.syncBase) state.syncBase = (lastSaved && lastSaved.savedAt) || now;
+  trackChanges(lastSaved, state, now); lastSaved = jcopy(state);
+  state.savedAt = now; lastSaved.savedAt = now;
+  syncSoon();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  if (cloud.ref){ clearTimeout(cloud.timer); cloud.timer = setTimeout(pushCloud, 700); }
+}
+function pushCloud(){
+  if (!cloud.ref) return;
+  if (cloud.saving){ cloud.again = true; return; }
+  cloud.saving = true;
+  var body = {state: JSON.parse(JSON.stringify(state))};
+  var attempt = function(n){
+    return cloud.ref.set(body).catch(function(e){
+      if (e && e.code === 'unavailable' && n === 0) return new Promise(function(res){ setTimeout(res, 800 + Math.random()*800); }).then(function(){ return attempt(1); });
+      if (e && (e.code === 'invalid_argument' || e.code === 'revoked' || e.code === 'not_granted')){ cloud.ref = null; cloud.mode = 'phone'; }
+    });
+  };
+  attempt(0).then(function(){
+    cloud.saving = false;
+    if (cloud.again){ cloud.again = false; pushCloud(); }
+  });
+}
+function initCloud(){
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  Promise.all([window.claude.use('user'), window.claude.use('db')]).then(function(res){
+    var user = res[0], db = res[1];
+    if (!user || !db) return null;
+    return user.id().then(function(id){
+      if (!id) return null;
+      var ref = db.doc('data/users/' + id + '/app');
+      return ref.get().then(function(snap){
+        cloud.ref = ref; cloud.mode = 'cloud'; cloud.db = db; cloud.base = 'data/users/' + id + '/';
+        var remote = snap.exists ? (snap.data() || {}).state : null;
+        if (remote && (+remote.savedAt||0) > (+state.savedAt||0)){
+          state = migrate(remote); lastSaved = jcopy(state);
+          try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+          render(); if (state.syncOn) setTimeout(function(){ runSync(false); }, 1500);
+        } else if (state.savedAt && (!remote || (+state.savedAt) > (+remote.savedAt||0))){
+          pushCloud();
+        }
+        if (current === 'more') render();
+      });
+    });
+  }).catch(function(){ /* stays phone-only */ });
+}
+
+/* ---------- two-way sync with the laptop through the "MixBench Sync" folder in Google Drive ---------- */
+var SYNC_DIR = 'MixBench Sync', KEEP_PHONE_FILES = 3;
+var sync = {mcp:null, busy:false, again:false, folder:'', seen:{}, last:0, msg:'', kind:'', pushed:'', timer:null};
+var lastSaved = null;
+function syncMsg(t, kind){ sync.msg = t; sync.kind = kind || ''; var el = document.querySelector('[data-syncmsg]'); if (el){ el.textContent = t; el.style.color = kind === 'warn' ? 'var(--low)' : ''; } }
+function b64text(s){ var bin = atob(String(s).replace(/\s+/g, '')); try { return decodeURIComponent(Array.prototype.map.call(bin, function(c){ return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2); }).join('')); } catch (e) { return bin; } }
+function asJson(s){ s = String(s).trim(); if (s.charAt(0) !== '{') s = b64text(s).trim(); return JSON.parse(s); }
+/* TRANSPORT-START: Google Drive with Sign in with Google (Google's OAuth for browser apps, no server) */
+var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
+/* Optional: paste your OAuth client ID between the quotes. It is not a secret. You can also enter it in the app under More, Sync with laptop. */
+var DEFAULT_CLIENT_ID = '';
+var NOT_READY_MSG = 'Tap Sync now to sign in with Google.';
+var gtok = {token:'', exp:0};
+try { var tk0 = JSON.parse(localStorage.getItem('mixbench.gtoken') || 'null'); if (tk0 && tk0.exp > Date.now()) { gtok.token = tk0.token; gtok.exp = tk0.exp; } } catch (e) {}
+function clientId(){ var v = ''; try { v = localStorage.getItem('mixbench.clientid') || ''; } catch (e) {} return (v || DEFAULT_CLIENT_ID).trim(); }
+function redirectUri(){ return location.origin + location.pathname.replace(/index\.html$/, ''); }
+function tokenValid(){ return !!gtok.token && gtok.exp > Date.now() + 60000; }
+function syncErr(e){
+  var c = e && e.code;
+  if (c === 'no_client') syncMsg('Add your Google client ID below first (see the setup notes).', 'warn');
+  else if (c === 'signin' || c === 'not_ready') syncMsg('Tap Sync now to sign in with Google.', 'warn');
+  else if (c === 'offline') syncMsg('No signal. Your changes are saved on this phone and will sync when you’re back online.', 'warn');
+  else if (c === 'empty') syncMsg('The MixBench Sync folder has no Mix Bench files yet.', 'warn');
+  else if (c === 'http') syncMsg('Google Drive said: ' + (e.message || 'something went wrong') + '.', 'warn');
+  else syncMsg('Couldn’t reach Google Drive just now. It will try again shortly.', 'warn');
+}
+/* go to Google's sign-in page; it comes straight back here with a short-lived access token */
+function startSignIn(){
+  if (!clientId()) return Promise.reject({code:'no_client'});
+  if (!navigator.onLine) return Promise.reject({code:'offline'});
+  var st = uid(); try { localStorage.setItem('mixbench.oauthstate', st); localStorage.setItem('mixbench.backto', current); } catch (e) {}
+  var p = {client_id:clientId(), redirect_uri:redirectUri(), response_type:'token', scope:DRIVE_SCOPE, include_granted_scopes:'true', state:st};
+  location.assign('https://accounts.google.com/o/oauth2/v2/auth?' + Object.keys(p).map(function(k){ return k + '=' + encodeURIComponent(p[k]); }).join('&'));
+  return new Promise(function(){});
+}
+function takeToken(){
+  var h = location.hash || ''; if (h.indexOf('access_token=') < 0 && h.indexOf('error=') < 0) return null;
+  var p = {}; h.slice(1).split('&').forEach(function(kv){ var i = kv.indexOf('='); if (i > 0) p[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1)); });
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  var want = ''; try { want = localStorage.getItem('mixbench.oauthstate') || ''; localStorage.removeItem('mixbench.oauthstate'); } catch (e) {}
+  if (p.error || !p.access_token || !want || p.state !== want) return {ok:false};
+  gtok.token = p.access_token; gtok.exp = Date.now() + (+p.expires_in || 3600) * 1000;
+  try { localStorage.setItem('mixbench.gtoken', JSON.stringify({token:gtok.token, exp:gtok.exp})); } catch (e) {}
+  return {ok:true};
+}
+var signinResult = takeToken();
+function getToken(interactive){ if (tokenValid()) return Promise.resolve(gtok.token); if (interactive) return startSignIn(); return Promise.reject({code:navigator.onLine ? 'signin' : 'offline'}); }
+function api(path, opts){
+  opts = opts || {};
+  return getToken(false).then(function(t){
+    var h = opts.headers || {}; h.Authorization = 'Bearer ' + t;
+    return fetch((opts.upload ? 'https://www.googleapis.com/upload/drive/v3/' : 'https://www.googleapis.com/drive/v3/') + path, {method:opts.method || 'GET', headers:h, body:opts.body});
+  }, function(e){ throw e; }).then(function(r){
+    if (r.status === 401) { gtok.token = ''; gtok.exp = 0; try { localStorage.removeItem('mixbench.gtoken'); } catch (e) {} throw {code:'signin'}; }
+    if (!r.ok) throw {code:'http', message:'error ' + r.status};
+    return r;
+  }, function(e){ if (e && e.code) throw e; throw {code:navigator.onLine ? 'net' : 'offline'}; });
+}
+function qs(s){ return encodeURIComponent(s); }
+var DRIVE = {
+  ready: function(){ return tokenValid() && navigator.onLine; },
+  connect: function(interactive){ return getToken(!!interactive); },
+  folder: function(){
+    if (sync.folder) return Promise.resolve(sync.folder);
+    return api('files?q=' + qs("name = '" + SYNC_DIR + "' and mimeType = 'application/vnd.google-apps.folder' and trashed = false") + '&fields=files(id,name)&spaces=drive')
+      .then(function(r){ return r.json(); }).then(function(j){
+        var f = (j.files || [])[0]; if (f) return f.id;
+        return api('files?fields=id', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:SYNC_DIR, mimeType:'application/vnd.google-apps.folder'})}).then(function(r){ return r.json(); }).then(function(x){ return x.id; });
+      }).then(function(id){ if (!id) throw {code:'http', message:'the MixBench Sync folder could not be found'}; sync.folder = id; return id; });
+  },
+  list: function(prefix){
+    return api('files?q=' + qs("'" + sync.folder + "' in parents and name contains '" + prefix + "' and trashed = false") + '&fields=files(id,name,modifiedTime,createdTime)&pageSize=50')
+      .then(function(r){ return r.json(); }).then(function(j){ return (j.files || []).map(function(f){ return {id:f.id, name:f.name, modifiedTime:f.modifiedTime, createdTime:f.createdTime}; }); });
+  },
+  read: function(id){ return api('files/' + id + '?alt=media').then(function(r){ return r.text(); }).then(asJson); },
+  create: function(name, text){
+    var b = 'mixbench' + Date.now(), meta = {name:name, parents:[sync.folder], mimeType:'application/json'};
+    var body = '--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n' + text + '\r\n--' + b + '--';
+    return api('files?uploadType=multipart&fields=id', {upload:true, method:'POST', headers:{'Content-Type':'multipart/related; boundary=' + b}, body:body}).then(function(r){ return r.json(); });
+  },
+  trash: function(id){ return api('files/' + id + '?fields=id', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({trashed:true})}); }
+};
+function initTransport(){
+  try { var back = localStorage.getItem('mixbench.backto'); localStorage.removeItem('mixbench.backto'); if (back && signinResult && TABS.some(function(t){ return t[0] === back; })) { current = back; render(); } } catch (e) {}
+  if (signinResult && !signinResult.ok) syncMsg('Google sign-in didn’t finish. Tap Sync now to try again.', 'warn');
+  if (state.syncOn && DRIVE.ready()) setTimeout(function(){ runSync(false); }, 800);
+  else if (state.syncOn) syncErr({code:navigator.onLine ? 'signin' : 'offline'});
+}
+/* TRANSPORT-END */
+/* keep a copy of this phone's data on the phone before anything from the laptop is applied (last 10 kept) */
+function backupBeforeSync(){
+  var copy = {t:Date.now(), state:jcopy(state)};
+  try { localStorage.setItem('mixbench.backup', JSON.stringify(copy)); } catch (e) {}
+  var slot = 0; try { slot = (+localStorage.getItem('mixbench.bslot') || 0) % 10; localStorage.setItem('mixbench.bslot', String(slot + 1)); } catch (e) {}
+  if (!cloud.db || !cloud.base) { try { localStorage.setItem('mixbench.backup' + slot, JSON.stringify(copy)); } catch (e) {} return Promise.resolve(); }
+  return cloud.db.doc(cloud.base + 'backup' + slot).set(copy).catch(function(){});
+}
+function applyMerged(merged){
+  if (dataKey(merged) === dataKey(state)) return Promise.resolve(false);
+  return backupBeforeSync().then(function(){
+    state = migrate(merged); state.savedAt = Date.now(); lastSaved = jcopy(state);
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    if (cloud.ref) pushCloud();
+    var y = window.scrollY; render(); window.scrollTo(0, y); toast('Updated from your laptop.');
+    return true;
+  });
+}
+function persistQuiet(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  if (cloud.ref && Date.now() - (sync.cloudQuiet || 0) > 600000) { sync.cloudQuiet = Date.now(); pushCloud(); }
+}
+function pushSnapshot(){
+  var key = dataKey(state), times = state.syncTimes || {};
+  if (key === sync.pushed && Date.now() - (times.phonePush || 0) < 6 * 3600000) return Promise.resolve();
+  var now = new Date(), name = 'mixbench-phone-' + now.toISOString().replace(/[-:]/g, '').replace(/\..*$/, '') + '.json';
+  var body = JSON.stringify({app:'Mix Bench', device:'phone', writtenAt:now.getTime(), state:state});
+  return DRIVE.create(name, body).then(function(){
+    sync.pushed = key; state.syncTimes = state.syncTimes || {}; state.syncTimes.phonePush = Date.now();
+    return DRIVE.list('mixbench-phone');
+  }).then(function(files){
+    var mine = files.filter(function(f){ return /^mixbench-phone-.*\.json$/i.test(f.name || ''); })
+      .sort(function(a, b){ return String(b.createdTime || b.name).localeCompare(String(a.createdTime || a.name)); });
+    return mine.slice(KEEP_PHONE_FILES).reduce(function(p, f){ return p.then(function(){ return DRIVE.trash(f.id).catch(function(){}); }); }, Promise.resolve());
+  });
+}
+function runSync(manual){
+  if (!state.syncOn || !DRIVE.ready()) return Promise.resolve();
+  if (sync.busy || (!manual && document.querySelector('.sheet-wrap'))) { sync.again = true; return Promise.resolve(); }
+  sync.busy = true; syncMsg('Syncing\u2026');
+  var incoming = [];
+  return DRIVE.folder().then(function(){ return DRIVE.list('mixbench-laptop'); }).then(function(all){
+    var files = all.filter(function(f){ return /^mixbench-laptop.*\.json$/i.test(f.name || '') && sync.seen[f.id] !== f.modifiedTime; });
+    return files.reduce(function(p, f){ return p.then(function(){
+      return DRIVE.read(f.id).then(function(d){
+        if (d && d.state && d.state.plan) incoming.push(d.state); sync.seen[f.id] = f.modifiedTime;
+        if (d && +d.writtenAt > 0) { state.syncTimes = state.syncTimes || {}; state.syncTimes.laptop = Math.max(state.syncTimes.laptop || 0, +d.writtenAt); }
+      });
+    }); }, Promise.resolve());
+  }).then(function(){
+    var merged = state; incoming.forEach(function(r){ merged = mergeStates(merged, migrate(r)); });
+    merged.syncTimes = jcopy(state.syncTimes || {});
+    return applyMerged(merged);
+  }).then(pushSnapshot).then(function(){
+    sync.busy = false; sync.last = Date.now(); state.syncTimes = state.syncTimes || {}; state.syncTimes.phone = sync.last; persistQuiet();
+    var st = document.querySelector('[data-synctimes]'); if (st) st.innerHTML = syncTimesHtml();
+    syncMsg('Synced at ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) + '.');
+    if (sync.again){ sync.again = false; setTimeout(function(){ runSync(false); }, 1500); }
+  }).catch(function(e){ sync.busy = false; syncErr(e); });
+}
+function syncSoon(){ if (!state.syncOn || !DRIVE.ready()) return; clearTimeout(sync.timer); sync.timer = setTimeout(function(){ runSync(false); }, 15000); }
+function initSync(){
+  initTransport();
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden && state.syncOn) runSync(false); });
+  window.addEventListener('online', function(){ if (state.syncOn) runSync(false); });
+  setInterval(function(){ if (!document.hidden && state.syncOn) runSync(false); }, 90000);
+}
+function syncCardHtml(){
+  var on = !!state.syncOn;
+  return '<h2>Sync with laptop</h2><section class="card"><p class="small" style="margin-top:0">' + (on ? 'On. Changes here and on the laptop are combined through the <b>MixBench Sync</b> folder in your Google Drive. Nothing is overwritten: everything logged on either device is kept.' : 'Off. Turn it on to share batches, stock, plans and prices with the laptop version through your Google Drive.') + '</p>' +
+    (on ? '<div data-synctimes>' + syncTimesHtml() + '</div>' : '') +
+    '<p class="small" data-syncmsg style="margin:0 0 10px;font-weight:600' + (sync.kind === 'warn' ? ';color:var(--low)' : '') + '">' + esc(sync.msg || (on ? 'Waiting to sync.' : '')) + '</p>' +
+    clientIdHtml() +
+    (on ? '<div class="grid2"><button class="btn" data-syncnow>Sync now</button><button class="btn secondary" data-syncoff>Turn off</button></div>' : '<button class="btn" data-syncon>Turn on sync</button>') +
+    '<p class="muted small" style="margin:10px 0 0">A copy of this phone\u2019s data is saved before anything from the laptop is applied.</p></section>';
+}
+function bindSync(){
+  var a = document.querySelector('[data-syncon]'), b = document.querySelector('[data-syncnow]'), c = document.querySelector('[data-syncoff]');
+  if (a) a.onclick = function(){ state.syncOn = true; save(); render(); DRIVE.connect(true).then(function(){ return runSync(true); }).catch(syncErr); };
+  if (b) b.onclick = function(){ DRIVE.connect(true).then(function(){ return runSync(true); }).catch(syncErr); };
+  if (c) c.onclick = function(){ state.syncOn = false; save(); render(); toast('Sync turned off on this phone.'); };
+}
+document.addEventListener('click', function(e){
+  var a = e.target.closest && e.target.closest('[data-taccept],[data-tignore]');
+  if (a) { var rid = a.getAttribute('data-taccept') || a.getAttribute('data-tignore');
+    if (a.hasAttribute('data-taccept')) { acceptSuggestion(rid); toast('New amounts saved for ' + recById[rid].name + '.'); } else { ignoreSuggestion(rid); toast('Suggestion ignored.'); }
+    save(); var y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  var t = e.target.closest && e.target.closest('[data-bdetail]'); if (!t) return;
+  var b = state.batches.filter(function(x){ return x.id === t.getAttribute('data-bdetail'); })[0]; if (!b) return;
+  var w = sheet({title:(b.name || (recById[b.recipe] || {}).name || 'Batch') + ', ' + mlShort(b.ml) + ' ml', cancel:'Close', confirm:recById[b.recipe] ? 'Make again' : '', onConfirm:function(){
+    var r = makeAgain(b); if (!r) return; openBox['r:' + r.id] = true; save(); current = 'plan'; render();
+    var c = document.querySelector('[data-rec="' + r.id + '"]'); if (c) c.scrollIntoView({block:'start'}); toast(r.name + ' loaded into Plan.');
+  }, body:'<p class="muted small" style="margin-top:0">Made ' + esc(when(b.t)) + (b.nb === 'zero' ? ', no nicotine' : (b.nb === 'vg' ? ', Vapable 20mg (100 VG) shots' : (b.nb ? ', Nic Nic 20mg (50 PG / 50 VG) shots' : ''))) + (b.finished ? ', finished ' + esc(when(b.finished)) : '') + '</p>' + batchDetailHtml(b) + tasteFormHtml(b)});
+  w.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; if (tasteApply(el)) { save(); var box = w.querySelector('[data-taste]'); box.outerHTML = tasteFormHtml(b); } });
+  w.addEventListener('change', function(ev){ if (ev.target.hasAttribute && ev.target.hasAttribute('data-tnotes') && tasteApply(ev.target)) save(); });
+  w.querySelector('[data-cancel]').addEventListener('click', function(){ var y = window.scrollY; render(); window.scrollTo(0, y); });
+});
+
+/* ---------- iPhone app: first open, client ID, install help, offline storage ---------- */
+var IS_STANDALONE = (window.navigator.standalone === true) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+NOTIFY_HINT = IS_STANDALONE ? '' : 'To get a 1pm notification, add Mix Bench to your Home Screen first (iPhone with iOS 16.4 or later).';
+function firstRunNeeded(){ try { return !raw && !localStorage.getItem('mixbench.firstDone'); } catch (e) { return false; } }
+function finishFirstRun(msg){ try { localStorage.setItem('mixbench.firstDone', '1'); localStorage.removeItem('mixbench.importPending'); } catch (e) {} document.getElementById('tabs').hidden = false; current = 'plan'; render(); window.scrollTo(0, 0); if (msg) toast(msg); }
+function welcomeHtml(msg, busy){
+  return '<div style="padding-top:24px"><h1>Mix Bench</h1><p class="lede">Welcome. Load your stock, batches, recipes, prices, orders and feedback from the <b>MixBench Sync</b> folder in your Google Drive.</p>' +
+    '<section class="card"><button class="btn" data-w="google"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Loading your data…' : 'Sign in with Google and load my data') + '</button>' +
+    (msg ? '<p class="small" style="color:var(--low);font-weight:600;margin:10px 0 0">' + esc(msg) + '</p>' : '') +
+    (clientId() ? '' : '<label class="f" for="w-cid">Google client ID (from the setup notes)</label><input id="w-cid" class="field" placeholder="1234-abc.apps.googleusercontent.com" autocomplete="off" autocapitalize="off" spellcheck="false">') +
+    '</section><section class="card"><div style="font-weight:700">No signal or no Google?</div><p class="small muted" style="margin:4px 0 10px">Restore from a backup file instead: a laptop export, or a backup copied from the old phone version and saved as a file.</p>' +
+    '<button class="btn secondary" data-w="file">Restore from backup file</button><input type="file" id="w-file" accept=".json,application/json,text/plain" hidden>' +
+    '<button class="linkbtn" data-w="empty" style="margin-top:10px">Start with an empty app</button></section></div>';
+}
+function showWelcome(msg, busy){ document.getElementById('tabs').hidden = true; document.getElementById('app').innerHTML = welcomeHtml(msg, busy); }
+function importFromDrive(){
+  showWelcome('', true);
+  var files = [];
+  return DRIVE.folder().then(function(){ return Promise.all([DRIVE.list('mixbench-laptop'), DRIVE.list('mixbench-phone')]); }).then(function(r){
+    files = r[0].concat(r[1]).filter(function(f){ return /^mixbench-(laptop|phone).*\.json$/i.test(f.name || ''); });
+    if (!files.length) throw {code:'empty'};
+    return Promise.all(files.map(function(f){ return DRIVE.read(f.id).catch(function(){ return null; }); }));
+  }).then(function(docs){
+    var merged = null, lap = 0;
+    docs.forEach(function(d, i){ if (!d || !d.state || !d.state.plan) return; if (/laptop/.test(files[i].name) && +d.writtenAt > lap) lap = +d.writtenAt; var s = migrate(d.state); merged = merged ? mergeStates(merged, s) : s; });
+    if (!merged) throw {code:'empty'};
+    state = migrate(merged); state.syncOn = true; state.syncTimes = {laptop:lap}; lastSaved = jcopy(state);
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    finishFirstRun('Loaded your data from MixBench Sync.');
+    setTimeout(function(){ runSync(false); }, 1200);
+  }).catch(function(e){
+    var m = (e && e.code === 'empty') ? 'The MixBench Sync folder has no Mix Bench files yet.' : (e && e.code === 'offline') ? 'No signal. Try again when you’re online, or restore from a backup file.' : (e && e.code === 'signin') ? 'Google sign-in has expired. Tap the button again.' : 'Couldn’t load from Google Drive (' + ((e && (e.message || e.code)) || 'unknown error') + ').';
+    showWelcome(m, false);
+  });
+}
+document.addEventListener('click', function(e){
+  var w = e.target.closest && e.target.closest('[data-w]'); if (!w) return;
+  var k = w.getAttribute('data-w');
+  if (k === 'google') { var c = document.getElementById('w-cid'); if (c && c.value.trim()) { try { localStorage.setItem('mixbench.clientid', c.value.trim()); } catch (x) {} }
+    if (!clientId()) { showWelcome('Paste your Google client ID first.', false); return; }
+    try { localStorage.setItem('mixbench.importPending', '1'); } catch (x) {}
+    if (DRIVE.ready()) importFromDrive(); else DRIVE.connect(true).catch(function(x){ showWelcome(x && x.code === 'offline' ? 'No signal. Try again when you’re online.' : 'Couldn’t start Google sign-in.', false); });
+  } else if (k === 'file') document.getElementById('w-file').click();
+  else if (k === 'empty') finishFirstRun('Starting empty.');
+});
+document.addEventListener('change', function(e){
+  if (!e.target || e.target.id !== 'w-file') return;
+  var f = e.target.files[0]; if (!f) return; var rd = new FileReader();
+  rd.onload = function(){ try { var s = JSON.parse(String(rd.result)); if (s && s.state && s.state.plan) s = s.state; if (!s || !s.plan) throw 0; state = migrate(s); lastSaved = jcopy(state); try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (x) {} finishFirstRun('Backup restored.'); } catch (x) { showWelcome('That file isn’t a Mix Bench backup.', false); } };
+  rd.readAsText(f);
+});
+function startPwa(){
+  if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  if (firstRunNeeded()) {
+    var pending = false; try { pending = !!localStorage.getItem('mixbench.importPending'); } catch (e) {}
+    if (pending && signinResult && signinResult.ok) importFromDrive();
+    else showWelcome(signinResult && !signinResult.ok ? 'Google sign-in didn’t finish. Try again.' : '', false);
+  }
+}
+function installCardHtml(){
+  if (IS_STANDALONE) return '';
+  return '<h2>Install on your iPhone</h2><section class="card small"><p style="margin-top:0">In Safari, tap the Share button, then <b>Add to Home Screen</b>, then <b>Add</b>. Mix Bench then opens full screen from its own icon, works offline, and can send the 1pm reminder.</p></section>';
+}
+function clientIdHtml(){
+  return '<label class="f" for="gcid">Google client ID</label><input id="gcid" class="field" value="' + esc(clientId()) + '" placeholder="1234-abc.apps.googleusercontent.com" autocomplete="off" autocapitalize="off" spellcheck="false" style="font-size:14px">' +
+    '<button class="btn secondary" data-gcid style="margin:8px 0 12px">Save client ID</button>';
+}
+document.addEventListener('click', function(e){
+  var g = e.target.closest && e.target.closest('[data-gcid]'); if (!g) return;
+  var v = (document.getElementById('gcid').value || '').trim(); try { if (v) localStorage.setItem('mixbench.clientid', v); else localStorage.removeItem('mixbench.clientid'); } catch (x) {}
+  toast(v ? 'Client ID saved on this phone.' : 'Client ID cleared.');
+});
+/* ---------- ui helpers ---------- */
+function toast(msg){
+  Array.prototype.forEach.call(document.querySelectorAll('.toast'), function(x){ x.remove(); });
+  var t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2400);
+}
+var lastTap = null;
+document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('button'); if (b && !b.closest('.sheet-wrap')) lastTap = b; }, true);
+function sheet(opts){
+  Array.prototype.forEach.call(document.querySelectorAll('.sheet-wrap'), function(x){ x.remove(); });
+  var wrap = document.createElement('div'); wrap.className='sheet-wrap';
+  wrap.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(opts.title) + '"><h3>' + esc(opts.title) + '</h3>' + (opts.body||'') +
+    '<div style="margin-top:16px">' +
+    (opts.confirm ? '<button class="btn ' + (opts.danger?'danger':'') + '" data-ok>' + esc(opts.confirm) + '</button>' : '') +
+    '<button class="btn secondary" data-cancel>' + esc(opts.cancel || 'Cancel') + '</button></div></div>';
+  function close(){ wrap.remove(); }
+  wrap.querySelector('[data-cancel]').onclick = close;
+  var ok = wrap.querySelector('[data-ok]');
+  if (ok) ok.onclick = function(){ if (opts.onConfirm(wrap) !== false) close(); };
+  var anchor = (lastTap && document.getElementById('app').contains(lastTap)) ? (lastTap.closest('section.card') || lastTap) : null;
+  if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+  else document.getElementById('app').appendChild(wrap);
+  wrap.scrollIntoView({block:'center', behavior:'smooth'});
+  var field = wrap.querySelector('input,select,textarea'); if (field) field.focus({preventScroll:true});
+  return wrap;
+}
+function vial(rec){
+  var rt = RT(rec.id), out = '';
+  rec.parts.map(function(p){ return p[0]; }).concat(['nic','nicvg','pg','vg']).forEach(function(id){
+    var pct = (rt[id]||0)*100; if (!(pct > 0)) return;
+    out += '<div><span><i style="background:' + ingById[id].col + '"></i>' + esc(shortName(id)) + '</span><b class="num">' + mlShort(pct) + '%</b></div>';
+  });
+  return '<div class="rlist">' + out + '</div>';
+}
+function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
+
+/* ---------- tabs ---------- */
+var ICONS = {
+  steep:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/></svg>',
+  plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6.5L5 18a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-8.5V3"/><path d="M7.5 14h9"/></svg>',
+  shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+  stock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>',
+  log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/></svg>'
+};
+var TABS = [['plan','Plan'],['steep','Steeping'],['shop','Shop'],['stock','Stock'],['log','History'],['more','More']];
+var current = 'plan';
+var openBox = {};
+var rendering = false;
+function renderTabs(){
+  var st = stockNow(), lowN = 0;
+  ING.forEach(function(i){ var s=status(i.id,st)[1]; if (s==='low'||s==='out') lowN++; });
+  var toBuy = shopping().rows.filter(function(r){ return r.bottles>0; }).length;
+  document.getElementById('tabs').innerHTML = TABS.map(function(t){
+    var n = t[0]==='shop' ? toBuy : (t[0]==='stock' ? lowN : (t[0]==='steep' ? readyBatches().length + (shakeDue() ? 1 : 0) : 0));
+    return '<button data-tab="' + t[0] + '"' + (current===t[0]?' aria-current="page"':'') + '><span class="badge" data-n="' + n + '">' + ICONS[t[0]] + '</span>' + t[1] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function(b){
+    b.onclick = function(){ current = b.getAttribute('data-tab'); render(); window.scrollTo(0,0); };
+  });
+}
+/* ---------- parcel updates from Royal Mail emails in Gmail ---------- */
+var mail = {api:null, busy:false, last:0, note:'', noteKind:''};
+var SHOP_RE = { 'Vapable': /vapable/i, 'Vape and Go': /vape\s*(and|&)\s*go/i };
+var RANK = {ordered:0, dispatched:1, out:2, delivered:3};
+function shopsOf(rows){ var o = {}; rows.forEach(function(r){ o[r.ing.shop] = 1; }); return Object.keys(o); }
+function orderShops(o){ if (o.shops && o.shops.length) return o.shops; var out = {}; for (var k in o.items) if (ingById[k]) out[ingById[k].shop] = 1; return Object.keys(out); }
+function rmStatus(subject){
+  var m = /your parcel from (.+?) (is on its way|is due to be delivered|has been delivered)/i.exec(subject || '');
+  if (!m) return null;
+  var st = /has been/i.test(m[2]) ? 'delivered' : (/due/i.test(m[2]) ? 'out' : 'dispatched');
+  return {from:m[1], status:st};
+}
+/* what an email tells us: {shop, status, ref?, number?} or null */
+function parseMail(m){
+  var from = (m.sender || '').toLowerCase(), subj = m.subject || '', snip = (m.snippet || '').replace(/&#39;/g, "'");
+  if (from.indexOf('royalmail.com') >= 0) {
+    var rm = rmStatus(subj); if (!rm) return null;
+    var shop = null; for (var sp in SHOP_RE) if (SHOP_RE[sp].test(rm.from)) shop = sp;
+    return shop ? {shop:shop, status:rm.status, rm:true} : null;
+  }
+  if (from.indexOf('shipstation.com') >= 0 && /vapable/i.test(subj) && /dispatched|shipped/i.test(subj)) {
+    var n = /tracking no[:\s]*([A-Z0-9]{8,30})/i.exec(snip);
+    return {shop:'Vapable', status:'dispatched', number: n ? n[1].toUpperCase() : ''};
+  }
+  if (from.indexOf('vapeandgo.co.uk') >= 0 && /dispatched/i.test(subj)) {
+    var r = /#\s*(\d+)/.exec(subj);
+    return {shop:'Vape and Go', status:'dispatched', ref: r ? r[1] : ''};
+  }
+  return null;
+}
+function mailNote(text, kind){ mail.note = text; mail.noteKind = kind || ''; var el = document.querySelectorAll('[data-mailnote]'); Array.prototype.forEach.call(el, function(e){ e.textContent = text; e.style.color = kind === 'warn' ? 'var(--low)' : ''; }); }
+function mailError(e){
+  var c = e && e.code;
+  if (c === 'needs_reauth') mailNote('Gmail needs reconnecting: claude.ai Settings, then Connectors.', 'warn');
+  else if (c === 'server_not_connected' || c === 'selection_required') mailNote('Connect Gmail in claude.ai Settings, then Connectors, for automatic updates.', 'warn');
+  else if (c === 'not_in_manifest' || c === 'not_granted' || c === 'consent_required') mailNote('Gmail updates are switched off for this app. Tap the steps yourself.', 'warn');
+  else if (c === 'blocked_by_policy' || c === 'approval_required') mailNote('Gmail updates aren\u2019t allowed on this account.', 'warn');
+  else if (c === 'tool_error') mailNote('Gmail said: ' + (e.message || 'something went wrong') + '.', 'warn');
+  else mailNote('Couldn\u2019t reach Gmail just now. It will try again later.', 'warn');
+}
+function checkMail(manual){
+  var open = state.orders.filter(function(o){ return (o.status || 'ordered') !== 'delivered'; });
+  if (!mail.api || mail.busy || !open.length) { if (manual && !open.length) mailNote('No parcels waiting.'); return; }
+  if (!manual && Date.now() - mail.last < 10*60*1000) return;
+  mail.busy = true; mail.last = Date.now(); mailNote('Checking Gmail\u2026');
+  var oldest = Math.min.apply(null, open.map(function(o){ return o.t; }));
+  var days = Math.max(2, Math.ceil((Date.now() - oldest) / 86400000) + 1);
+  mail.api.callTool('Gmail', 'search_threads', {query:'{from:no-reply@royalmail.com from:tracking@shipstation.com from:noreply@vapeandgo.co.uk} newer_than:' + days + 'd', pageSize:40}, {cache:false}).then(function(res){
+    var p = res && res.payload, msgs = [];
+    ((p && p.threads) || []).forEach(function(t){ (t.messages || []).forEach(function(m){ msgs.push(m); }); });
+    var changed = false, needNum = [];
+    open.forEach(function(o){
+      var shops = orderShops(o), best = null, wayId = null, num = '';
+      msgs.forEach(function(m){
+        var info = parseMail(m), when = Date.parse(m.date || '') || 0;
+        if (!info || when < o.t - 2*3600*1000 || shops.indexOf(info.shop) < 0) return;
+        if (info.ref && o.ref && String(o.ref).replace(/\D/g,'') !== info.ref) return;
+        if (info.number) num = info.number;
+        if (info.rm && info.status === 'dispatched') wayId = m.id;
+        if (!best || RANK[info.status] > RANK[best.status] || (RANK[info.status] === RANK[best.status] && when > best.when)) best = {status:info.status, when:when, id:m.id, rm:info.rm};
+      });
+      if (!best) return;
+      if (RANK[best.status] > RANK[o.status || 'ordered']) { o.status = best.status; changed = true; }
+      if (num && (!o.track || o.track.number !== num)) { o.track = {courier:'rm', number:num}; changed = true; }
+      else if ((!o.track || !o.track.number) && (wayId || best.rm)) needNum.push({o:o, id:wayId || best.id});
+    });
+    return Promise.all(needNum.map(function(n){
+      return mail.api.callTool('Gmail', 'get_message', {messageId:n.id, messageFormat:'PLAIN_TEXT'}, {cache:false}).then(function(r){
+        var body = (r && r.payload && r.payload.plaintextBody) || '', m = /\b([A-Z]{2}\d{9}GB)\b/.exec(body);
+        if (m) { n.o.track = {courier:'rm', number:m[1]}; changed = true; }
+      }).catch(function(){});
+    })).then(function(){
+      mail.busy = false;
+      var t = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      if (changed) { save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Parcel updated from your emails.'); }
+      mailNote('Checked Gmail at ' + t + (changed ? ', updated.' : ', nothing new yet.'));
+    });
+  }).catch(function(e){ mail.busy = false; mailError(e); });
+}
+function initMail(){
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  window.claude.use('mcp').then(function(api){
+    if (!api) return;
+    mail.api = api; if (current === 'plan' || current === 'log') render();
+    setTimeout(function(){ checkMail(false); }, 1500);
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkMail(false); });
+  }).catch(function(){});
+}
+function bindParcels(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mailcheck]'), function(b){ b.onclick = function(){ checkMail(true); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function(b){
+    b.onclick = function(){
+      var v = b.getAttribute('data-step').split(':'), o = state.orders.filter(function(x){ return x.id === v[0]; })[0]; if (!o) return;
+      o.status = v[1]; save(); var y = window.scrollY; render(); window.scrollTo(0, y);
+      if (v[1] === 'delivered') toast('Marked as delivered.');
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-track]'), function(b){
+    b.onclick = function(){
+      var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-track'); })[0]; if (!o || !o.track) return;
+      var c = COURIERS[o.track.courier] || {}, num = o.track.number;
+      /* the link itself opens the app or page (a real tap, so nothing blocks it); we just copy the number */
+      var open = function(msg){ toast(msg); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(num).then(function(){ open('Tracking number copied. Paste it in the ' + c.name + (c.app ? ' app.' : ' page.')); }, function(){ open('Tracking number: ' + num); });
+      else open('Tracking number: ' + num);
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-trackedit]'), function(b){
+    b.onclick = function(){
+      var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-trackedit'); })[0]; if (!o) return;
+      var tr = o.track || {courier:'rm', number:''};
+      var opts = Object.keys(COURIERS).map(function(k){ return '<option value="' + k + '"' + (tr.courier===k?' selected':'') + '>' + COURIERS[k].name + '</option>'; }).join('');
+      sheet({title:'Parcel tracking', body:'<label class="f" for="tr-c">Courier</label><select id="tr-c" class="field">' + opts + '</select>' +
+        '<label class="f" for="tr-n">Tracking number</label><input id="tr-n" class="field" type="text" autocomplete="off" autocapitalize="characters" value="' + esc(tr.number || '') + '">',
+        confirm:'Save', onConfirm:function(w){
+          o.track = {courier: w.querySelector('#tr-c').value, number: (w.querySelector('#tr-n').value || '').replace(/\s+/g,'').toUpperCase().slice(0,40)};
+          if (!o.status || o.status === 'ordered') o.status = o.track.number ? 'dispatched' : (o.status || 'ordered');
+          save(); render(); toast('Tracking saved.');
+        }});
+    };
+  });
+}
+function render(){
+  syncRecipes();
+  var app = document.getElementById('app');
+  var html = shakeBannerHtml() + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, log:viewLog, more:viewMore})[current]();
+  rendering = true; try { app.innerHTML = html; } finally { rendering = false; }
+  ({plan:bindPlan, steep:bindSteepTab, shop:bindShop, stock:bindStock, log:bindLog, more:bindMore})[current]();
+  bindParcels();
+  renderTabs();
+}
+
+/* ---------- Plan ---------- */
+function howSteps(rec, ml){
+  var m = mlFor(rec.id, ml), steps = [], n = function(x){ return '<b>' + mlShort(x) + 'ml</b>'; };
+  var nicMl = (m.nic || 0) + (m.nicvg || 0), hasNic = nicMl > 0;
+  steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 60ml bottle.' + (ml > 55 ? ' <b>Split it across two bottles.</b>' : ''));
+  rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 4.0001 ? 1 : 0) - (m[y[0]] > 4.0001 ? 1 : 0); }).forEach(function(p){
+    var a = m[p[0]]; if (!(a > 0)) return;
+    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + (a <= 4.0001 ? '2ml' : '10ml') + ' syringe)</span>');
+  });
+  if (hasNic) {
+    var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
+    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(10ml syringe)</span>' : ''));
+  }
+  ['pg','vg'].forEach(function(id){
+    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(10ml syringe)</span>');
+  });
+  steps.push('Cap it and shake for 2 to 3 minutes.');
+  steps.push('Label it with the flavour and date.');
+  return steps.map(function(t){ return {t:t, tick:true}; }).concat([{t:'Steep for 3 days, shaking daily. Tap \u201cI\u2019ve made this\u201d to start the timer.', tick:false}]);
+}
+/* tick-off progress: stored per recipe and only valid while the amount, nicotine type and ratio are unchanged */
+function stepSig(id){ return [state.plan[id] || 0, planNb(id), state.vgr || 50, JSON.stringify(recById[id].parts)].join('|') + (planMg(id) !== 10 ? '|' + planMg(id) : ''); }
+function ticksOf(id){ var t = (state.ticks || {})[id]; return (t && t.sig === stepSig(id)) ? t.done : {}; }
+function setTick(id, k, on){
+  state.ticks = state.ticks || {};
+  var t = state.ticks[id]; if (!t || t.sig !== stepSig(id)) t = state.ticks[id] = {sig:stepSig(id), done:{}};
+  if (on) t.done[k] = true; else delete t.done[k];
+  save();
+}
+function progress(r){
+  var ml = state.plan[r.id] || 0; if (!ml || !r.parts.length) return {n:0, d:0};
+  var n = howSteps(r, ml).filter(function(x){ return x.tick; }).length, done = ticksOf(r.id), d = 0;
+  for (var k = 0; k < n; k++) if (done[k]) d++;
+  return {n:n, d:d};
+}
+function subText(r){
+  var ml = state.plan[r.id] || 0, p = progress(r);
+  return (state.zero && state.zero[r.id] ? '0mg ' : '') + (ml ? mlShort(ml) + ' ml' : '') + (p.d ? ' \u00b7 ' + p.d + '/' + p.n : '');
+}
+function updateMade(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-made]'), function(b){
+    var r = recById[b.getAttribute('data-made')], p = r ? progress(r) : {n:0, d:0}, ok = p.n > 0 && p.d === p.n;
+    b.disabled = !ok;
+    var h = b.parentNode.querySelector('[data-madehint]'); if (h) h.hidden = ok;
+  });
+}
+function howTo(rec, ml){
+  if (!ml) return '<p class="muted small" style="margin:4px 0 0">Set an amount to see the measurements.</p>';
+  var done = ticksOf(rec.id), k = -1;
+  return '<ol class="steps">' + howSteps(rec, ml).map(function(st){
+    if (!st.tick) return '<li class="note">' + st.t + '</li>';
+    k++;
+    return '<li' + (done[k] ? ' class="done"' : '') + '><label class="tick"><input type="checkbox" data-tick="' + rec.id + ':' + k + '"' + (done[k] ? ' checked' : '') + ' aria-label="Mark step ' + (k + 1) + ' done"><span>' + st.t + '</span></label></li>';
+  }).join('') + '</ol>';
+}
+/* green: plenty, amber: can only make a little (under 50ml), red: can't make what's planned / anything */
+function recipeLights(){
+  var st = stockNow(), need = planNeed(), out = {};
+  RECIPES.forEach(function(r){
+    var rt = RT(r.id), planned = state.plan[r.id] || 0, mine = mlFor(r.id, planned), max = Infinity, limit = null;
+    for (var id in rt){
+      if (!(rt[id] > 0)) continue;
+      var avail = st.left[id] - (need[id] - (mine[id] || 0));
+      var m = Math.max(0, avail) / rt[id];
+      if (m < max) { max = m; limit = id; }
+    }
+    max = Math.floor(max + 1e-6);
+    var name = limit ? ingById[limit].name : '';
+    var col, text;
+    if (!fits(r.id)) { col = 'red'; text = 'Nic strength too high for this recipe'; }
+    else if (planned > max + 0.001 || max < 10) { col = 'red'; text = 'Not enough stock'; }
+    else if (max < 50) { col = 'amber'; text = 'You can make up to ' + max + 'ml'; }
+    else { col = 'green'; text = 'You can make up to ' + max + 'ml'; }
+    out[r.id] = {col:col, text:text, max:max};
+  });
+  return out;
+}
+function lightHtml(l){ return '<span class="lamp ' + l.col + '" aria-hidden="true"></span><span>' + esc(l.text) + '</span>'; }
+function updateLights(){
+  var L = recipeLights();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-light]'), function(el){
+    var l = L[el.getAttribute('data-light')]; el.className = 'light ' + l.col; el.innerHTML = lightHtml(l);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-lamp]'), function(el){
+    var l = L[el.getAttribute('data-lamp')]; el.className = 'lamp ' + l.col; el.setAttribute('aria-label', ({green:'In stock', amber:'Low stock', red:'No stock'})[l.col]);
+  });
+}
+/* ---------- steep timer ---------- */
+var DAY = 86400000, STEEP_READY = 3*DAY, STEEP_BEST = 7*DAY;
+function steeping(){
+  return state.batches.filter(function(b){ return !b.done && Date.now() - b.t < 14*DAY && (recById[b.recipe] || b.name); })
+    .sort(function(a,b){ return a.t - b.t; });
+}
+function whenShort(t){ var d = new Date(t); return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
+function left(ms){ var h = Math.max(0, Math.round(ms/3600000)), d = Math.floor(h/24); h = h % 24; if (!d && !h) return 'under an hour'; return (d ? d + (d===1?' day ':' days ') : '') + (h || !d ? h + (h===1?' hr':' hrs') : '').trim(); }
+function steepHtml(){
+  var list = steeping(); if (!list.length) return '';
+  return '<section class="card"><div style="font-weight:700;margin-bottom:4px">Steeping</div><ul class="list">' + list.map(function(b){
+    var age = Date.now() - b.t, pct = Math.min(100, age/STEEP_BEST*100), r = {name: b.name || (recById[b.recipe] || {}).name || 'Batch'}, msg, col;
+    if (age < STEEP_READY) { msg = 'Ready to try in ' + left(STEEP_READY - age) + ' (' + whenShort(b.t + STEEP_READY) + ')'; col = '#E3A008'; }
+    else if (age < STEEP_BEST) { msg = 'Ready to try now. Best from ' + whenShort(b.t + STEEP_BEST); col = 'var(--ok)'; }
+    else { msg = 'Fully steeped. Enjoy!'; col = 'var(--ok)'; }
+    return '<li><div class="row between" style="align-items:flex-start"><div><button class="linkbtn" style="font-size:14px;font-weight:600;padding:0;text-align:left" data-bdetail="' + b.id + '">' + esc(r.name) + (b.nb === 'zero' ? ' (no nicotine)' : '') + '</button><div class="small muted num">' + esc(batchLine(b)) + '</div>' + (age >= STEEP_READY ? '<span class="pill ready" style="display:inline-block;margin-top:4px">Ready to try</span>' : '') +
+      '<div class="small" style="color:' + col + ';font-weight:600">' + esc(msg) + '</div></div>' +
+      '<button class="linkbtn" data-steepdone="' + b.id + '" aria-label="Remove ' + esc(r.name) + ' from steeping">Done</button></div>' +
+      '<div class="meter"><span style="width:' + pct + '%;background:' + col + '"></span></div></li>';
+  }).join('') + '</ul><p class="muted small" style="margin:8px 0 0">Shake each bottle once a day while it steeps.</p></section>';
+}
+function bindSteep(){
+  var box = document.querySelector('[data-steep]'); if (!box) return;
+  box.onclick = function(e){
+    var b = e.target.closest && e.target.closest('[data-steepdone]'); if (!b) return;
+    var x = state.batches.filter(function(y){ return y.id === b.getAttribute('data-steepdone'); })[0]; if (!x) return;
+    var w = sheet({title:'Finished the bottle?', body:'<p class="muted" style="margin-top:0">' + esc(x.name || 'This batch') + ' comes off Steeping either way. If you\u2019ve finished it, History records today as the date.</p><button class="btn secondary" data-hideonly>No, just remove it from Steeping</button>', confirm:'Yes, I\u2019ve finished it', onConfirm:function(){
+      x.done = true; x.finished = Date.now(); save(); render(); toast('Marked as finished.');
+    }});
+    w.querySelector('[data-hideonly]').onclick = function(){ x.done = true; w.remove(); save(); render(); toast('Removed from Steeping.'); };
+  };
+}
+function viewSteepTab(){
+  return '<h1>Steeping</h1><p class="lede">Each clock counts down to when the batch is ready to try, 3 days after mixing.</p>' + reminderCardHtml() + '<div data-steep>' + steepCardsHtml() + '</div>' + timerCardsHtml();
+}
+function bindSteepTab(){ bindSteep(); paintTimers(); }
+function goSteep(){ current = 'steep'; render(); window.scrollTo(0, 0); }
+function mixPicker(){
+  var m = state.mix || {}, picks = m.picks || {}, main = m.main || {}, str = m.strength || 'med', parts = mixParts(), pct = {};
+  parts.forEach(function(p){ pct[p[0]] = p[1]; });
+  var tick = function(i, star){
+    var on = i.id in picks;
+    return '<div class="mix-row' + (on ? ' on' : '') + '"><label class="zero-tick" style="margin:0"><input type="checkbox" data-pick="' + i.id + '"' + (on ? ' checked' : '') + '> ' + esc(i.name) + '</label>' +
+      (on && star ? '<button class="starbtn' + (main[i.id] ? ' on' : '') + '" data-main="' + i.id + '" aria-pressed="' + (main[i.id] ? 'true' : 'false') + '" aria-label="Make ' + esc(i.name) + ' the main flavour">' + (main[i.id] ? '\u2605 Main' : '\u2606 Main') + '</button>' : '<span></span>') + '</div>';
+  };
+  var flavs = mixFlavours().filter(function(i){ return !(i.id in ADDITIVE); }), extras = mixFlavours().filter(function(i){ return i.id in ADDITIVE; });
+  var seg = [['light','Light'],['med','Medium'],['strong','Strong']].map(function(x){
+    var on = str === x[0];
+    return '<button class="btn secondary" data-strength="' + x[0] + '" aria-pressed="' + on + '" style="padding:9px 0;font-size:12px' + (on ? ';background:var(--sel);color:var(--sel-ink)' : '') + '">' + x[1] + '</button>';
+  }).join('');
+  var adv = parts.length ? '<details style="margin-top:12px"><summary>Fine-tune amounts (optional)</summary>' +
+    '<p class="muted small" style="margin:8px 0">This is how much of the finished bottle each one takes up, as a percentage. Only change it if one flavour is too weak or too strong once the mix has steeped. Picking a new strength above resets these.</p>' +
+    parts.map(function(p){ var i = ingById[p[0]]; return '<div class="mix-row"><span style="font-size:14px">' + esc(i.name) + '</span><span class="row" style="gap:4px"><input class="num" data-pct="' + i.id + '" type="number" inputmode="decimal" min="0" max="30" step="0.5" value="' + p[1] + '" aria-label="Percent of ' + esc(i.name) + '" ><span class="small muted">%</span></span></div>'; }).join('') +
+    '<button class="linkbtn" data-pctauto style="margin-top:6px">Reset to automatic</button></details>' : '';
+  return '<ol class="small" style="margin:8px 0;padding-left:20px"><li>Tick the flavours you want.</li><li>Choose how strong you want it.</li><li>Optional: tap the star on the main flavour so it leads.</li></ol>' +
+    '<div class="mix-list">' + flavs.map(function(i){ return tick(i, true); }).join('') + '</div>' +
+    '<div class="small muted" style="margin:12px 0 4px">How strong?</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + seg + '</div>' +
+    '<p class="muted small" style="margin:6px 0 0">Light is subtle, Medium is like your usual recipes, Strong is punchy.</p>' +
+    '<div class="small muted" style="margin:12px 0 4px">Extras (a tiny amount each)</div><div class="mix-list">' + extras.map(function(i){ return tick(i, false); }).join('') + '</div>' + adv;
+}
+function viewPlan(){
+  var L = recipeLights();
+  var total = 0; RECIPES.forEach(function(r){ total += state.plan[r.id]||0; });
+  var cards = RECIPES.map(function(r){
+    var ml = state.plan[r.id]||0, empty = !r.parts.length, key = 'r:' + r.id;
+    var title = r.custom ? 'Make your own mix' + (empty ? '' : ': ' + esc(r.name)) : esc(r.name);
+    return '<section class="card" data-rec="' + r.id + '"><details data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '>' +
+      '<summary class="recsum"><span class="row" style="gap:10px">' + (empty ? '' : '<span class="lamp ' + L[r.id].col + '" data-lamp="' + r.id + '" role="img" aria-label="' + ({green:'In stock', amber:'Low stock', red:'No stock'})[L[r.id].col] + '"></span>') + '<span>' + title + '</span></span><span class="sub">' + subText(r) + '</span></summary>' +
+      (r.custom ? '<label class="f" for="mixname" style="margin-top:0">Name your mix</label><input id="mixname" class="field" data-mixname value="' + esc(r.name) + '" aria-label="Name of your mix" style="font-weight:700;margin-bottom:6px">' + mixPicker() : '') +
+      (empty ? '' : '<div class="light ' + L[r.id].col + '" data-light="' + r.id + '" role="status">' + lightHtml(L[r.id]) + '</div>') +
+      feedbackHtml(r.id) +
+      ratioNote(r.id) +
+      '<label class="zero-tick"><input type="checkbox" data-zero="' + r.id + '"' + (state.zero && state.zero[r.id] ? ' checked' : '') + '> Without nicotine?</label>' +
+      '<div class="small muted" style="margin-top:10px">Nic strength</div><div class="mgseg">' + MG_STEPS.map(function(v){ var z = state.zero && state.zero[r.id]; return '<button type="button" data-mg="' + r.id + ':' + v + '" class="' + (!z && planMg(r.id) === v ? 'on' : '') + '"' + (z ? ' disabled' : '') + '>' + v + 'mg</button>'; }).join('') + '</div>' +
+      '<div class="row between" style="margin-top:12px"><span class="muted small">How much to make</span>' +
+      '<div class="row" style="gap:6px"><div class="stepper"><button data-dec aria-label="Less">&minus;</button>' +
+      '<input class="num" data-ml type="number" inputmode="decimal" min="0" step="1" value="' + (ml||'') + '" placeholder="0" aria-label="ml of ' + esc(r.name) + '">' +
+      '<button data-inc aria-label="More">+</button></div><span class="unit">ml</span></div></div>' +
+      '<details' + (ml?' open':'') + '><summary>How to make</summary><div data-howto>' + (empty ? '<p class="muted small" style="margin:4px 0 0">Tick at least one flavour above.</p>' : (fits(r.id) ? howTo(r, ml) : '<p class="muted small" style="margin:4px 0 0">Pick a lower nic strength to see the measurements.</p>')) + '</div></details>' +
+      (empty ? '' : '<div><button class="btn" data-made="' + r.id + '" style="margin-top:12px"' + (fits(r.id) && progress(r).n && progress(r).d === progress(r).n ? '' : ' disabled') + '>I\u2019ve made this</button><p class="muted small" data-madehint style="text-align:center;margin:6px 0 0"' + (progress(r).n && progress(r).d === progress(r).n ? ' hidden' : '') + '>Tick every step above to unlock this.</p></div>') +
+      (r.custom && !empty ? '<button class="btn secondary" data-mixsave style="margin-top:12px">Save as one of my recipes</button>' : '') +
+      (r.user ? '<button class="linkbtn" data-delrec="' + r.id + '" style="margin-top:10px">Delete this recipe</button>' : '') +
+      '</details></section>';
+  }).join('');
+  var nicLbl = NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'], vgr = state.vgr || 50;
+  var settings = '<section class="card"><details data-box="settings"' + (openBox.settings ? ' open' : '') + '><summary class="recsum"><span>Mix settings</span><span class="sub" style="white-space:normal;text-align:right">' + nicLbl + '<br>' + pgvg(vgr) + '</span></summary>' +
+    '<div class="small muted">Which 20mg shots are you using?</div><div class="grid2" style="margin-top:6px">' +
+    '<button class="btn secondary" data-nicbase="5050">Nic Nic 20mg<br><span class="small" style="font-weight:600">(50 PG / 50 VG)</span></button><button class="btn secondary" data-nicbase="vg">Vapable 20mg<br><span class="small" style="font-weight:600">(100 VG)</span></button></div>' +
+    '<p class="muted small" style="margin:8px 0 14px">Each type has its own stock. Pick the nic strength on each recipe; the amounts adjust to match.</p>' +
+    '<div class="small muted">PG / VG ratio</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px">' +
+    [40,45,50,55,60,70].map(function(v){ return '<button class="btn secondary" data-vgr="' + v + '" style="padding:9px 6px;font-size:12.5px">' + ratioName(v) + '</button>'; }).join('') + '</div>' +
+    '<p class="muted small" style="margin:10px 0 0"><b>VG</b> is thicker and smoother. <b>PG</b> is thinner and gives more throat hit. 50 PG / 50 VG is the same as Bar Juice.</p></details></section>';
+  var coming = state.orders.filter(function(o){ return (o.status || 'ordered') !== 'delivered'; }).sort(function(a,b){ return b.t - a.t; });
+  var banner = coming.map(function(o){
+    return '<section class="card"><div class="row between"><div style="font-weight:700">Parcel on its way</div><div class="small muted">' + (o.ref ? 'Order ' + esc(o.ref) : esc(when(o.t))) + '</div></div>' + parcelHtml(o, true) + '</section>';
+  }).join('');
+  return steepSummaryHtml() + '<h1>Plan</h1><p class="lede">Set what you want to make. Shop and Stock update as you go.</p>' +
+    settings +
+    cards +
+    '<div class="card"><div class="row between"><span class="muted">Total planned</span><span class="num" style="font-weight:800;font-size:17px" data-total>' + mlShort(total) + ' ml</span></div></div>';
+}
+function bindPlan(){
+  bindSteep();
+  Array.prototype.forEach.call(document.querySelectorAll('details[data-box]'), function(d){
+    d.addEventListener('toggle', function(){ openBox[d.getAttribute('data-box')] = d.open; });
+  });
+  var stay = function(msg){ save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast(msg); };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-nicbase]'), function(b){
+    var on = b.getAttribute('data-nicbase') === state.nicBase;
+    b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.onclick = function(){ if (on) return; state.nicBase = b.getAttribute('data-nicbase'); stay('Recipes now use ' + NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'] + ' shots.'); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-vgr]'), function(b){
+    var on = +b.getAttribute('data-vgr') === (state.vgr || 50);
+    b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.onclick = function(){ state.vgr = +b.getAttribute('data-vgr'); stay('Recipes now ' + pgvg(state.vgr) + '.'); };
+  });
+  state.mix = state.mix || {name:'My mix', picks:{}};
+  state.mix.picks = state.mix.picks || {}; state.mix.main = state.mix.main || {}; state.mix.strength = state.mix.strength || 'med';
+  var keep = function(){ save(); var y = window.scrollY; render(); window.scrollTo(0, y); };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pick]'), function(cb){
+    cb.onchange = function(){ var id = cb.getAttribute('data-pick'); if (cb.checked) state.mix.picks[id] = null; else { delete state.mix.picks[id]; delete state.mix.main[id]; } keep(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-main]'), function(b){
+    b.onclick = function(){ var id = b.getAttribute('data-main'); if (state.mix.main[id]) delete state.mix.main[id]; else state.mix.main[id] = true; for (var k in state.mix.picks) state.mix.picks[k] = null; keep(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-strength]'), function(b){
+    b.onclick = function(){ state.mix.strength = b.getAttribute('data-strength'); for (var k in state.mix.picks) state.mix.picks[k] = null; keep(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pct]'), function(inp){
+    inp.onchange = function(){ var v = parseFloat(inp.value); state.mix.picks[inp.getAttribute('data-pct')] = (v >= 0 && v <= 30) ? Math.round(v*10)/10 : null; keep(); };
+  });
+  var pa = document.querySelector('[data-pctauto]'); if (pa) pa.onclick = function(){ for (var k in state.mix.picks) state.mix.picks[k] = null; keep(); };
+  var mn = document.querySelector('[data-mixname]'); if (mn) mn.onchange = function(){ state.mix.name = (mn.value || '').trim().slice(0,40) || 'My mix'; save(); syncRecipes(); };
+  var ms = document.querySelector('[data-mixsave]'); if (ms) ms.onclick = function(){
+    sheet({title:'Save this mix', body:'<label class="f" for="mx-n">Recipe name</label><input id="mx-n" class="field" type="text" value="' + esc(state.mix.name || 'My mix') + '">' +
+      '<p class="muted small">It will appear on Plan as a recipe of its own. The mix builder stays as it is.</p>', confirm:'Save recipe', onConfirm:function(w){
+        var name = (w.querySelector('#mx-n').value || '').trim().slice(0,40) || 'My mix';
+        state.myRecipes = state.myRecipes || [];
+        state.myRecipes.push({id:'u' + uid(), name:name, parts:mixParts().map(function(p){ return [p[0], p[1]]; })});
+        keep(); toast('Saved \u201c' + name + '\u201d to your recipes.');
+      }});
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-delrec]'), function(b){
+    b.onclick = function(){
+      var id = b.getAttribute('data-delrec'), r = recById[id]; if (!r) return;
+      sheet({title:'Delete \u201c' + esc(r.name) + '\u201d?', body:'<p class="muted" style="margin-top:0">Batches you\u2019ve already made stay in your history and stock.</p>', confirm:'Delete recipe', onConfirm:function(){
+        state.myRecipes = (state.myRecipes || []).filter(function(x){ return x.id !== id; }); delete state.plan[id]; if (state.zero) delete state.zero[id]; keep(); toast('Recipe deleted.');
+      }});
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mg]'), function(b){
+    b.onclick = function(){
+      var p = b.getAttribute('data-mg').split(':'); state.mgs = state.mgs || {}; state.mgs[p[0]] = +p[1];
+      save(); var y = window.scrollY; render(); window.scrollTo(0, y);
+      toast(fits(p[0]) ? recById[p[0]].name + ' now ' + p[1] + 'mg.' : p[1] + 'mg won\u2019t fit in ' + recById[p[0]].name + '. Pick a lower strength.');
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-zero]'), function(cb){
+    cb.onchange = function(){
+      state.zero = state.zero || {}; var id = cb.getAttribute('data-zero');
+      if (cb.checked) state.zero[id] = true; else delete state.zero[id];
+      save(); var y = window.scrollY; render(); window.scrollTo(0, y);
+      toast(cb.checked ? 'No nicotine. Recipe adjusted.' : 'Back to 10mg.');
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-rec]'), function(card){
+    var id = card.getAttribute('data-rec'), input = card.querySelector('input[data-ml]');
+    function set(v, full){
+      v = Math.max(0, Math.round((+v||0)*100)/100);
+      state.plan[id] = v; save();
+      if (full) { render(); return; }
+      card.querySelector('[data-howto]').innerHTML = howTo(recById[id], v);
+      var hd = card.querySelector('[data-howto]').closest('details'); if (v && hd && !hd.open) hd.open = true;
+      card.querySelector('.recsum .sub').textContent = subText(recById[id]);
+      var total = 0; RECIPES.forEach(function(r){ total += state.plan[r.id]||0; });
+      document.querySelector('[data-total]').textContent = mlShort(total) + ' ml';
+      updateMade();
+      updateLights(); renderTabs();
+    }
+    input.addEventListener('input', function(){ set(input.value, false); });
+    card.addEventListener('change', function(e){
+      var c = e.target.closest && e.target.closest('[data-tick]'); if (!c) return;
+      var p = c.getAttribute('data-tick').split(':');
+      setTick(id, +p[1], c.checked); c.closest('li').classList.toggle('done', c.checked);
+      card.querySelector('.recsum .sub').textContent = subText(recById[id]); updateMade();
+    });
+    card.querySelector('[data-inc]').onclick = function(){ set((state.plan[id]||0) + 10, true); };
+    card.querySelector('[data-dec]').onclick = function(){ set(Math.max(0,(state.plan[id]||0) - 10), true); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-made]'), function(b){ b.onclick = function(){ confirmMade(b.getAttribute('data-made')); }; });
+}
+function confirmMade(onlyId){
+  var kept = {};
+  RECIPES.forEach(function(r){ kept[r.id] = state.plan[r.id]; if (r.id !== onlyId) state.plan[r.id] = 0; });
+  var sh = shopping();
+  RECIPES.forEach(function(r){ state.plan[r.id] = kept[r.id]; });
+  var buys = sh.rows.filter(function(r){ return r.bottles>0; });
+  var batches = RECIPES.filter(function(r){ return r.id === onlyId && state.plan[r.id]>0 && r.parts.length; });
+  var body = '<p class="muted" style="margin-top:0">Batch:</p><ul class="list">' + batches.map(function(r){ return '<li><b>' + esc(r.name) + '</b><div class="small num">' + esc(batchSummary(r, state.plan[r.id], planNb(r.id), state.vgr || 50, planMg(r.id))) + '</div></li>'; }).join('') + '</ul>' +
+    '<p class="muted">Added to stock as bought:</p>' + (buys.length ? '<ul class="list">' + buys.map(function(b){ return '<li>' + esc(b.ing.name) + ' <b class="num">' + mlShort(b.buy) + ' ml</b></li>'; }).join('') + '</ul>' : '<p style="margin:0">Nothing. It all came from stock.</p>');
+  if (buys.length) body += '<label class="f" for="ord-no">Order number (optional)</label><input id="ord-no" class="field" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. Vapable 123456">';
+  sheet({title:'Made this batch?', body:body, confirm:'Yes, update my stock', onConfirm:function(w){
+    var t = Date.now(), items = {};
+    buys.forEach(function(b){ items[b.ing.id] = b.buy; });
+    var refEl = w.querySelector('#ord-no'), ref = refEl ? (refEl.value || '').trim().slice(0,80) : '';
+    if (buys.length) state.orders.push({id:uid(), t:t, items:items, ref:ref, status:'delivered', shops:shopsOf(buys)});
+    batches.forEach(function(r){ state.batches.push(newBatch(r, state.plan[r.id], planNb(r.id), state.vgr || 50, t, planMg(r.id))); state.plan[r.id]=0; delete state.ticks[r.id]; });
+    save(); render(); toast('Stock updated. ' + batches[0].name + ' reset to 0.');
+  }});
+}
+
+/* ---------- Shop ---------- */
+function bigHint(r){
+  if (packsOf(r.ing.id)) return '';
+  var id = r.ing.id, from = bigFrom(id); if (!from) return '';
+  var big = (id === 'nic' || id === 'nicvg') ? mlShort(bigSizeOf(id)/sizeOf(id)) + ' pack' : mlShort(bigSizeOf(id)) + 'ml bottle';
+  if (r.bb && r.bb.nB > 0) return '<div class="have" style="color:var(--ok);font-weight:700">' + big + ' is the better buy here</div>';
+  if (r.bottles > 0) return '<div class="have">' + big + ' becomes cheaper once you need ' + ((id === 'nic' || id === 'nicvg') ? Math.ceil(from/sizeOf(id)) + ' shots' : mlShort(from) + 'ml') + ' or more</div>';
+  return '';
+}
+function deliveryLine(subs){
+  var parts = [], gbpS = function(x){ return Math.abs(x - Math.round(x)) < 0.001 ? '\u00a3' + Math.round(x) : gbp(x); };
+  SHOPS.forEach(function(sp){
+    var x = subs[sp]; if (!x || x.sub <= 0) return;
+    if (x.st === 'free') parts.push('Free delivery from ' + sp + ' (over ' + gbpS(x.d.free) + ').');
+    else if (x.st === 'fee') parts.push('Includes ' + gbp(x.post) + ' ' + sp + ' postage. Free over ' + gbpS(x.d.free) + '.');
+    else parts.push('Plus ' + sp + ' postage. Free over ' + gbpS(x.d.free) + '.');
+  });
+  return parts.length ? parts.join(' ') : 'Nothing to buy. It all comes from your stock.';
+}
+function viewShop(){
+  var sh = shopping(), subs = shopSubs(sh);
+  var postage = 0, unknown = [];
+  SHOPS.forEach(function(sp){ postage += subs[sp].post; if (subs[sp].st === 'unknown') unknown.push(sp); });
+  var readyMade = sh.planned/10*2;
+  var groups = SHOPS.map(function(shop){
+    var rows = sh.rows.filter(function(r){ return r.ing.shop===shop && (r.need>0 || r.bottles>0); });
+    if (!rows.length) return '';
+    var sub = rows.reduce(function(a,r){ return a+r.cost; }, 0);
+    var ss = subs[shop], dl = '';
+    if (ss.st === 'free') dl = '<div class="small" style="color:var(--ok);font-weight:700;margin-bottom:4px">Free delivery (over ' + gbp(ss.d.free) + ')</div>';
+    else if (ss.st === 'fee' || ss.st === 'unknown') dl = '<div class="small" style="color:var(--low);font-weight:700;margin-bottom:4px">Add ' + gbp(ss.d.free - sub) + ' more for free delivery' + (ss.st === 'fee' ? ', or pay ' + gbp(ss.post) + ' postage' : '') + '</div>';
+    var dn = (DELIVERY[shop] || {}).note; if (dn) dl += '<div class="small muted" style="margin-bottom:4px">' + esc(dn) + '</div>';
+    return '<section class="card"><div class="shop-head"><h3>' + esc(shop) + '</h3><span class="num" style="font-weight:700">' + gbp(sub) + '</span></div>' + dl + '<ul class="list">' +
+      rows.map(function(r){
+        var right = r.bottles>0 ? '<div class="buy num">' + bottleText(r.ing.id, r.bb) + '</div><div class="have num">' + gbp(r.cost) + '</div>'
+                                : '<div class="pill ok">Have enough</div>';
+        return '<li><div class="row between" style="align-items:flex-start"><div><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a>' +
+          (r.ing.note ? '<div class="have">' + esc(r.ing.note) + '</div>' : '') +
+          '<div class="have num">Need ' + ml2(r.need) + ' ml, have ' + ml2(r.have) + ' ml</div>' + bigHint(r) + '</div><div style="text-align:right">' + right + '</div></div></li>';
+      }).join('') + '</ul></section>';
+  }).join('');
+  var anyBuy = sh.rows.some(function(r){ return r.bottles>0; });
+  return '<h1>Shop</h1><p class="lede">Exactly what to buy for your plan. Stock you already have is taken off, then it\u2019s rounded up to the bottle sizes each shop sells.</p>' +
+    (sh.planned ? '' : '<div class="card empty">Nothing planned yet. Set some amounts on Plan.</div>') +
+    (sh.planned ? '<div class="card"><div class="total"><span>To spend</span><span class="num">' + gbp(sh.total + postage) + '</span></div><div class="stat" style="margin-top:10px">' +
+      '<span class="muted">Liquid planned</span><span class="v num">' + mlShort(sh.planned) + ' ml</span>' +
+      '<span class="muted">Ingredient cost of it</span><span class="v num">' + gbp(sh.ingCost) + '</span>' +
+      '<span class="muted">Cost per 10ml bottle</span><span class="v num">' + gbp(sh.planned > 0 ? sh.ingCost / sh.planned * 10 : 0) + '</span>' +
+      '</div><p class="muted small" style="margin:10px 0 0">' + deliveryLine(subs) + '</p></div>' : '') +
+    groups +
+    (anyBuy ? '<button class="btn secondary" data-ordered>I\u2019ve ordered this (not made yet)</button><p class="muted small" style="text-align:center;margin-top:8px">Optional. Adds the order to stock now. Use \u201cI\u2019ve made these\u201d on Plan once you\u2019ve mixed.</p>' : '') +
+    '';
+}
+function bindShop(){
+  var b = document.querySelector('[data-ordered]');
+  if (b) b.onclick = function(){
+    var buys = shopping().rows.filter(function(r){ return r.bottles>0; });
+    sheet({title:'Add this order to stock?', body:'<ul class="list">' + buys.map(function(r){ return '<li>' + esc(r.ing.name) + ' <b class="num">' + mlShort(r.buy) + ' ml</b></li>'; }).join('') + '</ul>' + '<label class="f" for="ord-no">Order number (optional)</label><input id="ord-no" class="field" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. Vapable 123456">', confirm:'Yes, add it', onConfirm:function(w){
+      var items = {}; buys.forEach(function(r){ items[r.ing.id]=r.buy; });
+      var ref = (w.querySelector('#ord-no').value || '').trim().slice(0,80);
+      state.orders.push({id:uid(), t:Date.now(), items:items, ref:ref, status:'ordered', shops:shopsOf(buys)}); save(); render(); toast('Order added to stock.');
+    }});
+  };
+}
+
+/* ---------- Stock ---------- */
+var stockOpen = {}, stockAll = false;
+function viewStock(){
+  var st = stockNow();
+  var rows = ING.map(function(i){
+    var b = stockBar(i.id, st), open = stockAll || stockOpen[i.id];
+    return '<div class="srow" role="button" tabindex="0" data-sopen="' + i.id + '" aria-expanded="' + (open ? 'true' : 'false') + '"><div class="row between"><span style="font-weight:600">' + esc(i.name) + '</span><span class="amt num"' + (b.none ? ' style="color:var(--muted)"' : '') + '>' + esc(b.text) + (b.out ? '<span class="warn">Out</span>' : (b.low ? '<span class="warn">Low</span>' : '')) + '</span></div>' + stockBarHtml(i.id, st) +
+      (open ? '<div class="sdet"><span class="num">Ordered ' + mlShort(st.ordered[i.id]) + ' ml · used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? ' · adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '</span><button class="linkbtn" data-adj="' + i.id + '">Spill or extra</button></div>' : '') + '</div>';
+  }).join('');
+  var any = ING.some(function(i){ return !stockBar(i.id, st).none; });
+  return '<div class="row between" style="align-items:flex-start"><div><h1>Stock</h1><p class="lede">What you have left. Tap an item for ordered and used.</p></div><button class="linkbtn" data-sall style="margin-top:14px;white-space:nowrap">' + (stockAll ? 'Hide details' : 'Show details') + '</button></div>' +
+    (any ? '' : '<div class="card empty">No stock yet. It appears once you log an order or a batch.</div>') +
+    '<section class="card" style="padding-top:4px;padding-bottom:4px">' + rows + '</section>' +
+    '<p class="muted small" style="margin:0 2px">% left is what’s left out of everything you’ve bought or added. Spills count as used. The bar turns red when it’s nearly empty.</p>' +
+    (any ? '' : '<button class="btn secondary" data-adj-any>Already have some stock? Add it</button>');
+}
+function adjustSheet(ingId){
+  var opts = ING.map(function(i){ return '<option value="' + i.id + '"' + (i.id===ingId?' selected':'') + '>' + esc(i.name) + '</option>'; }).join('');
+  sheet({title:'Spill or extra', body:
+    '<label class="f" for="adj-ing">Ingredient</label><select id="adj-ing" class="field">' + opts + '</select>' +
+    '<label class="f" for="adj-ml">Amount (ml)</label><input id="adj-ml" class="field num" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 5">' +
+    '<div class="grid2" style="margin-top:12px"><button class="btn secondary" data-kind="minus" aria-pressed="true">Spilt or lost</button><button class="btn secondary" data-kind="plus" aria-pressed="false">Extra I have</button></div>',
+    confirm:'Save', onConfirm:function(w){
+      var ml = +w.querySelector('#adj-ml').value;
+      if (!(ml>0)) { toast('Type an amount first.'); return false; }
+      var kind = w.querySelector('[data-kind][aria-pressed="true"]').getAttribute('data-kind');
+      var ing = w.querySelector('#adj-ing').value;
+      state.adjust.push({id:uid(), t:Date.now(), ing:ing, ml: kind==='minus' ? -ml : ml});
+      save(); render(); toast(kind==='minus' ? 'Taken off stock.' : 'Added to stock.');
+    }});
+  var w = document.querySelector('.sheet-wrap');
+  Array.prototype.forEach.call(w.querySelectorAll('[data-kind]'), function(b){
+    function paint(){ Array.prototype.forEach.call(w.querySelectorAll('[data-kind]'), function(x){ var on = x.getAttribute('aria-pressed')==='true'; x.style.background = on ? 'var(--sel)' : ''; x.style.color = on ? 'var(--sel-ink)' : ''; }); }
+    b.onclick = function(){ Array.prototype.forEach.call(w.querySelectorAll('[data-kind]'), function(x){ x.setAttribute('aria-pressed', x===b ? 'true':'false'); }); paint(); };
+    paint();
+  });
+}
+function bindStock(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-adj]'), function(b){ b.onclick = function(e){ e.stopPropagation(); adjustSheet(b.getAttribute('data-adj')); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sopen]'), function(row){
+    var flip = function(){ var id = row.getAttribute('data-sopen'); stockOpen[id] = !stockOpen[id]; var y = window.scrollY; render(); window.scrollTo(0, y); };
+    row.onclick = flip; row.onkeydown = function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
+  });
+  var all = document.querySelector('[data-sall]'); if (all) all.onclick = function(){ stockAll = !stockAll; render(); };
+  var any = document.querySelector('[data-adj-any]'); if (any) any.onclick = function(){ adjustSheet('nic'); var w=document.querySelector('.sheet-wrap [data-kind="plus"]'); if (w) w.click(); };
+}
+
+/* ---------- History ---------- */
+function viewLog(){
+  var items = [];
+  state.batches.forEach(function(b){ var r=recById[b.recipe]; items.push({t:b.t, type:'batch', id:b.id, title:'Made ' + (b.name || (r?r.name:'recipe')) + (b.nb === 'zero' ? ' (no nicotine)' : ''), detail:batchLine(b) + '. ' + (Date.now() - b.t < STEEP_READY ? 'Ready to try ' + whenShort(b.t + STEEP_READY) : 'Ready to try'), batch:true}); });
+  state.adjust.forEach(function(a){ var i=ingById[a.ing]; items.push({t:a.t, type:'adjust', id:a.id, title:(a.ml<0?'Spilt ':'Extra ') + (i?i.name:''), detail:(a.ml>0?'+':'') + mlShort(a.ml) + ' ml'}); });
+  items.sort(function(a,b){ return b.t - a.t; });
+  return '<h1>History</h1><p class="lede">Everything that has changed your stock. Tap \u00d7 to undo an entry.</p>' +
+    ordersHtml() +
+    '<h2>Batches and adjustments</h2><section class="card">' + (items.length ? '<ul class="list">' + items.map(function(it){
+      return '<li class="hist-item"><span class="dot" style="margin-top:7px;background:' + (it.type==='batch'?'var(--accent)':(it.type==='order'?'var(--ok)':'var(--low)')) + '"></span><div>' + (it.batch ? '<button class="linkbtn" style="font-size:14px;font-weight:700;padding:0;text-align:left;text-decoration:none" data-bdetail="' + it.id + '">' + esc(it.title) + ' \u203a</button>' : '<div style="font-weight:700">' + esc(it.title) + '</div>') + '<div class="small muted">' + esc(it.detail) + '</div><div class="small muted">' + esc(when(it.t)) + '</div>' +
+        (it.type === 'order' ? (it.ref ? '<div class="small" style="font-weight:700">Order no. ' + esc(it.ref) + '</div>' : '') +
+          '<button class="linkbtn" data-ref="' + it.id + '">' + (it.ref ? 'Edit order number' : 'Add order number') + '</button>' : '') +
+        '</div>' +
+        '<button class="x" aria-label="Undo this entry" data-del="' + it.type + ':' + it.id + '">&times;</button></li>';
+    }).join('') + '</ul>' : '<div class="empty">Nothing yet.</div>') + '</section>';
+}
+function phoneOrderBody(o){
+  return '<div class="small muted" style="margin-top:2px">' + esc(orderItemsText(o)) + '</div>' + parcelHtml(o, false) +
+    '<div class="row" style="gap:14px;flex-wrap:wrap"><button class="linkbtn" data-ref="' + o.id + '">' + (o.ref ? 'Edit order number' : 'Add order number') + '</button><button class="linkbtn" style="color:var(--out)" data-del="order:' + o.id + '">Undo order</button></div>';
+}
+/* parcels still on the way stay at the top; delivered ones move to Previous orders, and come back up if Delivered is undone */
+function ordersHtml(){
+  var list = state.orders.slice().sort(function(a, b){ return b.t - a.t; }), active = list.filter(function(o){ return !isDelivered(o); }), done = list.filter(isDelivered);
+  var h = '<h2>Orders and parcels</h2><section class="card">' + (active.length ? '<ul class="list">' + active.map(function(o){
+    return '<li><div style="min-width:0"><b>' + esc(orderSupplier(o)) + '</b> <span class="small muted">' + esc(when(o.t)) + '</span>' + (o.ref ? '<div class="small"><b>Order no. ' + esc(o.ref) + '</b></div>' : '') + '</div>' + phoneOrderBody(o) + '</li>';
+  }).join('') + '</ul>' : '<div class="empty">No parcels on the way.</div>') + '</section>';
+  if (done.length) h += '<h2>Previous orders</h2><section class="card" style="padding-top:4px;padding-bottom:4px">' + done.map(function(o){
+    var key = 'o:' + o.id;
+    return '<details class="prevord" data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '><summary class="prevsum"><span style="min-width:0"><b>' + esc(when(o.t)) + '</b><span class="small muted"> \u00b7 ' + (o.ref ? 'Order no. ' + esc(o.ref) + ' \u00b7 ' : '') + esc(orderSupplier(o)) + '</span></span></summary>' + phoneOrderBody(o) + '</details>';
+  }).join('') + '</section>';
+  return h;
+}
+function bindLog(){
+  Array.prototype.forEach.call(document.querySelectorAll('details[data-box]'), function(d){ d.addEventListener('toggle', function(){ openBox[d.getAttribute('data-box')] = d.open; }); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ref]'), function(b){
+    b.onclick = function(){
+      var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-ref'); })[0]; if (!o) return;
+      sheet({title:'Order number', body:'<label class="f" for="ref-in">Order number</label><input id="ref-in" class="field" type="text" autocomplete="off" autocapitalize="characters" value="' + esc(o.ref || '') + '" placeholder="e.g. Vapable 123456">',
+        confirm:'Save', onConfirm:function(w){ o.ref = (w.querySelector('#ref-in').value || '').trim().slice(0,80); save(); render(); toast('Saved.'); }});
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-del]'), function(b){
+    b.onclick = function(){
+      var parts = b.getAttribute('data-del').split(':'), key = {batch:'batches', order:'orders', adjust:'adjust'}[parts[0]];
+      sheet({title:'Undo this entry?', body:'<p class="muted" style="margin:0">Your stock will be worked out again without it.</p>', confirm:'Undo it', danger:true, onConfirm:function(){
+        state[key] = state[key].filter(function(x){ return x.id !== parts[1]; }); save(); render(); toast('Entry removed.');
+      }});
+    };
+  });
+}
+
+/* ---------- More ---------- */
+function viewMore(){
+  var rows = ING.map(function(i){
+    var pk = packsOf(i.id);
+    if (pk) return '<div class="price-row"><div><div style="font-weight:600;font-size:14px">' + esc(i.name) + '</div><div class="small muted">' + esc(i.shop) + ', price per shot</div></div><span></span><span></span></div>' +
+      pk.map(function(p){
+        return '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">' + (p[0]===1 ? 'Single' : 'x ' + p[0] + ' pack') + '</div>' +
+          '<span class="small muted num" style="text-align:center">' + (p[0]===1 ? '' : '= ' + gbp(p[0]*p[1])) + '</span>' +
+          '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="pack" data-n="' + p[0] + '" data-id="' + i.id + '" value="' + p[1].toFixed(2) + '" aria-label="Price per shot in a ' + p[0] + ' pack"></div>';
+      }).join('');
+    var bs = bigSizeOf(i.id), bpv = bigPriceOf(i.id);
+    return '<div class="price-row"><div><div style="font-weight:600;font-size:14px">' + esc(i.name) + '</div><div class="small muted">' + esc(i.shop) + ((i.id==='nic' || i.id==='nicvg') ? ', one 10ml shot' : ', standard') + '</div></div>' +
+      '<input class="num" type="number" value="' + sizeOf(i.id) + '" disabled aria-label="Standard bottle size for ' + esc(i.name) + ', fixed">' +
+      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="price" data-id="' + i.id + '" value="' + priceOf(i.id).toFixed(2) + '" aria-label="Standard bottle price for ' + esc(i.name) + '"></div>' +
+      '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">Each, when buying 3 or more</div><span></span>' +
+      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="multi" data-id="' + i.id + '" value="' + (multiOf(i.id) ? multiOf(i.id).toFixed(2) : '') + '" placeholder="-" aria-label="Price each when buying 3 or more ' + esc(i.name) + '"></div>' +
+      (bs ? '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">Bigger bottle</div>' +
+      '<input class="num" type="number" value="' + bs + '" disabled aria-label="Bigger bottle size for ' + esc(i.name) + ', fixed">' +
+      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="bigPrice" data-id="' + i.id + '" value="' + (bpv?bpv.toFixed(2):'') + '" placeholder="-" aria-label="Bigger bottle price for ' + esc(i.name) + '"></div>' : '');
+  }).join('');
+  var sync = cloud.mode === 'cloud' ? 'Saved to your Claude account and on this phone. Only you can see it.' : 'Saved on this phone only. Use the backup below now and then.';
+  return '<h1>More</h1><p class="lede">' + sync + '</p>' +
+    '<h2>Prices and bottle sizes</h2><p class="muted small" style="margin-top:-4px">Bottle sizes are fixed. Update the prices if a shop changes them, and Shop picks the cheapest mix of bottles for your plan.</p><section class="card"><div class="price-row small muted" style="padding-top:0"><span>Item</span><span style="text-align:center">Size (ml)</span><span style="text-align:center">Price (\u00a3)</span></div>' + rows + '</section>' +
+    '<h2>Delivery</h2><section class="card"><div class="price-row small muted" style="padding-top:0"><span>Shop</span><span style="text-align:center">Free over (\u00a3)</span><span style="text-align:center">Postage (\u00a3)</span></div>' +
+      SHOPS.map(function(sp){ var d = delOf(sp);
+        return '<div class="price-row"><div style="font-weight:600;font-size:14px">' + esc(sp) + '</div>' +
+          '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-ship="free" data-shop="' + esc(sp) + '" value="' + d.free.toFixed(2) + '" aria-label="Free delivery threshold for ' + esc(sp) + '">' +
+          '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-ship="fee" data-shop="' + esc(sp) + '" value="' + (d.fee !== null ? d.fee.toFixed(2) : '') + '" placeholder="?" aria-label="Postage for ' + esc(sp) + '"></div>' +
+          ((DELIVERY[sp] || {}).note ? '<div class="small muted" style="padding:0 0 8px">' + esc(DELIVERY[sp].note) + '</div>' : '');
+      }).join('') + '<p class="muted small" style="margin:8px 0 0">Shop tells you when an order qualifies for free delivery, and adds the postage when it doesn\u2019t.</p></section>' +
+    '<h2>The recipes</h2><section class="card small"><p style="margin-top:0">Every recipe is made at your chosen nic strength and PG / VG ratio. Flavour concentrates are PG-based, so they count towards the PG part.</p>' +
+    '<p>The % is how much of the finished bottle is that flavour. Strawberry at 6% in 200ml is 12ml.</p>' +
+    '<p style="margin-bottom:0">These are close matches to the Bar Juice 5000 flavours, not exact copies. No WS-23 anywhere. Grape Blueberry Ice uses WS-5 for its cool. Steep for a few days before judging the taste.</p></section>' +
+    installCardHtml() + syncCardHtml() +
+    '<h2>Backup and restore</h2><section class="card"><p class="muted small" style="margin-top:0">Copy a backup and keep it somewhere safe, like Notes. Restore replaces what is here.</p>' +
+    (state.syncOn ? '<p class="small" style="margin:0 0 8px;color:var(--low);font-weight:600">Sync is on, so a restore is passed to your laptop too.</p>' : '') +
+    '<textarea class="field" id="bk" readonly>' + esc(JSON.stringify(state)) + '</textarea>' +
+    '<div class="grid2" style="margin-top:10px"><button class="btn secondary" data-copy>Copy backup</button><button class="btn secondary" data-restore>Restore</button></div>' +
+    '</section>' +
+    '<h2>Start again</h2><section class="card"><p class="muted small" style="margin-top:0">Handy after testing. Your prices and bottle sizes are kept unless you choose the second option.</p>' +
+    '<button class="btn secondary" data-reset="keep" style="color:var(--out)">Reset plan, stock and history</button>' +
+    '<button class="btn secondary" data-reset="all" style="color:var(--out)">Reset everything, including prices</button></section>' +
+    '<h2>Appearance</h2><section class="card"><div class="grid2"><button class="btn secondary" data-theme-set="light">Light</button><button class="btn secondary" data-theme-set="dark">Dark</button></div><button class="linkbtn" data-theme-set="">Match my phone</button></section>';
+}
+function bindMore(){
+  bindSync();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ship]'), function(inp){
+    inp.addEventListener('change', function(){
+      if (rendering) return;
+      var sp = inp.getAttribute('data-shop'), f = inp.getAttribute('data-ship'); state.ship = state.ship || {};
+      var o = state.ship[sp] || {}; var v = +inp.value;
+      if (inp.value.trim() === '' || !isFinite(v) || v < 0) { var d0 = delOf(sp)[f]; inp.value = (d0 !== null && d0 !== undefined) ? d0.toFixed(2) : ''; toast('Kept the previous amount.'); return; }
+      o[f] = v; state.ship[sp] = o; save(); renderTabs(); toast('Saved.');
+    });
+  });
+  function num(v, min){ v = +v; return (isFinite(v) && v >= min) ? v : null; }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-f]'), function(inp){
+    inp.addEventListener('change', function(){
+      if (rendering) return;
+      var id = inp.getAttribute('data-id'), f = inp.getAttribute('data-f'), p = state.prices[id] || {};
+      var keepOld = function(){ toast('Kept the previous price.'); render(); };
+      if (inp.value.trim() === '' || !(+inp.value > 0)) { keepOld(); return; }
+      if (f === 'pack'){ var pv = num(inp.value, 0); if (pv===null) { render(); return; } p.packs = p.packs || {}; p.packs[inp.getAttribute('data-n')] = pv; state.prices[id] = p; save(); render(); toast('Saved.'); return; }
+      if (f === 'size'){ var s = num(inp.value, 1); if (s===null) { inp.value = sizeOf(id); return; } p.size = s; }
+      else if (f === 'price'){ var pr = num(inp.value, 0); if (pr===null) { inp.value = priceOf(id).toFixed(2); return; } p.price = pr; }
+      else { var v = num(inp.value, 0); if (v===null) { keepOld(); return; } p[f] = v; }
+      state.prices[id] = p; save(); renderTabs(); toast('Saved.');
+    });
+  });
+  document.querySelector('[data-copy]').onclick = function(){
+    var ta = document.getElementById('bk'), txt = ta.value;
+    var done = function(){ toast('Backup copied.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function(){ ta.select(); toast('Select all and copy.'); });
+    else { ta.select(); toast('Select all and copy.'); }
+  };
+  document.querySelector('[data-restore]').onclick = function(){
+    sheet({title:'Restore a backup', body:'<p class="muted small" style="margin-top:0">Paste a backup you copied earlier. It replaces what is here now.</p><textarea class="field" id="rs" placeholder="Paste here"></textarea>', confirm:'Restore', danger:true, onConfirm:function(w){
+      try { var s = JSON.parse(w.querySelector('#rs').value); if (!s || !s.plan) throw 0; state = migrate(s); save(); render(); toast('Backup restored.'); }
+      catch (e) { toast('That doesn\u2019t look like a backup.'); return false; }
+    }});
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-reset]'), function(b){
+    b.onclick = function(){
+      var all = b.getAttribute('data-reset') === 'all';
+      sheet({title: all ? 'Reset everything?' : 'Reset plan, stock and history?',
+        body:'<p class="muted" style="margin:0">' + (all ? 'Everything goes back to how it was on day one, including any prices and bottle sizes you changed.' : 'Your plan, stock and history are cleared. Prices and bottle sizes stay as they are.') + ' This can\u2019t be undone.</p>',
+        confirm:'Reset', danger:true, onConfirm:function(){
+          var prices = state.prices, nbase = state.nicBase, shipKeep = state.ship; state = blank(); if (!all) { state.prices = prices; state.nicBase = nbase; state.ship = shipKeep; }
+          save(); current = 'plan'; render(); window.scrollTo(0,0); toast('Reset. You\u2019re back to the start.');
+        }});
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-theme-set]'), function(b){
+    b.onclick = function(){
+      var v = b.getAttribute('data-theme-set');
+      if (v) document.documentElement.setAttribute('data-theme', v); else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('mixbench.theme', v); } catch (e) {}
+    };
+  });
+}
+
+/* ---------- start ---------- */
+try { var th = localStorage.getItem('mixbench.theme'); if (th) document.documentElement.setAttribute('data-theme', th); } catch (e) {}
+lastSaved = jcopy(state);
+/* keep the tidied-up copy (old big-bottle prices removed, old batches keep their recipe) */
+if (typeof raw === 'string' && raw && JSON.stringify(state) !== raw) { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+render();
+initCloud();
+initSync();
+initSteepTools();
+startPwa();
+})();
+</script>
+</body>
+</html>
