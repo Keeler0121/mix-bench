@@ -168,6 +168,8 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .btn:disabled{opacity:.4;cursor:default}
 .bsteps{margin:8px 0 0;padding-left:20px;font-size:13px}
 .bsteps li{padding:4px 0}
+.pill.ordered{background:var(--sel);color:var(--sel-ink)}
+.ordcard .btn.sel{margin:10px 0 2px}
 .steps-bar{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;position:relative}
 .steps-bar::before{content:"";position:absolute;left:12.5%;right:12.5%;top:7px;height:1px;background:var(--line)}
 .stp{position:relative;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;text-align:center}
@@ -578,7 +580,7 @@ function planNeed(){
 function stockNow(){
   var s = {ordered:{}, used:{}, adj:{}, left:{}};
   ING.forEach(function(i){ s.ordered[i.id]=0; s.used[i.id]=0; s.adj[i.id]=0; });
-  state.orders.forEach(function(o){ for (var k in o.items) if (k in s.ordered) s.ordered[k]+= +o.items[k]||0; });
+  state.orders.forEach(function(o){ if (!orderInStock(o)) return; for (var k in o.items) if (k in s.ordered) s.ordered[k]+= +o.items[k]||0; });
   state.batches.forEach(function(b){
     var m = batchAmounts(b); if (!m) return;
     for (var k in m) if (k in s.used) s.used[k]+=m[k];
@@ -979,6 +981,8 @@ function orderSupplier(o){
 }
 function orderItemsText(o){ var parts = []; for (var k in (o.items || {})) if (ingById[k]) parts.push(ingById[k].name + ' ' + mlShort(o.items[k]) + 'ml'); return parts.join(', '); }
 function isDelivered(o){ return (o.status || 'ordered') === 'delivered'; }
+/* orders placed with Order now wait (pending) until you press Delivered; older orders were added to stock when they were logged */
+function orderInStock(o){ return !o.pending || isDelivered(o); }
 function stockBarHtml(id, st){
   var s = stockBar(id, st);
   return '<div class="sbar' + (s.low || s.out ? ' low' : '') + '" role="img" aria-label="' + esc(ingById[id].name) + ': ' + esc(s.text) + ' left' + (s.out ? ', out' : (s.low ? ', low' : '')) + '"><span style="width:' + s.pct + '%"></span></div>';
@@ -1135,14 +1139,15 @@ function packTip(id, n){
 }
 /* what to buy: anything short for the plan or running low, plus anything you added. The number is yours once you type it. */
 function shopList(){
-  var sh = shopping(), st = stockNow(), cart = state.cart || {}, rows = [];
+  var sh = shopping(), st = stockNow(), cart = state.cart || {}, rows = [], onOrder = onOrderQty();
   sh.rows.forEach(function(r){
     var id = r.ing.id, size = sizeOf(id), short = r4(Math.max(0, r.need - r.have)), s = status(id, st)[1], low = s === 'low' || s === 'out';
     var sugg = short > 0 ? Math.ceil(short / size - 1e-9) : (low ? Math.max(1, Math.ceil((ingById[id].warn - Math.max(0, st.left[id])) / size - 1e-9)) : 0);
     var typed = Object.prototype.hasOwnProperty.call(cart, id);
-    if (!short && !low && !typed) return;
+    if (!short && !low && !typed && !onOrder[id]) return;
     var n = typed ? Math.max(0, Math.round(+cart[id] || 0)) : sugg;
-    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, typed:typed, unit:unitOf(id), cost:lineCost(id, n), tip:packTip(id, n)});
+    if (onOrder[id]) n = onOrder[id];
+    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, typed:typed, onOrder:onOrder[id] || 0, unit:unitOf(id), cost:onOrder[id] ? 0 : lineCost(id, n), tip:onOrder[id] ? '' : packTip(id, n)});
   });
   var total = 0;
   var shops = SHOPS.map(function(shop){
@@ -1166,7 +1171,7 @@ function shopDelText(g){
 /* the Vapable lines that can go straight into the basket, and the ones that can't (no IDs yet) */
 function basketItems(L){
   var g = listShop(L, 'Vapable'), ok = [], miss = [];
-  (g ? g.rows : []).forEach(function(r){ if (!(r.n > 0)) return; var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
+  (g ? g.rows : []).forEach(function(r){ if (!(r.n > 0) || r.onOrder) return; var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
   return {ok:ok, miss:miss};
 }
 /* one Vapable tab, stepped through each add-to-cart link 1.5 seconds apart, then the basket. You log in and check out yourself. */
@@ -1185,9 +1190,10 @@ function fillBasket(items, onStep){
   })();
   return true;
 }
-function basketStepsHtml(items, miss){
+function basketStepsHtml(items, miss, nic){
   return '<ol class="bsteps">' + items.map(function(x){ return '<li><a href="' + esc(x.link) + '" target="_blank" rel="noopener" data-bstep>Add ' + x.n + ' × ' + esc(x.name) + '</a></li>'; }).join('') +
-    '<li><a href="' + VAP_BASKET + '" target="_blank" rel="noopener" data-bstep>Open the Vapable basket</a></li></ol>' +
+    (items.length ? '<li><a href="' + VAP_BASKET + '" target="_blank" rel="noopener" data-bstep>Open the Vapable basket</a></li>' : '') +
+    (nic ? '<li><a href="' + esc(ingById.nic.url) + '" target="_blank" rel="noopener" data-bstep>Open Nic Nic on Vape and Go (' + nic + ' × 10ml)</a></li>' : '') + '</ol>' +
     (miss.length ? '<p class="small" style="color:var(--low);margin:6px 0 0">Not added (no Vapable IDs yet): ' + esc(miss.join(', ')) + '. Set them under Vapable product IDs below.</p>' : '');
 }
 function idsText(id){ var c = vapIds(id); if (!c) return 'Not set'; return 'Product ' + c.pid + (c.vid ? ', option ' + c.vid : '') + (function(){ var a = c.attr || {}, o = []; for (var k in a) o.push(a[k]); return o.length ? ' (' + o.join(', ') + ')' : ''; })(); }
@@ -1207,8 +1213,8 @@ function paintShopList(root){
     var l = q('[data-shopline="' + g.shop + '"]'); if (l) l.textContent = gbp(g.sub + g.post);
   });
   var tt = q('[data-total]'); if (tt) tt.textContent = gbp(L.total);
-  var b = basketItems(L), st = q('[data-bsteps]'); if (st) st.innerHTML = basketStepsHtml(b.ok, b.miss);
-  var fb = q('[data-fill]'); if (fb) fb.disabled = !b.ok.length;
+  var b = basketItems(L), st = q('[data-bsteps]'); if (st) st.innerHTML = basketStepsHtml(b.ok, b.miss, nicOnList(L));
+  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.onOrder; });
   return L;
 }
 function setQty(id, v){
@@ -1223,17 +1229,84 @@ function setUnitPrice(id, v){
   state.prices[id] = p; return true;
 }
 function saveIds(id, o){ state.cartIds = state.cartIds || {}; state.cartIds[id] = {pid:Math.round(+o.pid), vid:Math.round(+o.vid) || 0, attr:o.attr || {}, url:o.url || ''}; }
-function startBasket(onBlocked){
-  var b = basketItems(shopList());
-  if (!b.ok.length) { toast('Nothing from Vapable to add yet.'); return; }
-  var ok = fillBasket(b.ok, function(i, n){
-    if (i === 'done') toast('Done. The Vapable tab now shows your basket. Log in and check out there yourself.');
-    else if (i === 'fail') toast('The Vapable tab was closed. Use the links under the button instead.');
-    else toast('Adding ' + i + ' of ' + n + ' to the Vapable basket…');
+/* ---------- order flow: Order now, "Ordered?" when you come back, then Delivered ---------- */
+var ASK_KEY = 'mixbench.orderAsk', askShowing = false;
+function onOrderQty(){ var q = {}; state.orders.forEach(function(o){ if (o.pending && !isDelivered(o)) for (var k in (o.qty || {})) q[k] = (q[k] || 0) + (+o.qty[k] || 0); }); return q; }
+function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.onOrder) n += r.n; }); return n; }
+/* exactly what you chose, per shop, at the moment you pressed Order now */
+function orderSnapshot(L){
+  var snap = {t:Date.now(), shops:{}};
+  L.shops.forEach(function(g){
+    var q = {}, any = false, sub = 0;
+    g.rows.forEach(function(r){ if (r.n > 0 && !r.onOrder) { q[r.id] = r.n; sub += r.cost; any = true; } });
+    if (any) snap.shops[g.shop] = {q:q, total:Math.round((g.sub + g.post) * 100) / 100};
   });
-  if (!ok) { var d = document.querySelector('details[data-bstepsbox]'); if (d) d.open = true; toast('A new tab was blocked. Tap each link under the button instead.'); if (onBlocked) onBlocked(); }
+  return snap;
 }
-function itemsOrdered(L){ var items = {}, rows = []; L.rows.forEach(function(r){ if (r.n > 0) { items[r.id] = r.n * r.size; rows.push(r); } }); return {items:items, rows:rows}; }
+function getAsk(){ try { var a = JSON.parse(localStorage.getItem(ASK_KEY) || 'null'); return (a && a.shops && Date.now() - a.t < 3 * DAY) ? a : null; } catch (e) { return null; } }
+function setAsk(a){ try { if (a) localStorage.setItem(ASK_KEY, JSON.stringify(a)); else localStorage.removeItem(ASK_KEY); } catch (e) {} }
+function snapLines(snap){
+  var out = [];
+  for (var shop in snap.shops){ var x = snap.shops[shop], parts = [];
+    for (var id in x.q) if (ingById[id]) parts.push(x.q[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabel(id)) + ')');
+    out.push({shop:shop, text:parts.join(', '), total:x.total}); }
+  return out;
+}
+function orderNow(onBlocked){
+  var L = shopList(), snap = orderSnapshot(L), b = basketItems(L), nic = nicOnList(L), blocked = false;
+  if (!Object.keys(snap.shops).length) { toast('Nothing to order yet. Type how many you want first.'); return; }
+  setAsk(snap);
+  if (b.ok.length) {
+    if (!fillBasket(b.ok, function(i, n){
+      if (i === 'done') { toast('Your Vapable basket is ready. Log in and check out there yourself.'); askIfOrdered(); }
+      else if (i === 'fail') toast('The Vapable tab was closed. Use the links under the button instead.');
+      else toast('Adding ' + i + ' of ' + n + ' to the Vapable basket…');
+    })) blocked = true;
+  }
+  if (nic) { var w = null; try { w = window.open(ingById.nic.url, 'mixbench-vapeandgo'); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} } else blocked = true; }
+  if (blocked) { var d = document.querySelector('details[data-bstepsbox]'); if (d) d.open = true; if (onBlocked) onBlocked(); toast('Your browser blocked a new tab. Tap the links under Order now instead.'); }
+}
+/* back in Mix Bench after Order now: ask whether the order went through */
+function askIfOrdered(){
+  var a = getAsk(); if (!a || askShowing || basketRun || document.hidden || Date.now() - a.t < 2500) return;
+  askShowing = true; showOrderedAsk(a, function(){ askShowing = false; });
+}
+function initOrderAsk(){
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) setTimeout(askIfOrdered, 400); });
+  window.addEventListener('focus', function(){ setTimeout(askIfOrdered, 400); });
+  setTimeout(askIfOrdered, 1200);
+}
+function saveOrders(snap, refs){
+  var made = [];
+  for (var shop in snap.shops){
+    var x = snap.shops[shop], items = {}, qty = {};
+    for (var id in x.q) if (ingById[id]) { qty[id] = x.q[id]; items[id] = x.q[id] * sizeOf(id); }
+    var o = {id:uid(), t:Date.now(), items:items, qty:qty, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true};
+    state.orders.push(o); made.push(o);
+  }
+  setAsk(null); return made;
+}
+/* Delivered: the order joins your stock and its items leave the shopping list. Undo puts both back. */
+function markDelivered(o){
+  var cart = state.cart = state.cart || {}; o.cleared = {};
+  for (var k in (o.qty || o.items || {})) if (Object.prototype.hasOwnProperty.call(cart, k)) { o.cleared[k] = cart[k]; delete cart[k]; }
+  o.status = 'delivered'; o.delivered = Date.now();
+}
+function undoDelivered(o){
+  var cart = state.cart = state.cart || {};
+  for (var k in (o.cleared || {})) if (!Object.prototype.hasOwnProperty.call(cart, k)) cart[k] = o.cleared[k];
+  delete o.cleared; delete o.delivered; o.status = 'ordered';
+}
+function setOrderStatus(o, st){
+  if (st === 'delivered') { if (!isDelivered(o)) markDelivered(o); return; }
+  if (isDelivered(o)) undoDelivered(o);
+  o.status = st;
+}
+function orderQtyText(o){
+  if (o.qty) { var parts = []; for (var id in o.qty) if (ingById[id]) parts.push(o.qty[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabel(id)) + ')'); return parts.join(', '); }
+  return orderItemsText(o);
+}
+function stepName(o){ return STEPS[stepIdx(o)][1]; }
 /* ---------- saving: this phone + your Claude account ---------- */
 var cloud = {ref:null, mode:'phone', saving:false, again:false, timer:null, db:null, base:''};
 function save(){
@@ -1667,7 +1740,8 @@ function checkMail(manual){
         if (!best || RANK[info.status] > RANK[best.status] || (RANK[info.status] === RANK[best.status] && when > best.when)) best = {status:info.status, when:when, id:m.id, rm:info.rm};
       });
       if (!best) return;
-      if (RANK[best.status] > RANK[o.status || 'ordered']) { o.status = best.status; changed = true; }
+      var to = (o.pending && best.status === 'delivered') ? 'out' : best.status;
+      if (RANK[to] > RANK[o.status || 'ordered']) { o.status = to; changed = true; }
       if (num && (!o.track || o.track.number !== num)) { o.track = {courier:'rm', number:num}; changed = true; }
       else if ((!o.track || !o.track.number) && (wayId || best.rm)) needNum.push({o:o, id:wayId || best.id});
     });
@@ -1698,7 +1772,7 @@ function bindParcels(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function(b){
     b.onclick = function(){
       var v = b.getAttribute('data-step').split(':'), o = state.orders.filter(function(x){ return x.id === v[0]; })[0]; if (!o) return;
-      o.status = v[1]; save(); var y = window.scrollY; render(); window.scrollTo(0, y);
+      setOrderStatus(o, v[1]); save(); var y = window.scrollY; render(); window.scrollTo(0, y);
       if (v[1] === 'delivered') toast('Marked as delivered.');
     };
   });
@@ -2040,7 +2114,8 @@ function confirmMade(onlyId){
 /* ---------- Shop ---------- */
 function shopRowHtml(r){
   var nicItem = r.id === 'nic' || r.id === 'nicvg', m = multiOf(r.id);
-  var tag = r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : ''));
+  var tag = r.onOrder ? '<span class="pill ordered">Ordered</span>' : (r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : '')));
+  if (r.onOrder) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + r.onOrder + ' \u00d7 ' + (nicItem ? '10ml shot' : sizeLabel(r.id)) + ' on order. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
   return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a>' +
     '<div class="have">' + esc(r.ing.shop) + ' · ' + (nicItem ? '10ml shot' : sizeLabel(r.id) + ' bottle') + '</div>' +
     '<div class="have num">' + (r.need > 0 ? 'Need ' + ml2(r.need) + ' ml, have ' : 'Have ') + ml2(r.have) + ' ml</div></div>' + tag + '</div>' +
@@ -2051,36 +2126,67 @@ function shopRowHtml(r){
     '<div class="have tip" data-tip="' + r.id + '">' + esc(r.tip) + '</div><div class="have" data-sugg="' + r.id + '">' + (r.typed && r.n !== r.sugg ? 'Suggested: ' + r.sugg : '') + '</div>' +
     (r.typed && !r.short && !r.low ? '<button class="linkbtn" data-unlist="' + r.id + '">Take off the list</button>' : '') + '</li>';
 }
+function ordersShopHtml(){
+  var list = state.orders.slice().sort(function(a, b){ return b.t - a.t; }), cur = list.filter(function(o){ return !isDelivered(o); }), prev = list.filter(isDelivered);
+  var h = '<h2>Current orders</h2>' + (cur.length ? cur.map(function(o){
+    return '<section class="card ordcard"><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><b>' + esc(orderSupplier(o)) + '</b><div class="small muted">Ordered ' + esc(when(o.t)) + '</div>' +
+      (o.ref ? '<div class="small"><b>Order no. ' + esc(o.ref) + '</b></div>' : '') + '</div><span class="pill ordered">' + esc(stepName(o)) + '</span></div>' +
+      '<div class="small" style="margin-top:6px">' + esc(orderQtyText(o)) + '</div>' + (o.total ? '<div class="small num" style="font-weight:700;margin-top:2px">Total ' + gbp(o.total) + '</div>' : '') +
+      '<button class="btn sel" data-delivered="' + o.id + '">Delivered</button>' +
+      '<div class="row" style="gap:14px;flex-wrap:wrap"><button class="linkbtn" data-ref="' + o.id + '">' + (o.ref ? 'Edit order number' : 'Add order number') + '</button><button class="linkbtn" style="color:var(--out)" data-ordcancel="' + o.id + '">Cancel this order</button></div></section>';
+  }).join('') : '<div class="card empty">No orders on the way.</div>');
+  if (prev.length) h += '<h2>Previous orders</h2><section class="card" style="padding-top:4px;padding-bottom:4px">' + prev.map(function(o){
+    var key = 'po:' + o.id;
+    return '<details class="prevord" data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '><summary class="prevsum"><span style="min-width:0"><b>' + esc(o.delivered ? 'Delivered ' + whenShort(o.delivered) : when(o.t)) + '</b><span class="small muted"> · ' + (o.ref ? 'Order no. ' + esc(o.ref) + ' · ' : '') + esc(orderSupplier(o)) + '</span></span></summary>' +
+      '<div class="small muted">Ordered ' + esc(when(o.t)) + (o.delivered ? ', delivered ' + esc(when(o.delivered)) : '') + '</div><div class="small" style="margin-top:4px">' + esc(orderQtyText(o)) + '</div>' + (o.total ? '<div class="small num" style="font-weight:700">Total ' + gbp(o.total) + '</div>' : '') +
+      '<button class="linkbtn" data-undeliver="' + o.id + '">Undo Delivered</button></details>';
+  }).join('') + '</section>';
+  return h;
+}
 function viewShop(){
-  var L = shopList(), sh = L.sh, b = basketItems(L);
+  var L = shopList(), sh = L.sh, b = basketItems(L), nic = nicOnList(L);
   var groups = L.shops.map(function(g){
     if (!g.rows.length) return '';
     var vap = g.shop === 'Vapable', dn = (DELIVERY[g.shop] || {}).note;
     return '<section class="card"><div class="shop-head"><h3>' + esc(g.shop) + (vap ? '' : ' <span class="small muted" style="font-weight:500">(Nic Nic shots)</span>') + '</h3><span class="num" style="font-weight:700" data-sub="' + esc(g.shop) + '">' + gbp(g.sub) + '</span></div>' +
       '<div class="small" style="font-weight:700;margin-bottom:4px;color:' + (g.st === 'free' ? 'var(--ok)' : 'var(--low)') + '" data-del="' + esc(g.shop) + '">' + esc(shopDelText(g)) + '</div>' +
       (dn ? '<div class="small muted" style="margin-bottom:4px">' + esc(dn) + '</div>' : '') +
-      '<ul class="list">' + g.rows.map(shopRowHtml).join('') + '</ul>' +
-      (vap ? '<button class="btn sel" data-fill' + (b.ok.length ? '' : ' disabled') + '>Fill my Vapable basket</button>' +
-        '<p class="muted small" style="margin:8px 0 0">Opens Vapable in a new tab and adds each item in turn, 1.5 seconds apart, then shows the basket. It never logs in or checks out: you do that yourself.</p>' +
-        '<details data-bstepsbox data-box="shop:steps"' + (openBox['shop:steps'] ? ' open' : '') + '><summary>Or add them one at a time</summary><div data-bsteps>' + basketStepsHtml(b.ok, b.miss) + '</div></details>'
-      : '<a class="btn secondary" style="text-decoration:none;text-align:center;margin-top:10px" href="' + esc(ingById.nic.url) + '" target="_blank" rel="noopener">Open the Nic Nic page on Vape and Go</a>') +
-      '</section>';
+      '<ul class="list">' + g.rows.map(shopRowHtml).join('') + '</ul></section>';
   }).join('');
   var spare = ING.filter(function(i){ return !L.rows.some(function(r){ return r.id === i.id; }); });
-  var add = spare.length ? '<label class="f" for="additem">Add something else to the list</label><select id="additem" class="field" data-additem><option value="">Choose an item</option>' + spare.map(function(i){ return '<option value="' + i.id + '">' + esc(i.name) + ' (' + esc(i.shop) + ')</option>'; }).join('') + '</select>' : '';
-  var anyTyped = L.rows.some(function(r){ return r.typed; }), anyBuy = L.rows.some(function(r){ return r.n > 0; });
+  var add = spare.length ? '<section class="card"><label class="f" for="additem" style="margin-top:0">Add something else to the list</label><select id="additem" class="field" data-additem><option value="">Choose an item</option>' + spare.map(function(i){ return '<option value="' + i.id + '">' + esc(i.name) + ' (' + esc(i.shop) + ')</option>'; }).join('') + '</select></section>' : '';
+  var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.onOrder; });
   var total = L.rows.length ? '<section class="card"><div class="total"><span>Total to order</span><span class="num" data-total>' + gbp(L.total) + '</span></div>' +
     '<div class="stat" style="margin-top:10px">' + L.shops.filter(function(g){ return g.rows.length; }).map(function(g){ return '<span class="muted">' + esc(g.shop) + ', with postage</span><span class="v num" data-shopline="' + esc(g.shop) + '">' + gbp(g.sub + g.post) + '</span>'; }).join('') + '</div>' +
-    (anyTyped ? '<button class="linkbtn" data-cartreset>Go back to the suggested amounts</button>' : '') + '</section>' : '';
+    (anyTyped ? '<button class="linkbtn" data-cartreset>Go back to the suggested amounts</button>' : '') +
+    '<button class="btn sel" data-ordernow' + (toOrder ? '' : ' disabled') + '>Order now</button>' +
+    '<p class="muted small" style="margin:8px 0 0">Opens Vapable and adds each item in turn, 1.5 seconds apart, then shows the basket' + (nic ? '. Also opens the Nic Nic page on Vape and Go' : '') + '. It never logs in or checks out: you do that yourself. Nothing is added to stock until you press Delivered.</p>' +
+    '<details data-bstepsbox data-box="shop:steps"' + (openBox['shop:steps'] ? ' open' : '') + '><summary>Or open them one at a time</summary><div data-bsteps>' + basketStepsHtml(b.ok, b.miss, nic) + '</div></details>' +
+    (toOrder ? '<button class="linkbtn" data-recordorder>Already ordered? Record it</button>' : '') + '</section>' : '';
   var cost = sh.planned ? '<section class="card"><div class="stat">' +
       '<span class="muted">Liquid planned</span><span class="v num">' + mlShort(sh.planned) + ' ml</span>' +
       '<span class="muted">Ingredient cost of it</span><span class="v num">' + gbp(sh.ingCost) + '</span>' +
       '<span class="muted">Cost per 10ml bottle</span><span class="v num">' + gbp(sh.ingCost / sh.planned * 10) + '</span></div></section>' : '';
   return '<h1>Shop</h1><p class="lede">What you’re low on or need for your plan. Type how many to order and the total keeps up.</p>' +
     (L.rows.length ? '' : '<div class="card empty">Nothing low or needed for your plan.</div>') +
-    groups + '<section class="card">' + add + '</section>' + total +
-    (anyBuy ? '<button class="btn secondary" data-ordered>I’ve ordered this (not made yet)</button><p class="muted small" style="text-align:center;margin-top:8px">Optional. Adds the order to stock now. Use “I’ve made these” on Plan once you’ve mixed.</p>' : '') +
-    cost + settingsHtml();
+    groups + add + total + ordersShopHtml() + cost + settingsHtml();
+}
+function orderNumberSheet(snap){
+  var lines = snapLines(snap);
+  sheet({title:'Order numbers', confirm:'Save order', cancel:'Back', body:'<ul class="list">' + lines.map(function(l){ return '<li><b>' + esc(l.shop) + '</b> <span class="num">' + gbp(l.total) + '</span><div class="small muted">' + esc(l.text) + '</div></li>'; }).join('') + '</ul>' +
+    lines.map(function(l, i){ return '<label class="f" for="on' + i + '">' + esc(l.shop) + ' order number</label><input id="on' + i + '" data-shop="' + esc(l.shop) + '" class="field" type="text" autocomplete="off" autocapitalize="characters" placeholder="Optional">'; }).join(''),
+    onConfirm:function(w){
+      var refs = {}; Array.prototype.forEach.call(w.querySelectorAll('input[data-shop]'), function(inp){ refs[inp.getAttribute('data-shop')] = inp.value; });
+      saveOrders(snap, refs); save(); current = 'shop'; render(); var c = document.querySelector('.ordcard'); if (c) c.scrollIntoView({block:'center'}); toast('Saved under Current orders. Press Delivered when it arrives.');
+    }});
+}
+function showOrderedAsk(a, done){
+  var lines = snapLines(a), L = shopList(), b = basketItems(L);
+  if (current !== 'shop') { current = 'shop'; render(); }
+  var w = sheet({title:'Ordered?', confirm:'Yes', cancel:'Not yet', body:'<ul class="list">' + lines.map(function(l){ return '<li><b>' + esc(l.shop) + '</b> <span class="num">' + gbp(l.total) + '</span><div class="small muted">' + esc(l.text) + '</div></li>'; }).join('') + '</ul>' +
+    '<details><summary>Didn’t all go into the basket? Open them one at a time</summary>' + basketStepsHtml(b.ok, b.miss, nicOnList(L)) + '</details>',
+    onConfirm:function(){ done(); setTimeout(function(){ orderNumberSheet(a); }, 0); }});
+  w.querySelector('[data-cancel]').addEventListener('click', function(){ setAsk(null); done(); toast('Your list is kept as it is.'); });
 }
 function bindShop(){
   bindSettings();
@@ -2094,21 +2200,29 @@ function bindShop(){
     var id = inp.getAttribute('data-lp');
     inp.addEventListener('change', function(){ if (rendering) return; if (!setUnitPrice(id, inp.value)) { inp.value = unitOf(id).toFixed(2); toast('Kept the previous price.'); return; } save(); paintShopList(root); toast('Saved.'); });
   });
-  Array.prototype.forEach.call(root.querySelectorAll('[data-unlist]'), function(b){ b.onclick = function(){ delete state.cart[b.getAttribute('data-unlist')]; save(); var y = window.scrollY; render(); window.scrollTo(0, y); }; });
+  var keepY = function(){ var y = window.scrollY; render(); window.scrollTo(0, y); };
+  Array.prototype.forEach.call(root.querySelectorAll('[data-unlist]'), function(b){ b.onclick = function(){ delete state.cart[b.getAttribute('data-unlist')]; save(); keepY(); }; });
   var ai = root.querySelector('[data-additem]');
-  if (ai) ai.onchange = function(){ if (!ai.value) return; state.cart = state.cart || {}; state.cart[ai.value] = 1; save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast(ingById[ai.value].name + ' added to the list.'); };
+  if (ai) ai.onchange = function(){ if (!ai.value) return; state.cart = state.cart || {}; state.cart[ai.value] = 1; save(); keepY(); toast(ingById[ai.value].name + ' added to the list.'); };
   var cr = root.querySelector('[data-cartreset]');
-  if (cr) cr.onclick = function(){ state.cart = {}; save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Back to the suggested amounts.'); };
-  var fb = root.querySelector('[data-fill]');
-  if (fb) fb.onclick = function(){ startBasket(function(){ openBox['shop:steps'] = true; }); };
-  var b = root.querySelector('[data-ordered]');
-  if (b) b.onclick = function(){
-    var o = itemsOrdered(shopList());
-    sheet({title:'Add this order to stock?', body:'<ul class="list">' + o.rows.map(function(r){ return '<li>' + esc(r.ing.name) + ' <b class="num">' + r.n + ' × ' + esc(sizeLabel(r.id)) + '</b></li>'; }).join('') + '</ul>' + '<label class="f" for="ord-no">Order number (optional)</label><input id="ord-no" class="field" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. Vapable 123456">', confirm:'Yes, add it', onConfirm:function(w){
-      var ref = (w.querySelector('#ord-no').value || '').trim().slice(0,80);
-      state.orders.push({id:uid(), t:Date.now(), items:o.items, ref:ref, status:'ordered', shops:shopsOf(o.rows)}); state.cart = {}; save(); render(); toast('Order added to stock.');
-    }});
-  };
+  if (cr) cr.onclick = function(){ state.cart = {}; save(); keepY(); toast('Back to the suggested amounts.'); };
+  var on = root.querySelector('[data-ordernow]');
+  if (on) on.onclick = function(){ orderNow(function(){ openBox['shop:steps'] = true; }); };
+  var ro = root.querySelector('[data-recordorder]');
+  if (ro) ro.onclick = function(){ var snap = orderSnapshot(shopList()); if (Object.keys(snap.shops).length) orderNumberSheet(snap); };
+  Array.prototype.forEach.call(root.querySelectorAll('[data-delivered]'), function(b){ b.onclick = function(){
+    var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-delivered'); })[0]; if (!o) return;
+    markDelivered(o); save(); keepY(); toast('Added to stock and moved to Previous orders.');
+  }; });
+  Array.prototype.forEach.call(root.querySelectorAll('[data-undeliver]'), function(b){ b.onclick = function(){
+    var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-undeliver'); })[0]; if (!o) return;
+    sheet({title:'Undo Delivered?', body:'<p class="muted" style="margin:0">' + (o.pending ? 'The items come off your stock again and ' : '') + 'the order goes back to Current orders.</p>', confirm:'Undo Delivered', onConfirm:function(){ undoDelivered(o); save(); keepY(); toast('Back in Current orders.'); }});
+  }; });
+  Array.prototype.forEach.call(root.querySelectorAll('[data-ordcancel]'), function(b){ b.onclick = function(){
+    var id = b.getAttribute('data-ordcancel');
+    sheet({title:'Cancel this order?', body:'<p class="muted" style="margin:0">It is removed from Current orders. Your shopping list stays as it is.</p>', confirm:'Cancel order', cancel:'Keep it', danger:true, onConfirm:function(){ state.orders = state.orders.filter(function(x){ return x.id !== id; }); save(); keepY(); toast('Order removed.'); }});
+  }; });
+  bindLogRefs(root);
 }
 
 /* ---------- Stock ---------- */
@@ -2192,13 +2306,19 @@ function ordersHtml(){
 }
 function bindLog(){
   Array.prototype.forEach.call(document.querySelectorAll('details[data-box]'), function(d){ d.addEventListener('toggle', function(){ openBox[d.getAttribute('data-box')] = d.open; }); });
-  Array.prototype.forEach.call(document.querySelectorAll('[data-ref]'), function(b){
+  bindLogRefs(document);
+  bindLogDels();
+}
+function bindLogRefs(root){
+  Array.prototype.forEach.call(root.querySelectorAll('[data-ref]'), function(b){
     b.onclick = function(){
       var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-ref'); })[0]; if (!o) return;
       sheet({title:'Order number', body:'<label class="f" for="ref-in">Order number</label><input id="ref-in" class="field" type="text" autocomplete="off" autocapitalize="characters" value="' + esc(o.ref || '') + '" placeholder="e.g. Vapable 123456">',
-        confirm:'Save', onConfirm:function(w){ o.ref = (w.querySelector('#ref-in').value || '').trim().slice(0,80); save(); render(); toast('Saved.'); }});
+        confirm:'Save', onConfirm:function(w){ o.ref = (w.querySelector('#ref-in').value || '').trim().slice(0,80); save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Saved.'); }});
     };
   });
+}
+function bindLogDels(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-del]'), function(b){
     b.onclick = function(){
       var parts = b.getAttribute('data-del').split(':'), key = {batch:'batches', order:'orders', adjust:'adjust'}[parts[0]];
@@ -2346,6 +2466,7 @@ render();
 initCloud();
 initSync();
 initSteepTools();
+initOrderAsk();
 startPwa();
 })();
 </script>
