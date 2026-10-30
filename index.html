@@ -185,7 +185,11 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .usage-row input{width:64px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center;font-size:16px;margin:0 4px}
 .freepost{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
 .freepost[hidden]{display:none}
-.tiplist li{padding:3px 0}
+.tiplist{list-style:none;padding:0;margin:6px 0 0}
+.tiplist li{padding:8px 0;border-top:1px solid var(--line)}
+.tipmain{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tipbtn{width:auto;flex:none;padding:8px 12px}
+.btn.tipall{margin-top:8px}
 .tipwhy{font-size:11px}
 .tipwhy.tipout{color:var(--out);font-weight:600}
 .freepost ul{margin:4px 0 0;padding-left:18px}
@@ -983,13 +987,14 @@ function reminderTick(){
 }
 function initSteepTools(){
   document.addEventListener('click', function(e){
-    var nb = e.target.closest && e.target.closest('[data-batchplan],[data-batchsnooze],[data-batchshop],[data-tipadd]');
+    var nb = e.target.closest && e.target.closest('[data-batchplan],[data-batchsnooze],[data-batchshop],[data-tipadd],[data-tipall]');
     if (nb) {
       if (nb.hasAttribute('data-batchplan')) { goPlan(); return; }
       if (nb.hasAttribute('data-batchsnooze')) { try { localStorage.setItem('mixbench.batchSnooze', londonDay(Date.now())); } catch (x) {} softRender(); return; }
       var redraw = function(){ if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); var y = window.scrollY; render(); window.scrollTo(0, y); };
       if (nb.hasAttribute('data-batchshop')) { var n = addShortToCart(); save(); redraw(); toast(n ? 'Added to the Shop list.' : 'Nothing to add.'); return; }
-      var tp = nb.getAttribute('data-tipadd').split(':'); addTip(nb.getAttribute('data-tipadd')); save(); redraw(); toast(tp[1] + ' \u00d7 ' + ingById[tp[0]].name + ' added to the list.'); return;
+      if (nb.hasAttribute('data-tipall')) { var items = nb.getAttribute('data-tipall').split(','); items.forEach(addTip); save(); redraw(); toast(items.length + ' items added to your basket.'); return; }
+      var tp = nb.getAttribute('data-tipadd').split(':'); addTip(nb.getAttribute('data-tipadd')); save(); redraw(); toast(tp[1] + ' \u00d7 ' + ingById[tp[0]].name + ' added to your basket.'); return;
     }
     var t = e.target.closest && e.target.closest('[data-tm],[data-shaken],[data-gosteep],[data-notify]'); if (!t || t.disabled) return;
     if (t.hasAttribute('data-shaken')) { markShaken(); save(); softRender(); toast('Shake recorded on every steeping batch.'); return; }
@@ -1581,8 +1586,12 @@ function freePostInner(L, g){
   /* under the free delivery amount: everything urgent and at least 3; over it: only what's still needed */
   var tips = under ? all.slice(0, Math.max(3, urgent.length)) : urgent;
   if (!tips.length && !under) return '';
-  return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small tiplist">' +
-    tips.map(function(t){ return '<li><div>' + t.n + ' × ' + esc(ingById[t.id].name) + ' <span class="num">' + gbp(t.cost) + '</span> <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></div><div class="muted tipwhy' + (t.cat === 'a' ? ' tipout' : '') + '">' + esc(t.why) + '</div></li>'; }).join('') + '</ul>' : '');
+  var total = 0; tips.forEach(function(t){ total += t.cost; });
+  return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') +
+    (tips.length > 1 ? '<button type="button" class="btn sm sel tipall" data-tipall="' + tips.map(function(t){ return t.id + ':' + t.n; }).join(',') + '">Add all ' + tips.length + ' to basket (' + gbp(total) + ')</button>' : '') +
+    (tips.length ? '<div class="small muted" style="margin-top:8px">You’ll need these for your next batches:</div><ul class="small tiplist">' +
+    tips.map(function(t){ return '<li><div class="tipmain"><div><b>' + t.n + ' × ' + esc(ingById[t.id].name) + '</b> <span class="num">' + gbp(t.cost) + '</span><div class="muted tipwhy' + (t.cat === 'a' ? ' tipout' : '') + '">' + esc(t.why) + '</div></div>' +
+      '<button type="button" class="btn sm sel tipbtn" data-tipadd="' + t.id + ':' + t.n + '" aria-label="Add ' + t.n + ' ' + esc(ingById[t.id].name) + ' to basket">Add to basket</button></div></li>'; }).join('') + '</ul>' : '');
 }
 function freePostHtml(L, g){ var inner = freePostInner(L, g); return '<div class="freepost" data-freepost' + (inner ? '' : ' hidden') + '>' + inner + '</div>'; }
 function addTip(v){ var p = String(v).split(':'), id = p[0], n = +p[1]; if (!ingById[id] || !(n > 0)) return; state.cart = state.cart || {}; var L = shopList(), r = L.rows.filter(function(x){ return x.id === id; })[0]; state.cart[id] = (r ? r.n : 0) + n; }
