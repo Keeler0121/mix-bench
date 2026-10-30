@@ -311,6 +311,10 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .bcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 8px 10px;text-align:center;cursor:pointer;min-width:0}
 .bcard:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .bottle{display:block;width:56px;height:110px;margin:0 auto 8px;overflow:visible}
+.bottle.big{width:76px;height:150px}
+.szsw{display:inline-flex;background:var(--soft);border-radius:8px;padding:2px;gap:2px;margin:4px 0 2px}
+.szsw button{border:0;background:none;padding:5px 12px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.szsw button.on{background:var(--sel);color:var(--sel-ink)}
 .liq{transition:transform 1s cubic-bezier(.25,.8,.25,1)}
 .slosh .wave{animation:slosh .9s linear 2}
 @keyframes slosh{from{transform:translateX(0)}to{transform:translateX(-30px)}}
@@ -380,19 +384,19 @@ function shopSubs(sh){
   return out;
 }
 var ING = [
-  {id:'straw', name:'Strawberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E0445A', warn:5, url:'https://vapable.com/product/strawberry-flavor-west-concentrate/', vap:{pid:311128, vid:311130, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'rasp', name:'Raspberry', shop:'Vapable', size:10, price:1.49, multi:1.37, col:'#C2185B', warn:5, url:'https://vapable.com/product/raspberry-flavour-concentrate-10ml/', vap:{pid:5812, vid:8277, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'blue', name:'Blueberry Wild TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4B5BD6', warn:5, url:'https://vapable.com/product/blueberry-wild-perfumers-apprentice-flavour-concentrate/', vap:{pid:21031, vid:21033, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'melon', name:'Watermelon TPA', shop:'Vapable', size:10, price:1.69, multi:1.65, col:'#FF6F86', warn:5, url:'https://vapable.com/product/watermelon-perfumers-apprentice-flavour-concentrate-copy/', vap:{pid:21166, vid:21167, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'sour', name:'TPA Sour', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#A8BD3A', warn:2, url:'https://vapable.com/product/sour-perfumers-apprentice-flavour-concentrate/', vap:{pid:8616, vid:8621, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'grape', name:'Grape Juice TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#7B3FA0', warn:5, url:'https://vapable.com/product/grape-juice-perfumers-apprentice-flavour-concentrate/', vap:{pid:19554, vid:19555, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'black', name:'Blackberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4A2A63', warn:5, url:'https://vapable.com/product/blackberry-natural-flavor-west-concentrate/', vap:{pid:67552, vid:67554, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'ws5', name:'WS-5 cooling agent', shop:'Vapable', size:10, price:1.27, multi:1.17, col:'#4FC3D6', warn:2, url:'https://vapable.com/product/cooling-agent-ws-5-flavour-concentrate/', vap:{pid:195690, vid:195691, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'sweet', name:'Sweetener', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E3BD3A', warn:2, note:'Perfumer\u2019s Apprentice (TPA) Sweetener', url:'https://vapable.com/product/sweetener-perfumers-apprentice-flavour-concentrate/', vap:{pid:61605, vid:61607, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'cherry', name:'Cherry Berry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#8E1B2E', warn:5, url:'https://vapable.com/product/cherry-berry-flavor-west-concentrate/', vap:{pid:24558, vid:24560, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'brasp', name:'Blue Raspberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#2E7BD6', warn:3, url:'https://vapable.com/product/blue-raspberry-flavor-west-concentrate-copy/?attribute_pa_bottle_size_filter=10ml', vap:{pid:311103, vid:311105, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'lemon', name:'Lemonade (Natural) FW', shop:'Vapable', size:10, price:1.89, col:'#E8D44D', warn:3, url:'https://vapable.com/product/lemonade-flavor-west-concentrate/', vap:{pid:18706, vid:18708, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
-  {id:'rainbow', name:'Rainbow Candy FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#C94BD1', warn:3, url:'https://vapable.com/product/rainbow-candy-flavor-west-concentrate/', vap:{pid:18714, vid:18716, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'straw', name:'Strawberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E0445A', warn:5, url:'https://vapable.com/product/strawberry-flavor-west-concentrate/', p100:{price:12.49, multi:11.49}, main:true, vap:{pid:311128, vid:311130, vid100:311131, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'rasp', name:'Raspberry', shop:'Vapable', size:10, price:1.49, multi:1.37, col:'#C2185B', warn:5, url:'https://vapable.com/product/raspberry-flavour-concentrate-10ml/', p100:{price:11.99, multi:11.03}, main:true, vap:{pid:5812, vid:8277, vid100:8278, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'blue', name:'Blueberry Wild TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4B5BD6', warn:5, url:'https://vapable.com/product/blueberry-wild-perfumers-apprentice-flavour-concentrate/', p100:{price:11.99, multi:11.03}, main:true, vap:{pid:21031, vid:21033, vid100:21032, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'melon', name:'Watermelon TPA', shop:'Vapable', size:10, price:1.79, multi:1.65, col:'#FF6F86', warn:5, url:'https://vapable.com/product/watermelon-perfumers-apprentice-flavour-concentrate-copy/', p100:{price:12.99, multi:11.95}, vap:{pid:21166, vid:21167, vid100:21168, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'sour', name:'TPA Sour', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#A8BD3A', warn:2, url:'https://vapable.com/product/sour-perfumers-apprentice-flavour-concentrate/', p100:{price:11.99, multi:11.03}, vap:{pid:8616, vid:8621, vid100:8622, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'grape', name:'Grape Juice TPA', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#7B3FA0', warn:5, url:'https://vapable.com/product/grape-juice-perfumers-apprentice-flavour-concentrate/', p100:{price:11.99, multi:11.03}, vap:{pid:19554, vid:19555, vid100:19556, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'black', name:'Blackberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#4A2A63', warn:5, url:'https://vapable.com/product/blackberry-natural-flavor-west-concentrate/', p100:{price:12.49, multi:11.49}, vap:{pid:67552, vid:67554, vid100:67553, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'ws5', name:'WS-5 cooling agent', shop:'Vapable', size:10, price:1.27, multi:1.17, col:'#4FC3D6', warn:2, url:'https://vapable.com/product/cooling-agent-ws-5-flavour-concentrate/', p100:{price:9.74, multi:8.96}, vap:{pid:195690, vid:195691, vid100:195692, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'sweet', name:'Sweetener', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#E3BD3A', warn:2, note:'Perfumer\u2019s Apprentice (TPA) Sweetener', url:'https://vapable.com/product/sweetener-perfumers-apprentice-flavour-concentrate/', p100:{price:11.99, multi:11.03}, vap:{pid:61605, vid:61607, vid100:61606, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'cherry', name:'Cherry Berry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#8E1B2E', warn:5, url:'https://vapable.com/product/cherry-berry-flavor-west-concentrate/', p100:{price:12.49, multi:11.49}, main:true, vap:{pid:24558, vid:24560, vid100:24559, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'brasp', name:'Blue Raspberry FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#2E7BD6', warn:3, url:'https://vapable.com/product/blue-raspberry-flavor-west-concentrate-copy/?attribute_pa_bottle_size_filter=10ml', p100:{price:12.49, multi:11.49}, vap:{pid:311103, vid:311105, vid100:311106, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'lemon', name:'Lemonade (Natural) FW', shop:'Vapable', size:10, price:1.89, col:'#E8D44D', warn:3, url:'https://vapable.com/product/lemonade-flavor-west-concentrate/', p100:{price:12.99, multi:11.95}, vap:{pid:18706, vid:18708, vid100:18707, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
+  {id:'rainbow', name:'Rainbow Candy FW', shop:'Vapable', size:10, price:1.69, multi:1.55, col:'#C94BD1', warn:3, url:'https://vapable.com/product/rainbow-candy-flavor-west-concentrate/', p100:{price:12.49, multi:11.49}, vap:{pid:18714, vid:18716, vid100:18715, attr:{attribute_pa_bottle_size_filter:'10ml'}}},
   {id:'pg', name:'PG base', shop:'Vapable', size:1000, price:9.49, col:'#9FB0BD', warn:50, url:'https://vapable.com/product/propylene-glycol-1-litre/?attribute_bottle-size=1000ml', vap:{pid:14929, vid:431030, attr:{'attribute_bottle-size':'1 Litre'}}},
   {id:'vg', name:'VG base', shop:'Vapable', size:1000, price:6.99, col:'#CBD6DF', warn:50, url:'https://vapable.com/product/vegetable-glycerine-1-litre/', vap:{pid:14925, vid:431057, attr:{'attribute_bottle-size':'1 Litre'}}},
   {id:'nic', name:'Nic Nic 20mg (50 PG / 50 VG)', shop:'Vape and Go', size:10, price:0.99, packs:[[1,0.99]], col:'#D9913A', warn:50, note:'Nic Nic 20mg 50VG salt booster, not the Ice one', url:'https://www.vapeandgo.co.uk/product/nic-20mg-50vg-10ml-nicotine-salt-booster/'},
@@ -448,7 +452,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}};
 }
 function migrate(s){
   var b = blank();
@@ -467,7 +471,7 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
   if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
@@ -501,9 +505,19 @@ try { var raw = localStorage.getItem(LS_KEY); if (raw) state = migrate(JSON.pars
 
 /* ---------- maths ---------- */
 function r4(x){ return Math.round(x*10000)/10000; }
-function sizeOf(id){ return ingById[id].size; }
-function priceOf(id){ var p=state.prices[id]; return (p && p.price!==undefined && +p.price>=0) ? +p.price : ingById[id].price; }
-function multiOf(id){ var p=state.prices[id]; if (p && p.multi!==undefined) return +p.multi>0 ? +p.multi : 0; return ingById[id].multi || 0; }
+/* Flavours come in 10ml and 100ml (never bigger). 'sizes' holds the one you've picked; Strawberry, Raspberry, Blueberry Wild and Cherry Berry default to 100ml, everything else to 10ml. */
+function hasSizes(id){ return !!ingById[id].p100; }
+function sizeOf(id){ var i = ingById[id]; if (!i.p100) return i.size; var v = state.sizes && +state.sizes[id]; return (v === 10 || v === 100) ? v : (i.main ? 100 : i.size); }
+/* prices are kept per size: 'straw' is the 10ml bottle, 'straw@100' the 100ml one */
+function keyFor(id, size){ return (ingById[id].p100 && size === 100) ? id + '@100' : id; }
+function sizeKey(id){ return keyFor(id, sizeOf(id)); }
+function keyParts(key){ var a = String(key).split('@'); return {id:a[0], size:a[1] ? +a[1] : ingById[a[0]].size}; }
+function defaultsOf(key){ var k = keyParts(key), i = ingById[k.id]; return (k.size === 100 && i.p100) ? i.p100 : i; }
+function priceOfKey(key){ var p = state.prices[key]; return (p && p.price !== undefined && +p.price >= 0) ? +p.price : defaultsOf(key).price; }
+function multiOfKey(key){ var p = state.prices[key]; if (p && p.multi !== undefined) return +p.multi > 0 ? +p.multi : 0; return defaultsOf(key).multi || 0; }
+function priceOf(id){ return priceOfKey(sizeKey(id)); }
+function multiOf(id){ return multiOfKey(sizeKey(id)); }
+function sizeLabelAt(id, size){ return size >= 1000 ? mlShort(size / 1000) + ' litre' : mlShort(size) + 'ml'; }
 /* cheapest way to buy n or more standard bottles, using the 3+ price when it applies */
 function cheapestSmall(id, rest){
   var s = sizeOf(id), n0 = rest>0 ? Math.ceil(rest/s - 1e-9) : 0, m = multiOf(id), sp = priceOf(id), best = null;
@@ -711,7 +725,7 @@ function batchDetailHtml(b){
 
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
-var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes'];
 var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
@@ -870,12 +884,14 @@ function syncTimesHtml(){
 function readyBatches(){ return steeping().filter(function(b){ return Date.now() >= readyAt(b); }); }
 /* stock bar: what's left out of everything you've had of it (bought, plus extras you added). Spills count as used, so they lower what's left, not what you had. Same for every item. */
 function extrasOf(id){ var t = 0; state.adjust.forEach(function(a){ if (a.ing === id && +a.ml > 0) t += +a.ml; }); return t; }
+/* you've had a 100ml bottle of it delivered: show the bigger bottle */
+function hasBigStock(id){ return hasSizes(id) && state.orders.some(function(o){ return isDelivered(o) && !o.cancelled && (o.sz || {})[id] === 100 && (o.items || {})[id] > 0; }); }
 function stockBar(id, st){
   var left = Math.max(0, st.left[id]), full = st.ordered[id] + extrasOf(id);
   var none = !st.ordered[id] && !st.used[id] && !st.adj[id];
   var pct = full > 0 ? Math.max(0, Math.min(100, left / full * 100)) : 0, oo = onOrderMl(id);
   var pctOn = oo > 0 ? Math.max(pct, Math.min(100, (left + oo) / Math.max(full, left + oo) * 100)) : pct;
-  return {left:left, pct:pct, oo:oo, pctOn:pctOn, none:none && !oo, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
+  return {left:left, pct:pct, oo:oo, pctOn:pctOn, big:hasBigStock(id), none:none && !oo, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
     amt:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml'),
     text:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml') + ' \u00b7 ' + Math.round(pct) + '% left'};
 }
@@ -1111,7 +1127,7 @@ function stepFx(root, instant){
 var BOTTLE_H = 76;
 function bottleSvg(id, s){
   var lvl = (BOTTLE_H * (1 - s.pct / 100)).toFixed(1), c = 'b' + id.replace(/[^a-z0-9]/gi, '');
-  return '<svg class="bottle" viewBox="0 0 60 118" aria-hidden="true" focusable="false"><defs><clipPath id="' + c + '"><rect x="11.5" y="35.5" width="37" height="75" rx="8.5"/></clipPath></defs>' +
+  return '<svg class="bottle' + (s.big ? ' big' : '') + '" viewBox="0 0 60 118" aria-hidden="true" focusable="false"><defs><clipPath id="' + c + '"><rect x="11.5" y="35.5" width="37" height="75" rx="8.5"/></clipPath></defs>' +
     '<rect x="25" y="1" width="10" height="15" rx="3" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<path d="M20 16h20l3 10H17z" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<rect x="15" y="25" width="30" height="9" rx="2.5" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
@@ -1124,7 +1140,7 @@ function bottleInnerHtml(id, s){
   var name = ingById[id].name;
   return bottleSvg(id, s) + '<div class="bname">' + esc(name) + '</div>' +
     '<div class="bamt num"' + (s.none ? ' style="color:var(--muted)"' : '') + '>' + esc(s.amt) + (s.out ? '<span class="warn">Out</span>' : (s.low ? '<span class="warn">Low</span>' : '')) + '</div>' +
-    (s.none ? '' : '<div class="bpct num">' + Math.round(s.pct) + '% left</div>') +
+    (s.none ? '' : '<div class="bpct num">' + Math.round(s.pct) + '% left</div>') + (s.big ? '<div class="bpct">100ml bottle</div>' : '') +
     (s.oo > 0 ? '<div class="bpct num" style="color:var(--sel)">+' + esc(amtText(id, s.oo)) + ' on order</div>' : '');
 }
 /* fill up from empty when Stock opens; afterwards changes slide from the old level */
@@ -1155,7 +1171,14 @@ function logoSvg(cls){
     '<text x="50" y="61" text-anchor="middle" dominant-baseline="central" font-size="24" font-weight="800" fill="#0A0A0B" font-family="\'DejaVu Sans\',Arial,sans-serif">MB</text></svg>';
 }
 /* Vapable's add-to-cart IDs: your own if you have set them, otherwise the app's (read from each item's saved link) */
-function vapIds(id){ var o = (state.cartIds || {})[id]; return (o && +o.pid > 0) ? o : (ingById[id].vap || null); }
+function vapIds(id){
+  var o = (state.cartIds || {})[id], d = ingById[id].vap; if (!d) return null;
+  var sz = sizeOf(id);
+  /* IDs you set yourself belong to the standard bottle; the 100ml option uses the app's own */
+  if (o && +o.pid > 0 && sz === ingById[id].size) return o;
+  if (ingById[id].p100 && sz === 100) { var a = {}; for (var k in d.attr) a[k] = d.attr[k]; a.attribute_pa_bottle_size_filter = '100ml'; return {pid:d.pid, vid:d.vid100, attr:a}; }
+  return d;
+}
 function vapLink(id, n){
   var c = vapIds(id); if (!c || !(+c.pid > 0) || !(n > 0)) return '';
   var q = 'add-to-cart=' + (+c.pid) + (+c.vid > 0 ? '&variation_id=' + (+c.vid) : ''), a = c.attr || {};
@@ -1198,17 +1221,17 @@ function packTip(id, n){
 }
 /* what to buy: anything short for the plan or running low, plus anything you added. The number is yours once you type it. */
 function shopList(){
-  var sh = shopping(), st = stockNow(), cart = state.cart || {}, rows = [], onOrder = onOrderQty();
+  var sh = shopping(), st = stockNow(), cart = state.cart || {}, rows = [], onOrder = onOrderQty(), onOrderMls = onOrderMlMap();
   sh.rows.forEach(function(r){
     var id = r.ing.id, size = sizeOf(id), short = r4(Math.max(0, r.need - r.have)), s = status(id, st)[1], low = s === 'low' || s === 'out';
-    var oo = onOrder[id] || 0, ooMl = oo * size, shortLeft = r4(Math.max(0, short - ooMl)), lowLeft = low && Math.max(0, st.left[id]) + ooMl < ingById[id].warn;
+    var oo = onOrder[id] || 0, ooMl = onOrderMls[id] || 0, shortLeft = r4(Math.max(0, short - ooMl)), lowLeft = low && Math.max(0, st.left[id]) + ooMl < ingById[id].warn;
     /* what's already on order counts towards what you need; suggest only the rest */
     var sugg = shortLeft > 0 ? Math.ceil(shortLeft / size - 1e-9) : (lowLeft ? Math.max(1, Math.ceil((ingById[id].warn - Math.max(0, st.left[id]) - ooMl) / size - 1e-9)) : 0);
     var typed = Object.prototype.hasOwnProperty.call(cart, id);
     if (!short && !low && !typed && !oo) return;
     var n = typed ? Math.max(0, Math.round(+cart[id] || 0)) : sugg;
     var oos = isOos(id), pb = multiPack(id) && n > 0 ? packBuy(id, n * size) : null;
-    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, buy:pb ? pb.shots : n, pb:pb, typed:typed, onOrder:oo, oos:oos, unit:unitOf(id), cost:oos ? 0 : lineCost(id, n), tip:oos ? '' : packTip(id, n)});
+    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, buy:pb ? pb.shots : n, pb:pb, typed:typed, onOrder:oo, onOrderText:oo ? onOrderText(id) : '', oos:oos, unit:unitOf(id), cost:oos ? 0 : lineCost(id, n), tip:oos ? '' : packTip(id, n)});
   });
   var total = 0;
   var shops = SHOPS.map(function(shop){
@@ -1222,14 +1245,16 @@ function shopList(){
   return {rows:rows, shops:shops, total:Math.round(total * 100) / 100, sh:sh};
 }
 /* items the shop has run out of (you mark them, or the laptop reads it from the product page): kept on the list, left out of the order */
-function isOos(id){ return !!(state.oos && state.oos[id]); }
-function setOos(id, on){ state.oos = state.oos || {}; if (on) state.oos[id] = true; else delete state.oos[id]; }
+function isOosKey(key){ return !!(state.oos && state.oos[key]); }
+function setOosKey(key, on){ state.oos = state.oos || {}; if (on) state.oos[key] = true; else delete state.oos[key]; }
+function isOos(id){ return isOosKey(sizeKey(id)); }
+function setOos(id, on){ setOosKey(sizeKey(id), on); }
 function oosTag(r){ return r.oos ? '<span class="pill oos">Out of stock</span>' : ''; }
 /* sale or clearance price read from Vapable by the laptop's Update prices */
-function wasText(id){ var p = state.prices[id]; return (p && +p.was > priceOf(id) + 0.004) ? 'On sale, was ' + gbp(+p.was) : ''; }
+function wasText(id){ var p = state.prices[sizeKey(id)]; return (p && +p.was > priceOf(id) + 0.004) ? 'On sale, was ' + gbp(+p.was) : ''; }
 function pricesUpdatedText(){ var u = state.pricesUpdated; return (u && u.t) ? 'Prices last updated from Vapable ' + when(u.t) + '.' : 'Prices haven\u2019t been updated from Vapable yet.'; }
 function listShop(L, shop){ return L.shops.filter(function(g){ return g.shop === shop; })[0]; }
-function sizeLabel(id){ var s = sizeOf(id); return s >= 1000 ? mlShort(s / 1000) + ' litre' : mlShort(s) + 'ml'; }
+function sizeLabel(id){ return sizeLabelAt(id, sizeOf(id)); }
 function shopDelText(g){
   if (g.st === 'free') return 'Free delivery (over ' + gbp(g.d.free) + ')';
   if (g.st === 'fee') return 'Includes ' + gbp(g.post) + ' postage. Add ' + gbp(g.d.free - g.sub) + ' more for free delivery.';
@@ -1242,7 +1267,7 @@ function basketItems(L){
   (g ? g.rows : []).forEach(function(r){
     if (!(r.n > 0) || r.oos) return;
     if (r.pb && packLinks(r.id, r.pb)) { packLinks(r.id, r.pb).forEach(function(x){ ok.push(x); }); return; }
-    var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
+    var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name + (hasSizes(r.id) ? ' (' + sizeLabel(r.id) + ')' : ''), link:link}); else miss.push(r.ing.name); });
   return {ok:ok, miss:miss};
 }
 /* one Vapable tab, stepped through each add-to-cart link 1.5 seconds apart, then the basket. You log in and check out yourself. */
@@ -1277,7 +1302,11 @@ function basketStepsHtml(items, miss, nic){
     (nic ? '<li><a href="' + esc(ingById.nic.url) + '" target="_blank" rel="noopener" data-bstep>Open Nic Nic on Vape and Go (' + nic + ' × 10ml)</a></li>' : '') + '</ol>' +
     (miss.length ? '<p class="small" style="color:var(--low);margin:6px 0 0">Not added (no Vapable IDs yet): ' + esc(miss.join(', ')) + '. Set them under Vapable product IDs below.</p>' : '');
 }
-function idsText(id){ var c = vapIds(id); if (!c) return 'Not set'; return 'Product ' + c.pid + (c.vid ? ', option ' + c.vid : '') + (function(){ var a = c.attr || {}, o = []; for (var k in a) o.push(a[k]); return o.length ? ' (' + o.join(', ') + ')' : ''; })(); }
+function idsText(id){
+  var c = (state.cartIds || {})[id], d = ingById[id].vap; c = (c && +c.pid > 0) ? c : d; if (!c) return 'Not set';
+  var a = c.attr || {}, o = []; for (var k in a) o.push(a[k]);
+  return 'Product ' + c.pid + (c.vid ? ', option ' + c.vid : '') + (o.length ? ' (' + o.join(', ') + ')' : '') + (d && d.vid100 ? ', 100ml option ' + d.vid100 : '');
+}
 
 /* keep the totals in step while you type, without redrawing the page (so the box you are typing in stays put) */
 function paintShopList(root){
@@ -1300,6 +1329,14 @@ function paintShopList(root){
   var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.oos; });
   return L;
 }
+/* pick 10ml or 100ml for a flavour: what you typed is converted so the same amount of liquid stays on the list */
+function setSize(id, size){
+  if (!hasSizes(id) || (size !== 10 && size !== 100)) return false;
+  var old = sizeOf(id); if (old === size) return false;
+  var cart = state.cart || {};
+  if (Object.prototype.hasOwnProperty.call(cart, id) && +cart[id] > 0) cart[id] = Math.min(999, Math.max(1, Math.ceil(cart[id] * old / size - 1e-9)));
+  state.sizes = state.sizes || {}; state.sizes[id] = size; return true;
+}
 function setQty(id, v){
   v = String(v).trim(); var n = Math.round(+v);
   if (v === '' || !isFinite(n) || n < 0) return false;
@@ -1307,22 +1344,30 @@ function setQty(id, v){
 }
 function setUnitPrice(id, v){
   v = +v; if (!(v > 0)) return false;
-  var p = state.prices[id] || {};
+  var key = sizeKey(id), p = state.prices[key] || {};
   if (packsOf(id)) { p.packs = p.packs || {}; p.packs[1] = v; } else p.price = v;
-  state.prices[id] = p; return true;
+  state.prices[key] = p; return true;
 }
 function saveIds(id, o){ state.cartIds = state.cartIds || {}; state.cartIds[id] = {pid:Math.round(+o.pid), vid:Math.round(+o.vid) || 0, attr:o.attr || {}, url:o.url || ''}; }
 /* ---------- order flow: Order now, "Ordered?" when you come back, then Delivered ---------- */
 var ASK_KEY = 'mixbench.orderAsk', askShowing = false;
+function onOrderMlMap(){ var q = {}; state.orders.forEach(function(o){ if (o.pending && !isDelivered(o)) for (var k in (o.items || {})) q[k] = (q[k] || 0) + (+o.items[k] || 0); }); return q; }
+/* what's on order for an item, e.g. "1 \u00d7 100ml" (or just the count for items with one size) */
+function onOrderText(id){
+  var by = {}, n = 0;
+  state.orders.forEach(function(o){ if (o.pending && !isDelivered(o) && o.qty && o.qty[id] > 0) { var sz = (o.sz || {})[id] || ingById[id].size; by[sz] = (by[sz] || 0) + (+o.qty[id]); n += +o.qty[id]; } });
+  if (!hasSizes(id)) return String(n);
+  return Object.keys(by).map(Number).sort(function(a, b){ return b - a; }).map(function(sz){ return by[sz] + ' \u00d7 ' + sizeLabelAt(id, sz); }).join(' + ');
+}
 function onOrderQty(){ var q = {}; state.orders.forEach(function(o){ if (o.pending && !isDelivered(o)) for (var k in (o.qty || {})) q[k] = (q[k] || 0) + (+o.qty[k] || 0); }); return q; }
 function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.oos) n += r.n; }); return n; }
 /* exactly what you chose, per shop, at the moment you pressed Order now */
 function orderSnapshot(L){
   var snap = {t:Date.now(), shops:{}};
   L.shops.forEach(function(g){
-    var q = {}, any = false, sub = 0;
-    g.rows.forEach(function(r){ if (r.n > 0 && !r.oos) { q[r.id] = r.buy; sub += r.cost; any = true; } });
-    if (any) snap.shops[g.shop] = {q:q, total:Math.round((g.sub + g.post) * 100) / 100};
+    var q = {}, sz = {}, any = false, sub = 0;
+    g.rows.forEach(function(r){ if (r.n > 0 && !r.oos) { q[r.id] = r.buy; sz[r.id] = r.size; sub += r.cost; any = true; } });
+    if (any) snap.shops[g.shop] = {q:q, sz:sz, total:Math.round((g.sub + g.post) * 100) / 100};
   });
   return snap;
 }
@@ -1331,7 +1376,7 @@ function setAsk(a){ try { if (a) localStorage.setItem(ASK_KEY, JSON.stringify(a)
 function snapLines(snap){
   var out = [];
   for (var shop in snap.shops){ var x = snap.shops[shop], parts = [];
-    for (var id in x.q) if (ingById[id]) parts.push(x.q[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabel(id)) + ')');
+    for (var id in x.q) if (ingById[id]) parts.push(x.q[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabelAt(id, (x.sz || {})[id] || sizeOf(id))) + ')');
     out.push({shop:shop, text:parts.join(', '), total:x.total}); }
   return out;
 }
@@ -1362,9 +1407,9 @@ function initOrderAsk(){
 function saveOrders(snap, refs){
   var made = [];
   for (var shop in snap.shops){
-    var x = snap.shops[shop], items = {}, qty = {};
-    for (var id in x.q) if (ingById[id]) { qty[id] = x.q[id]; items[id] = x.q[id] * sizeOf(id); }
-    var o = {id:uid(), t:Date.now(), items:items, qty:qty, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true}, cart = state.cart || {};
+    var x = snap.shops[shop], items = {}, qty = {}, sz = {};
+    for (var id in x.q) if (ingById[id]) { var bs = (x.sz || {})[id] || sizeOf(id); qty[id] = x.q[id]; sz[id] = bs; items[id] = x.q[id] * bs; }
+    var o = {id:uid(), t:Date.now(), items:items, qty:qty, sz:sz, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true}, cart = state.cart || {};
     /* the typed amounts are now on order, so they leave the list (and come back if the order is cancelled) */
     o.cartWas = {}; for (var c in qty) if (Object.prototype.hasOwnProperty.call(cart, c)) { o.cartWas[c] = cart[c]; delete cart[c]; }
     state.orders.push(o); made.push(o);
@@ -1399,7 +1444,7 @@ function setOrderStatus(o, st){
   o.status = st;
 }
 function orderQtyText(o){
-  if (o.qty) { var parts = []; for (var id in o.qty) if (ingById[id]) parts.push(o.qty[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabel(id)) + ')'); return parts.join(', '); }
+  if (o.qty) { var parts = []; for (var id in o.qty) if (ingById[id]) parts.push(o.qty[id] + ' × ' + ingById[id].name + ' (' + (id === 'nic' || id === 'nicvg' ? '10ml shot' : sizeLabelAt(id, (o.sz || {})[id] || ingById[id].size)) + ')'); return parts.join(', '); }
   return orderItemsText(o);
 }
 function stepName(o){ return STEPS[stepIdx(o)][1]; }
@@ -1485,8 +1530,8 @@ function needFor(parts, times){
 var DELIVERY_DAYS = 3;
 function nextBatchStock(){
   var nbp = nextBatchParts(); if (!nbp.list.length) return null;
-  var need = needFor(nbp.list), st = stockNow(), oo = onOrderQty(), short = [];
-  for (var k in need) { var have = Math.max(0, st.left[k]) + (oo[k] || 0) * sizeOf(k), lack = r4(need[k] - have); if (lack > 0.0001) short.push({id:k, need:need[k], have:have, lack:lack, bottles:Math.ceil(lack / sizeOf(k) - 1e-9)}); }
+  var need = needFor(nbp.list), st = stockNow(), oo = onOrderMlMap(), short = [];
+  for (var k in need) { var have = Math.max(0, st.left[k]) + (oo[k] || 0), lack = r4(need[k] - have); if (lack > 0.0001) short.push({id:k, need:need[k], have:have, lack:lack, bottles:Math.ceil(lack / sizeOf(k) - 1e-9)}); }
   var nb = nextBatch();
   return {from:nbp.from, list:nbp.list, short:short, orderBy:nb.none ? 0 : nb.due - DELIVERY_DAYS * DAY};
 }
@@ -1518,7 +1563,7 @@ function nicSafetyHtml(rid){
 }
 function recipeStars(rid){ var b = lastTaste(rid); return b && b.taste && b.taste.stars ? starsText(b.taste.stars) : ''; }
 /* on its way: shown as a faint fill above what you have */
-function onOrderMl(id){ return (onOrderQty()[id] || 0) * sizeOf(id); }
+function onOrderMl(id){ return onOrderMlMap()[id] || 0; }
 /* the next-batch reminder banner: on or after the due date, until you dismiss it for the day */
 function batchDueNow(){ var nb = nextBatch(); return !nb.none && Date.now() >= nb.due; }
 function batchBannerHtml(){
@@ -1563,7 +1608,7 @@ function recipeUse(){
    d. anything else low in Stock
    Vapable only (never Nic Nic shots from Vape and Go), and nothing already on the list or on order. */
 function freePostTips(L, g){
-  var st = stockNow(), oo = onOrderQty(), taken = {}, out = [], seen = {}, use = recipeUse();
+  var st = stockNow(), oo = onOrderMlMap(), taken = {}, out = [], seen = {}, use = recipeUse();
   L.rows.forEach(function(r){ if (r.n > 0 && !r.oos) taken[r.id] = 1; });
   var ok = function(k){ var i = ingById[k]; return i && i.shop === 'Vapable' && !taken[k] && !(oo[k] > 0) && !seen[k]; };
   var left = function(k){ return Math.max(0, st.left[k] || 0); };
@@ -1592,7 +1637,7 @@ function freePostInner(L, g){
   return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') +
     (tips.length > 1 ? '<button type="button" class="btn sm sel tipall" data-tipall="' + tips.map(function(t){ return t.id + ':' + t.n; }).join(',') + '">Add all ' + tips.length + ' to basket (' + gbp(total) + ')</button>' : '') +
     (tips.length ? '<div class="small muted" style="margin-top:8px">You’ll need these for your next batches:</div><ul class="small tiplist">' +
-    tips.map(function(t){ return '<li><div class="tipmain"><div><b>' + t.n + ' × ' + esc(ingById[t.id].name) + '</b> <span class="num">' + gbp(t.cost) + '</span><div class="muted tipwhy' + (t.cat === 'a' ? ' tipout' : '') + '">' + esc(t.why) + '</div></div>' +
+    tips.map(function(t){ return '<li><div class="tipmain"><div><b>' + t.n + ' × ' + esc(ingById[t.id].name) + (hasSizes(t.id) ? ' (' + sizeLabel(t.id) + ')' : '') + '</b> <span class="num">' + gbp(t.cost) + '</span><div class="muted tipwhy' + (t.cat === 'a' ? ' tipout' : '') + '">' + esc(t.why) + '</div></div>' +
       '<button type="button" class="btn sm sel tipbtn" data-tipadd="' + t.id + ':' + t.n + '" aria-label="Add ' + t.n + ' ' + esc(ingById[t.id].name) + ' to basket">Add to basket</button></div></li>'; }).join('') + '</ul>' : '');
 }
 function freePostHtml(L, g){ var inner = freePostInner(L, g); return '<div class="freepost" data-freepost' + (inner ? '' : ' hidden') + '>' + inner + '</div>'; }
@@ -2418,12 +2463,12 @@ function confirmMade(onlyId){
 /* ---------- Shop ---------- */
 function shopRowHtml(r){
   var nicItem = r.id === 'nic' || r.id === 'nicvg', m = multiOf(r.id);
-  var tag = r.onOrder ? '<span class="pill ordered">Ordered ' + r.onOrder + '</span>' : (r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : '')));
-  if (r.onOrder && !(r.n > 0) && !r.typed) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + r.onOrder + ' \u00d7 ' + (nicItem ? '10ml shot' : sizeLabel(r.id)) + ' on order, which covers what you need. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
+  var tag = r.onOrder ? '<span class="pill ordered">Ordered ' + esc(r.onOrderText) + '</span>' : (r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : '')));
+  if (r.onOrder && !(r.n > 0) && !r.typed) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + esc(r.onOrderText) + (nicItem ? ' 10ml shot' : '') + ' on order, which covers what you need. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
   return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a>' +
-    '<div class="have">' + esc(r.ing.shop) + ' · ' + (nicItem ? '10ml shot' : sizeLabel(r.id) + ' bottle') + '</div>' +
+    '<div class="have">' + esc(r.ing.shop) + (hasSizes(r.id) ? '' : ' · ' + (nicItem ? '10ml shot' : sizeLabel(r.id) + ' bottle')) + '</div>' + (hasSizes(r.id) ? '<div class="szsw" role="group" aria-label="Bottle size for ' + esc(r.ing.name) + '"><button type="button" data-sz="' + r.id + ':10" class="' + (r.size === 10 ? 'on' : '') + '" aria-pressed="' + (r.size === 10) + '">10ml</button><button type="button" data-sz="' + r.id + ':100" class="' + (r.size === 100 ? 'on' : '') + '" aria-pressed="' + (r.size === 100) + '">100ml</button></div>' : '') +
     '<div class="have num">' + (r.need > 0 ? 'Need ' + esc(amtText(r.id, r.need)) + ', have ' : 'Have ') + esc(amtText(r.id, r.have)) + '</div>' +
-    (r.onOrder ? '<div class="have" style="font-weight:700;color:var(--ink)">Ordered ' + r.onOrder + ', still need ' + r.sugg + ' more</div>' : '') + '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + tag + oosTag(r) + '</div></div>' +
+    (r.onOrder ? '<div class="have" style="font-weight:700;color:var(--ink)">Ordered ' + esc(r.onOrderText) + ', still need ' + r.sugg + ' more' + (hasSizes(r.id) ? ' (' + sizeLabel(r.id) + ')' : '') + '</div>' : '') + '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + tag + oosTag(r) + '</div></div>' +
     '<div class="qrow"><label><span>£ each</span><input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-lp="' + r.id + '" value="' + r.unit.toFixed(2) + '" aria-label="Price per ' + (nicItem ? 'shot' : 'bottle') + ' for ' + esc(r.ing.name) + '"></label>' +
     '<span class="x" aria-hidden="true">×</span><label><span>' + (nicItem ? 'Shots' : 'Bottles') + '</span><input class="num" inputmode="numeric" type="number" min="0" step="1" data-q="' + r.id + '" value="' + r.n + '" aria-label="How many ' + (nicItem ? 'shots' : 'bottles') + ' of ' + esc(r.ing.name) + ' to order"></label>' +
     '<b class="num qcost" data-cost="' + r.id + '">' + (r.oos ? '-' : gbp(r.cost)) + '</b></div>' +
@@ -2509,6 +2554,7 @@ function bindShop(){
     inp.addEventListener('change', function(){ if (rendering) return; if (!setUnitPrice(id, inp.value)) { inp.value = unitOf(id).toFixed(2); toast('Kept the previous price.'); return; } save(); paintShopList(root); toast('Saved.'); });
   });
   var keepY = function(){ var y = window.scrollY; render(); window.scrollTo(0, y); };
+  Array.prototype.forEach.call(root.querySelectorAll('[data-sz]'), function(b){ b.onclick = function(){ var p = b.getAttribute('data-sz').split(':'); if (setSize(p[0], +p[1])) { save(); keepY(); toast(ingById[p[0]].name + ': ' + p[1] + 'ml bottle.'); } }; });
   Array.prototype.forEach.call(root.querySelectorAll('[data-unlist]'), function(b){ b.onclick = function(){ delete state.cart[b.getAttribute('data-unlist')]; save(); keepY(); }; });
   var ai = root.querySelector('[data-additem]');
   if (ai) ai.onchange = function(){ if (!ai.value) return; state.cart = state.cart || {}; state.cart[ai.value] = 1; save(); keepY(); toast(ingById[ai.value].name + ' added to the list.'); };
@@ -2654,19 +2700,18 @@ function settingsHtml(){
           '<span class="small muted num" style="text-align:center">' + (p[0]===1 ? '' : '= ' + gbp(p[0]*p[1])) + '</span>' +
           '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="pack" data-n="' + p[0] + '" data-id="' + i.id + '" value="' + p[1].toFixed(2) + '" aria-label="Price per shot in a ' + p[0] + ' pack"></div>';
       }).join('');
-    var bs = bigSizeOf(i.id), bpv = bigPriceOf(i.id);
-    return '<div class="price-row"><div><div style="font-weight:600;font-size:14px">' + esc(i.name) + '</div><div class="small muted">' + esc(i.shop) + ((i.id==='nic' || i.id==='nicvg') ? ', one 10ml shot' : ', standard') + '</div></div>' +
-      '<input class="num" type="number" value="' + sizeOf(i.id) + '" disabled aria-label="Standard bottle size for ' + esc(i.name) + ', fixed">' +
-      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="price" data-id="' + i.id + '" value="' + priceOf(i.id).toFixed(2) + '" aria-label="Standard bottle price for ' + esc(i.name) + '"></div>' +
-      '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">Each, when buying 3 or more</div><span></span>' +
-      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="multi" data-id="' + i.id + '" value="' + (multiOf(i.id) ? multiOf(i.id).toFixed(2) : '') + '" placeholder="-" aria-label="Price each when buying 3 or more ' + esc(i.name) + '"></div>' +
-      (bs ? '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">Bigger bottle</div>' +
-      '<input class="num" type="number" value="' + bs + '" disabled aria-label="Bigger bottle size for ' + esc(i.name) + ', fixed">' +
-      '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="bigPrice" data-id="' + i.id + '" value="' + (bpv?bpv.toFixed(2):'') + '" placeholder="-" aria-label="Bigger bottle price for ' + esc(i.name) + '"></div>' : '');
+    return (i.p100 ? [i.size, 100] : [i.size]).map(function(sz){
+      var key = keyFor(i.id, sz);
+      return '<div class="price-row"><div><div style="font-weight:600;font-size:14px">' + esc(i.name) + (i.p100 ? ' <span class="muted">' + sz + 'ml</span>' : '') + '</div><div class="small muted">' + esc(i.shop) + ((i.id==='nic' || i.id==='nicvg') ? ', one 10ml shot' : ', ' + sizeLabelAt(i.id, sz) + ' bottle') + (wasText(i.id) && sz === sizeOf(i.id) ? '' : '') + '</div></div>' +
+        '<input class="num" type="number" value="' + sz + '" disabled aria-label="Bottle size for ' + esc(i.name) + ', fixed">' +
+        '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="price" data-id="' + key + '" value="' + priceOfKey(key).toFixed(2) + '" aria-label="Price of the ' + sz + 'ml ' + esc(i.name) + '"></div>' +
+        '<div class="price-row" style="padding-top:0"><div class="small muted" style="padding-left:12px">Each, when buying 3 or more</div><span></span>' +
+        '<input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-f="multi" data-id="' + key + '" value="' + (multiOfKey(key) ? multiOfKey(key).toFixed(2) : '') + '" placeholder="-" aria-label="Price each when buying 3 or more, ' + sz + 'ml ' + esc(i.name) + '"></div>';
+    }).join('');
   }).join('');
   var sync = cloud.mode === 'cloud' ? 'Saved to your Claude account and on this phone. Only you can see it.' : 'Saved on this phone only. Use the backup below now and then.';
   return '<div class="sect">Prices, delivery and data</div><p class="muted small" style="margin-top:-4px">' + sync + '</p>' +
-    '<h2>Prices and bottle sizes</h2><section class="card"><p class="small muted" style="margin:0 0 6px">' + esc(pricesUpdatedText()) + ' Vapable prices are updated on the laptop and arrive here through sync.</p><details data-box="shop:prices"' + (openBox['shop:prices'] ? ' open' : '') + '><summary>Show every item\u2019s price</summary><p class="muted small">Bottle sizes are fixed: PG 1 litre, VG 1 litre, everything else 10ml. You can also change a price on the list above.</p><div class="price-row small muted" style="padding-top:0"><span>Item</span><span style="text-align:center">Size (ml)</span><span style="text-align:center">Price (\u00a3)</span></div>' + rows + '</details></section>' +
+    '<h2>Prices and bottle sizes</h2><section class="card"><p class="small muted" style="margin:0 0 6px">' + esc(pricesUpdatedText()) + ' Vapable prices are updated on the laptop and arrive here through sync.</p><details data-box="shop:prices"' + (openBox['shop:prices'] ? ' open' : '') + '><summary>Show every item\u2019s price</summary><p class="muted small">Bottle sizes are fixed: PG 1 litre, VG 1 litre, flavours 10ml or 100ml, everything else 10ml. You can also change a price on the list above.</p><div class="price-row small muted" style="padding-top:0"><span>Item</span><span style="text-align:center">Size (ml)</span><span style="text-align:center">Price (\u00a3)</span></div>' + rows + '</details></section>' +
     '<h2>Vapable product IDs</h2><section class="card"><details data-box="shop:ids"' + (openBox['shop:ids'] ? ' open' : '') + '><summary>Show the IDs used for the basket</summary><p class="muted small">The basket button needs each item\u2019s product and option ID. They were read from the product links saved in the app. To change one, paste an add-to-cart link or type the IDs.</p>' + vapIdsHtml() + '</details></section>' +
     '<h2>Delivery</h2><section class="card"><div class="price-row small muted" style="padding-top:0"><span>Shop</span><span style="text-align:center">Free over (\u00a3)</span><span style="text-align:center">Postage (\u00a3)</span></div>' +
       SHOPS.map(function(sp){ var d = delOf(sp);
@@ -2711,7 +2756,7 @@ function bindSettings(){
       if (inp.value.trim() === '' || !(+inp.value > 0)) { keepOld(); return; }
       if (f === 'pack'){ var pv = num(inp.value, 0); if (pv===null) { render(); return; } p.packs = p.packs || {}; p.packs[inp.getAttribute('data-n')] = pv; state.prices[id] = p; save(); render(); toast('Saved.'); return; }
       if (f === 'size'){ var s = num(inp.value, 1); if (s===null) { inp.value = sizeOf(id); return; } p.size = s; }
-      else if (f === 'price'){ var pr = num(inp.value, 0); if (pr===null) { inp.value = priceOf(id).toFixed(2); return; } p.price = pr; }
+      else if (f === 'price'){ var pr = num(inp.value, 0); if (pr===null) { inp.value = priceOfKey(id).toFixed(2); return; } p.price = pr; }
       else { var v = num(inp.value, 0); if (v===null) { keepOld(); return; } p[f] = v; }
       state.prices[id] = p; save(); renderTabs(); paintShopList(); toast('Saved.');
     });
