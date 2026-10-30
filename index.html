@@ -184,6 +184,7 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .usage-row{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .usage-row input{width:64px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center;font-size:16px;margin:0 4px}
 .freepost{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.freepost[hidden]{display:none}
 .freepost ul{margin:4px 0 0;padding-left:18px}
 .shake-banner.batch-banner{background:#0A0A0B;color:#fff;border:2px solid var(--sel)}
 .shake-banner.batch-banner .btn{background:var(--sel);color:var(--sel-ink)}
@@ -438,7 +439,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0};
 }
 function migrate(s){
   var b = blank();
@@ -460,6 +461,7 @@ function migrate(s){
   ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
+  if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -701,7 +703,7 @@ function batchDetailHtml(b){
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
 var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps'];
-var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -982,8 +984,9 @@ function initSteepTools(){
     if (nb) {
       if (nb.hasAttribute('data-batchplan')) { goPlan(); return; }
       if (nb.hasAttribute('data-batchsnooze')) { try { localStorage.setItem('mixbench.batchSnooze', londonDay(Date.now())); } catch (x) {} softRender(); return; }
-      if (nb.hasAttribute('data-batchshop')) { var n = addShortToCart(); save(); softRender(); toast(n ? 'Added to the Shop list.' : 'Nothing to add.'); return; }
-      addTip(nb.getAttribute('data-tipadd')); save(); softRender(); toast('Added to the list.'); return;
+      var redraw = function(){ if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); var y = window.scrollY; render(); window.scrollTo(0, y); };
+      if (nb.hasAttribute('data-batchshop')) { var n = addShortToCart(); save(); redraw(); toast(n ? 'Added to the Shop list.' : 'Nothing to add.'); return; }
+      var tp = nb.getAttribute('data-tipadd').split(':'); addTip(nb.getAttribute('data-tipadd')); save(); redraw(); toast(tp[1] + ' \u00d7 ' + ingById[tp[0]].name + ' added to the list.'); return;
     }
     var t = e.target.closest && e.target.closest('[data-tm],[data-shaken],[data-gosteep],[data-notify]'); if (!t || t.disabled) return;
     if (t.hasAttribute('data-shaken')) { markShaken(); save(); softRender(); toast('Shake recorded on every steeping batch.'); return; }
@@ -999,8 +1002,9 @@ function initSteepTools(){
   });
   document.addEventListener('change', function(e){
     var t = e.target; if (!t || !t.hasAttribute) return;
-    if (t.hasAttribute('data-usage')) { if (setUsageDays(t.value)) { save(); softRender(); toast('Saved: 100ml lasts about ' + t.value + ' days.'); } else toast('Type a number of days from 1 to 90.'); }
-    else if (t.hasAttribute('data-batchsteep')) { if (setBatchSteep(t.value)) { save(); softRender(); toast('Saved.'); } else toast('Type a number of days from 0 to 30.'); }
+    var redraw = function(){ var y = window.scrollY; render(); window.scrollTo(0, y); };
+    if (t.hasAttribute('data-usage')) { if (setUsageDays(t.value)) { save(); redraw(); toast('Saved: ' + mlShort(currentBatchMl()) + 'ml lasts about ' + t.value + ' days.'); } else toast('Type a number of days from 1 to 180.'); }
+    else if (t.hasAttribute('data-batchsteep')) { if (setBatchSteep(t.value)) { save(); redraw(); toast('Saved.'); } else toast('Type a number of days from 0 to 30.'); }
   });
   setInterval(clockTick, 1000);
   setInterval(timerTick, 200);
@@ -1280,7 +1284,9 @@ function paintShopList(root){
     var l = q('[data-shopline="' + g.shop + '"]'); if (l) l.textContent = gbp(g.sub + g.post);
   });
   var tt = q('[data-total]'); if (tt) tt.textContent = gbp(L.total);
-  var b = basketItems(L), st = q('[data-bsteps]'); if (st) st.innerHTML = basketStepsHtml(b.ok, b.miss, nicOnList(L));
+  /* only redraw a box when its contents change, so a button in it still gets the click that moved focus off a quantity box */
+  var fp = q('[data-freepost]'); if (fp) { var fi = freePostInner(L, listShop(L, 'Vapable')); if (fp.__html !== fi) { fp.innerHTML = fi; fp.__html = fi; } fp.hidden = !fi; }
+  var b = basketItems(L), st = q('[data-bsteps]'); if (st) { var sh = basketStepsHtml(b.ok, b.miss, nicOnList(L)); if (st.__html !== sh) { st.innerHTML = sh; st.__html = sh; } }
   var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.oos; });
   return L;
 }
@@ -1389,39 +1395,68 @@ function orderQtyText(o){
 function stepName(o){ return STEPS[stepIdx(o)][1]; }
 /* ---------- shared: steep time per recipe, the next batch, costs ---------- */
 function steepDaysOf(rid){ var v = +((state.steeps || {})[rid]); return v >= 1 && v <= 30 ? Math.round(v) : 3; }
-function readyAt(b){ return b.t + (+b.steep >= 1 ? +b.steep : 3) * DAY; }
-function bestAt(b){ return b.t + Math.max(7, (+b.steep >= 1 ? +b.steep : 3) + 2) * DAY; }
+function readyAt(b){ return (batchTime(b) || 0) + (+b.steep >= 1 ? +b.steep : 3) * DAY; }
+function bestAt(b){ return (batchTime(b) || 0) + Math.max(7, (+b.steep >= 1 ? +b.steep : 3) + 2) * DAY; }
+/* a batch's time in ms, whatever shape it was saved in (ms, seconds or a date string); null if it can't be read */
+function batchTime(b){
+  var t = b && b.t;
+  if (typeof t === 'string') t = /^\d+(\.\d+)?$/.test(t.trim()) ? +t : Date.parse(t);
+  t = +t; if (!isFinite(t) || t <= 0) return null;
+  if (t < 1e11) t *= 1000;
+  return (t > 946684800000 && t < 4102444800000) ? t : null;
+}
 /* batches mixed within 3 days of each other count as one session (e.g. 180ml over 2 days) */
-function mixSessions(){
+function mixSessions(recordedOnly){
   var out = [];
-  state.batches.filter(function(b){ return +b.ml > 0; }).slice().sort(function(a, b){ return a.t - b.t; }).forEach(function(b){
-    var x = out[out.length - 1];
-    if (x && b.t - x.end <= 3 * DAY) { x.ml += +b.ml; x.end = b.t; x.batches.push(b); } else out.push({start:b.t, end:b.t, ml:+b.ml, batches:[b]});
-  });
+  state.batches.filter(function(b){ return +b.ml > 0 && batchTime(b) !== null && (!recordedOnly || batchRecorded(b)); })
+    .slice().sort(function(a, b){ return batchTime(a) - batchTime(b); }).forEach(function(b){
+      var t = batchTime(b), x = out[out.length - 1];
+      if (x && t - x.end <= 3 * DAY) { x.ml += +b.ml; x.end = t; x.batches.push(b); } else out.push({start:t, end:t, ml:+b.ml, batches:[b]});
+    });
   return out;
 }
-/* ml a day: from your history once there are two sessions at least 5 days apart, otherwise your setting */
-function usageRate(){
-  var ss = mixSessions(), u = state.usage || {ml:100, days:10};
-  if (ss.length >= 2) { var span = (ss[ss.length - 1].start - ss[0].start) / DAY, made = 0;
-    for (var i = 0; i < ss.length - 1; i++) made += ss[i].ml;
-    if (span >= 5 && made > 0) return {perDay:made / span, from:'history', sessions:ss.length}; }
-  return {perDay:u.ml / u.days, from:'setting'};
+/* the batch you're on now: everything steeping or ready, otherwise your last session */
+function currentBatchMl(){
+  var ml = 0; steeping().forEach(function(b){ if (batchTime(b) !== null) ml += +b.ml || 0; });
+  if (ml > 0) return Math.round(ml * 100) / 100;
+  var ss = mixSessions(false); return ss.length ? ss[ss.length - 1].ml : 0;
 }
+/* your setting: "<current batch>ml should last me about N days" (20 until you change it) */
+function lastsDays(){ return +state.lastsDays >= 1 ? +state.lastsDays : 20; }
+/* ml a day: from your history once there are two sessions (recorded the current way) at least 5 days apart, otherwise your setting */
+function usageRate(){
+  var ss = mixSessions(true);
+  if (ss.length >= 2) {
+    var span = (ss[ss.length - 1].end - ss[0].end) / DAY, made = 0;
+    for (var i = 0; i < ss.length - 1; i++) made += ss[i].ml;
+    if (span >= 5 && made > 0) return {perDay:made / span, from:'history', sessions:ss.length};
+  }
+  var ml = currentBatchMl() || 100, days = lastsDays();
+  return {perDay:ml / days, from:'setting', ml:ml, days:days};
+}
+/* runs out: each session adds its ml to whatever is left, used up at your daily rate from when it was made */
 function nextBatch(){
-  var ss = mixSessions(), rate = usageRate(); if (!ss.length || !(rate.perDay > 0)) return {rate:rate, none:true};
+  var ss = mixSessions(false), rate = usageRate();
+  if (!ss.length || !(rate.perDay > 0) || !isFinite(rate.perDay)) return {rate:rate, none:true};
   var runout = 0;
-  ss.forEach(function(x){ var left = Math.max(0, runout - x.start) * rate.perDay; runout = x.start + (left + x.ml) / rate.perDay * DAY; });
-  var steepD = state.batchSteep >= 0 ? +state.batchSteep : 5;
+  ss.forEach(function(x){ var leftMl = Math.max(0, (runout - x.end) / DAY) * rate.perDay; runout = x.end + (leftMl + x.ml) / rate.perDay * DAY; });
+  var steepD = +state.batchSteep >= 0 ? +state.batchSteep : 5;
+  if (!isFinite(runout) || runout <= 0) return {rate:rate, none:true};
   return {rate:rate, runout:runout, due:runout - steepD * DAY, steep:steepD, last:ss[ss.length - 1]};
 }
-function dayText(t){ return new Date(t).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}); }
+function dayText(t){ t = +t; if (!isFinite(t) || Math.abs(t) > 8e15) return 'unknown'; return new Date(t).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}); }
+function nextBatchHead(){
+  var nb = nextBatch();
+  if (nb.none) return 'Next batch due: not known yet';
+  return 'Next batch due: about ' + dayText(nb.due) + (nb.due <= Date.now() ? ' (now)' : '');
+}
 function nextBatchText(){
   var nb = nextBatch();
-  if (nb.none) return 'Next batch due: make your first batch and Mix Bench works out when the next is due.';
-  var r = nb.rate, now = Date.now();
-  return 'Next batch due: ' + dayText(nb.due) + (nb.due <= now ? ' (now)' : '') + '. Your juice runs out about ' + dayText(nb.runout) + ', and the new batch needs ' + nb.steep + ' days to steep. ' +
-    (r.from === 'history' ? 'You use about ' + mlShort(Math.round(r.perDay * 10) / 10) + 'ml a day, from your last ' + r.sessions + ' batches.' : 'Based on your setting: ' + mlShort(state.usage.ml) + 'ml lasts about ' + state.usage.days + ' days.');
+  if (nb.none) return 'Make your first batch and Mix Bench works out when the next one is due.';
+  var r = nb.rate;
+  return 'Your juice runs out about ' + dayText(nb.runout) + ', and the new batch needs ' + nb.steep + ' days to steep. ' +
+    (r.from === 'history' ? 'You use about ' + mlShort(Math.round(r.perDay * 10) / 10) + 'ml a day, from your last ' + r.sessions + ' batch sessions.'
+      : 'Using your setting: ' + mlShort(r.ml) + 'ml lasts about ' + r.days + ' days, so about ' + mlShort(Math.round(r.perDay * 10) / 10) + 'ml a day. Your own history takes over once you have two batch sessions at least 5 days apart.');
 }
 /* the next batch: your plan if you have one, otherwise the same as your last session */
 function nextBatchParts(){
@@ -1484,12 +1519,12 @@ function batchBannerHtml(){
   return '<div class="shake-banner batch-banner" role="status"><div><b>Time to mix your next batch</b><div class="small">Due ' + esc(dayText(nb.due)) + '. Your juice runs out about ' + esc(dayText(nb.runout)) + '.</div></div><div class="tbtns2"><button type="button" class="btn sm" data-batchplan>Open Plan</button><button type="button" class="btn sm secondary" data-batchsnooze>Not today</button></div></div>';
 }
 function batchSettingsHtml(){
-  var u = state.usage || {ml:100, days:10};
-  return '<div class="usage-row small"><label>100ml lasts me about <input class="num" type="number" min="1" max="90" step="1" data-usage value="' + Math.round(u.days * 100 / u.ml) + '" aria-label="Days 100ml lasts"> days</label>' +
-    '<label>Steep before it’s needed <input class="num" type="number" min="0" max="30" step="1" data-batchsteep value="' + (state.batchSteep >= 0 ? state.batchSteep : 5) + '" aria-label="Days to steep before the next batch is needed"> days</label></div>' +
-    '<p class="muted small" style="margin:4px 0 0">' + (usageRate().from === 'history' ? 'Your history is used now; the 100ml setting is only a fallback.' : 'Used until you have two batches at least 5 days apart.') + '</p>';
+  var ml = currentBatchMl();
+  return '<div class="usage-row small"><label>' + (ml > 0 ? mlShort(ml) + 'ml' : 'My batch') + ' should last me about <input class="num" type="number" min="1" max="180" step="1" data-usage value="' + lastsDays() + '" aria-label="Days your current batch should last"> days</label>' +
+    '<label>Steep before it’s needed <input class="num" type="number" min="0" max="30" step="1" data-batchsteep value="' + (+state.batchSteep >= 0 ? state.batchSteep : 5) + '" aria-label="Days to steep before the next batch is needed"> days</label></div>' +
+    '<p class="muted small" style="margin:4px 0 0">The ml is what’s steeping or ready now, and updates by itself. ' + (usageRate().from === 'history' ? 'Your history is used now; this setting is only a fallback.' : 'This is used until you have two batch sessions at least 5 days apart.') + '</p>';
 }
-function setUsageDays(v){ v = Math.round(+v); if (!(v >= 1 && v <= 90)) return false; state.usage = {ml:100, days:v}; return true; }
+function setUsageDays(v){ v = Math.round(+v); if (!(v >= 1 && v <= 180)) return false; state.lastsDays = v; return true; }
 function setBatchSteep(v){ v = Math.round(+v); if (!(v >= 0 && v <= 30)) return false; state.batchSteep = v; return true; }
 function nextBatchCardHtml(withStock){
   var ns = withStock ? nextBatchStock() : null, body = '';
@@ -1500,26 +1535,32 @@ function nextBatchCardHtml(withStock){
         (ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '') + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add these to the Shop list</button>'
       : '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough stock for ' + esc(what) + '.</p>';
   }
-  return '<div class="card nextbatch"><b>' + esc(nextBatchText().split('. ')[0]) + '</b><p class="small muted" style="margin:4px 0 0">' + esc(nextBatchText().split('. ').slice(1).join('. ')) + '</p>' + body +
+  return '<div class="card nextbatch"><b>' + esc(nextBatchHead()) + '</b><p class="small muted" style="margin:4px 0 0">' + esc(nextBatchText()) + '</p>' + body +
     '<details data-box="nb:set"' + ((typeof openBox !== 'undefined' && openBox['nb:set']) || ((typeof ui !== 'undefined') && (ui.prevOpen || {})['nb:set']) ? ' open' : '') + '><summary class="small">Usage settings</summary>' + batchSettingsHtml() + '</details></div>';
 }
 function addShortToCart(){ var ns = nextBatchStock(); if (!ns) return 0; state.cart = state.cart || {}; ns.short.forEach(function(x){ var cur = +state.cart[x.id] || 0; state.cart[x.id] = Math.max(cur, x.bottles); }); return ns.short.length; }
 /* free delivery helper: items you'll need for your next two batches, not already in stock, on order or on the list */
 function freePostTips(L, g){
-  if (g.st !== 'fee' && g.st !== 'unknown') return [];
-  var nbp = nextBatchParts(); if (!nbp.list.length) return [];
-  var need = needFor(nbp.list, 2), st = stockNow(), oo = onOrderQty(), onList = {}, out = [];
-  L.rows.forEach(function(r){ onList[r.id] = r.buy || r.n || 0; });
+  var nbp = nextBatchParts(), st = stockNow(), oo = onOrderQty(), onList = {}, out = [], seen = {};
+  L.rows.forEach(function(r){ onList[r.id] = r.oos ? 0 : (r.buy || r.n || 0); });
+  var need = nbp.list.length ? needFor(nbp.list, 2) : {};
   for (var k in need) { var i = ingById[k]; if (!i || i.shop !== 'Vapable' || isOos(k)) continue;
     var lack = need[k] - Math.max(0, st.left[k]) - ((oo[k] || 0) + (onList[k] || 0)) * sizeOf(k);
-    if (lack > 0.0001) { var n = Math.ceil(lack / sizeOf(k) - 1e-9); out.push({id:k, n:n, cost:lineCost(k, n)}); } }
-  return out.sort(function(a, b){ return a.cost - b.cost; }).slice(0, 4);
+    if (lack > 0.0001) { var n = Math.ceil(lack / sizeOf(k) - 1e-9); out.push({id:k, n:n, cost:lineCost(k, n), why:'next batches'}); seen[k] = 1; } }
+  /* anything you're low on or out of that isn't already covered */
+  ING.forEach(function(i){ var k = i.id; if (seen[k] || i.shop !== 'Vapable' || isOos(k)) return;
+    var s = status(k, st)[1]; if (s !== 'low' && s !== 'out') return;
+    var have = Math.max(0, st.left[k]) + ((oo[k] || 0) + (onList[k] || 0)) * sizeOf(k); if (have >= i.warn) return;
+    var n = Math.max(1, Math.ceil((i.warn - have) / sizeOf(k) - 1e-9)); out.push({id:k, n:n, cost:lineCost(k, n), why:s === 'out' ? 'out' : 'low'}); });
+  return out.sort(function(a, b){ return a.cost - b.cost; }).slice(0, 6);
 }
-function freePostHtml(L, g){
-  var tips = freePostTips(L, g); if (g.st !== 'fee' && g.st !== 'unknown') return '';
-  return '<div class="freepost"><b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small">' +
-    tips.map(function(t){ return '<li>' + t.n + ' × ' + esc(ingById[t.id].name) + ' (' + gbp(t.cost) + ') <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></li>'; }).join('') + '</ul>' : '') + '</div>';
+function freePostInner(L, g){
+  var tips = freePostTips(L, g), under = g && (g.st === 'fee' || g.st === 'unknown');
+  if (!tips.length && !under) return '';
+  return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small">' +
+    tips.map(function(t){ return '<li>' + t.n + ' × ' + esc(ingById[t.id].name) + ' (' + gbp(t.cost) + (t.why === 'out' ? ', you’re out' : (t.why === 'low' ? ', you’re low' : '')) + ') <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></li>'; }).join('') + '</ul>' : '');
 }
+function freePostHtml(L, g){ var inner = freePostInner(L, g); return '<div class="freepost" data-freepost' + (inner ? '' : ' hidden') + '>' + inner + '</div>'; }
 function addTip(v){ var p = String(v).split(':'), id = p[0], n = +p[1]; if (!ingById[id] || !(n > 0)) return; state.cart = state.cart || {}; var L = shopList(), r = L.rows.filter(function(x){ return x.id === id; })[0]; state.cart[id] = (r ? r.n : 0) + n; }
 /* due-date notification (the iPhone app, the same way as the 1pm shake reminder) */
 function batchNotifyTick(){
@@ -2127,7 +2168,7 @@ function updateLights(){
 /* ---------- steep timer ---------- */
 var DAY = 86400000, STEEP_READY = 3*DAY, STEEP_BEST = 7*DAY;
 function steeping(){
-  return state.batches.filter(function(b){ return !b.done && Date.now() < Math.max(b.t + 14*DAY, bestAt(b) + 7*DAY) && (recById[b.recipe] || b.name); })
+  return state.batches.filter(function(b){ return !b.done && batchTime(b) !== null && Date.now() < Math.max(batchTime(b) + 14*DAY, bestAt(b) + 7*DAY) && (recById[b.recipe] || b.name); })
     .sort(function(a,b){ return a.t - b.t; });
 }
 function whenShort(t){ var d = new Date(t); return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
