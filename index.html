@@ -170,6 +170,24 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .bsteps li{padding:4px 0}
 .pill.ordered{background:var(--sel);color:var(--sel-ink)}
 .pill.oos{background:var(--out);color:#fff}
+.rstars{color:inherit;font-size:12px;letter-spacing:1px;white-space:nowrap}
+.steepsel{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);padding:0 8px;font-size:14px}
+.costline{margin-top:8px;color:var(--muted)}
+.costline:empty{display:none}
+.nicsafe{margin:10px 0;padding:12px;border-radius:12px;background:var(--sel);color:var(--sel-ink);text-align:center}
+.nicsafe-mg{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.nicsafe-sub{font-size:15px;margin-top:2px}
+.shortwarn{border:2px solid var(--out);border-radius:12px;padding:10px 12px;margin:10px 0}
+.shortwarn ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.shortwarn .btn + .btn{margin-top:6px}
+.nextbatch details summary{margin-top:8px}
+.usage-row{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.usage-row input{width:64px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center;font-size:16px;margin:0 4px}
+.freepost{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.freepost ul{margin:4px 0 0;padding-left:18px}
+.shake-banner.batch-banner{background:#0A0A0B;color:#fff;border:2px solid var(--sel)}
+.shake-banner.batch-banner .btn{background:var(--sel);color:var(--sel-ink)}
+.shake-banner.batch-banner .btn.secondary{background:#26262A;color:#fff}
 .ordcard .btn.sel{margin:10px 0 2px}
 .steps-bar{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;position:relative}
 .steps-bar::before{content:"";position:absolute;left:12.5%;right:12.5%;top:7px;height:1px;background:var(--line)}
@@ -368,7 +386,7 @@ var ING = [
   {id:'pg', name:'PG base', shop:'Vapable', size:1000, price:9.49, col:'#9FB0BD', warn:50, url:'https://vapable.com/product/propylene-glycol-1-litre/?attribute_bottle-size=1000ml', vap:{pid:14929, vid:431030, attr:{'attribute_bottle-size':'1 Litre'}}},
   {id:'vg', name:'VG base', shop:'Vapable', size:1000, price:6.99, col:'#CBD6DF', warn:50, url:'https://vapable.com/product/vegetable-glycerine-1-litre/', vap:{pid:14925, vid:431057, attr:{'attribute_bottle-size':'1 Litre'}}},
   {id:'nic', name:'Nic Nic 20mg (50 PG / 50 VG)', shop:'Vape and Go', size:10, price:0.99, packs:[[1,0.99]], col:'#D9913A', warn:50, note:'Nic Nic 20mg 50VG salt booster, not the Ice one', url:'https://www.vapeandgo.co.uk/product/nic-20mg-50vg-10ml-nicotine-salt-booster/'},
-  {id:'nicvg', name:'Vapable 20mg (100 VG)', shop:'Vapable', size:10, price:1.10, packs:[[1,1.10],[10,1.05],[20,1.00],[50,0.9498]], col:'#B8702A', warn:50, note:'20mg Nicotine Salt Shot, pick 100% VG and the pack size shown', url:'https://vapable.com/product/20mg-nicotine-salt-shot-10ml/', vap:{pid:265933, vid:265950, attr:{'attribute_base-liquid':'100% VG', 'attribute_pack-size':'Single'}}}
+  {id:'nicvg', name:'Vapable 20mg (100 VG)', shop:'Vapable', size:10, price:1.10, packs:[[1,1.10],[10,1.05],[20,1.00],[50,0.9498]], col:'#B8702A', warn:50, note:'20mg Nicotine Salt Shot, pick 100% VG and the pack size shown', url:'https://vapable.com/product/20mg-nicotine-salt-shot-10ml/', vap:{pid:265933, vid:265950, attr:{'attribute_base-liquid':'100% VG', 'attribute_pack-size':'Single'}, packs:{1:[265950,'Single'], 10:[265951,'10 Pack'], 20:[450048,'20 Pack'], 50:[450049,'50 Pack']}}}
 ];
 var RECIPES = [
   {id:'srb', name:'Strawberry Raspberry Blueberry', parts:[['straw',6],['rasp',6],['blue',6],['sweet',0.5]]},
@@ -382,7 +400,7 @@ var RECIPES = [
 ];
 var KIT = [
   ['10ml bottles','https://vapable.com/product-category/diy/bottles/'],
-  ['Syringes (1ml and 10ml)','https://vapable.com/product-category/diy/bottles/'],
+  ['Syringes (1ml, 2ml and 10ml)','https://vapable.com/product-category/diy/bottles/'],
   ['Nitrile gloves','https://vapable.com/product/powder-free-nitrile-gloves/'],
   ['60ml empty bottle, for mixing batches up to 50ml','https://vapable.com/product-category/diy/bottles/']
 ];
@@ -420,7 +438,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5};
 }
 function migrate(s){
   var b = blank();
@@ -439,7 +457,9 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
+  if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -571,7 +591,7 @@ function ratioNote(recId){
     return '<p class="small" style="color:var(--out);margin:8px 0 0;font-weight:600">' + mg + 'mg won\u2019t fit: 20mg shots would fill ' + mlShort(mg / SETTINGS.shotNic * 100) + '% of the bottle, leaving no room for this recipe\u2019s ' + mlShort(fl) + '% flavour. Pick a lower strength.</p>'; }
   var v = state.vgr || 50, i = mixInfo(RT(recId)), real = i ? pgvg(i.vg) : '';
   return '<p class="small" style="color:var(--low);margin:8px 0 0">' + (f === 'vg'
-    ? 'Vapable 20mg (100 VG) shots can\u2019t make it thinner than 50 PG / 50 VG, so this will come out at about ' + real + ', not ' + pgvg(v) + '.'
+    ? 'At ' + planMg(recId) + 'mg, Vapable 20mg (100 VG) shots make up ' + mlShort(planMg(recId) / SETTINGS.shotNic * 100) + '% of the bottle, all VG, so the thinnest this can be is about ' + real + ', not ' + pgvg(v) + '.'
     : 'Not enough room for ' + pgvg(v) + ' with this much flavour. It will come out lower in VG (higher in PG), at about ' + real + '.') + '</p>';
 }
 function mlFor(recId, ml, nb, vgr, mg){ var o={}, rt=RT(recId, nb, vgr, mg); for (var k in rt) o[k]=r4(rt[k]*ml); return o; }
@@ -680,8 +700,8 @@ function batchDetailHtml(b){
 
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
-var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos'];
-var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -836,14 +856,15 @@ function syncTimesHtml(){
   var line = function(lbl, v){ var old = !v || now - v > DAY; return '<div class="small" style="margin:2px 0;' + (old ? 'color:var(--low);font-weight:600' : '') + '">' + lbl + ' last synced: ' + (v ? esc(whenShort(v)) : 'not yet') + (v && old ? ' (over 24 hours ago)' : '') + '</div>'; };
   return '<div style="margin:0 0 10px">' + line('Phone', t.phone) + line('Laptop', t.laptop) + '</div>';
 }
-function readyBatches(){ return steeping().filter(function(b){ return Date.now() - b.t >= STEEP_READY; }); }
+function readyBatches(){ return steeping().filter(function(b){ return Date.now() >= readyAt(b); }); }
 /* stock bar: what's left out of everything you've had of it (bought, plus extras you added). Spills count as used, so they lower what's left, not what you had. Same for every item. */
 function extrasOf(id){ var t = 0; state.adjust.forEach(function(a){ if (a.ing === id && +a.ml > 0) t += +a.ml; }); return t; }
 function stockBar(id, st){
   var left = Math.max(0, st.left[id]), full = st.ordered[id] + extrasOf(id);
   var none = !st.ordered[id] && !st.used[id] && !st.adj[id];
-  var pct = full > 0 ? Math.max(0, Math.min(100, left / full * 100)) : 0;
-  return {left:left, pct:pct, none:none, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
+  var pct = full > 0 ? Math.max(0, Math.min(100, left / full * 100)) : 0, oo = onOrderMl(id);
+  var pctOn = oo > 0 ? Math.max(pct, Math.min(100, (left + oo) / Math.max(full, left + oo) * 100)) : pct;
+  return {left:left, pct:pct, oo:oo, pctOn:pctOn, none:none && !oo, out:!none && left <= 0.0001, low:!none && left > 0.0001 && left < ingById[id].warn,
     amt:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml'),
     text:none ? 'None' : ((id === 'nic' || id === 'nicvg') ? (Math.round(left / 10 * 100) / 100) + (Math.abs(left / 10 - 1) < 0.005 ? ' shot' : ' shots') : mlShort(left) + ' ml') + ' \u00b7 ' + Math.round(pct) + '% left'};
 }
@@ -874,7 +895,7 @@ function steepCardsHtml(){
   if (!list.length) return '<div class="card empty">Nothing steeping. Batches appear here when you tap “I’ve made this”.</div>';
   var day = londonDay(Date.now());
   return list.map(function(b){
-    var ready = b.t + STEEP_READY, best = b.t + STEEP_BEST, nm = b.name || (recById[b.recipe] || {}).name || 'Batch', ls = lastShake(b);
+    var ready = readyAt(b), best = bestAt(b), nm = b.name || (recById[b.recipe] || {}).name || 'Batch', ls = lastShake(b);
     return '<div class="card steepcard"><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><button class="linkbtn" style="font-size:15px;font-weight:700;padding:0;text-align:left;text-decoration:none" data-bdetail="' + b.id + '">' + esc(nm) + (b.nb === 'zero' ? ' (no nicotine)' : '') + ' ›</button><div class="small muted num">' + esc(batchLine(b)) + '</div></div>' +
       (Date.now() >= ready ? '<span class="pill ready">Ready to try</span>' : '') + '</div>' +
       '<div class="led" data-cd="' + ready + '" role="timer" aria-label="Time until ' + esc(nm) + ' is ready">' + ledInner(ready - Date.now()) + '</div>' +
@@ -946,6 +967,7 @@ function softRender(){
 }
 var shakeWasDue = null;
 function reminderTick(){
+  batchNotifyTick();
   var due = shakeDue();
   if (shakeWasDue !== null && due !== shakeWasDue) softRender();
   shakeWasDue = due;
@@ -956,6 +978,13 @@ function reminderTick(){
 }
 function initSteepTools(){
   document.addEventListener('click', function(e){
+    var nb = e.target.closest && e.target.closest('[data-batchplan],[data-batchsnooze],[data-batchshop],[data-tipadd]');
+    if (nb) {
+      if (nb.hasAttribute('data-batchplan')) { goPlan(); return; }
+      if (nb.hasAttribute('data-batchsnooze')) { try { localStorage.setItem('mixbench.batchSnooze', londonDay(Date.now())); } catch (x) {} softRender(); return; }
+      if (nb.hasAttribute('data-batchshop')) { var n = addShortToCart(); save(); softRender(); toast(n ? 'Added to the Shop list.' : 'Nothing to add.'); return; }
+      addTip(nb.getAttribute('data-tipadd')); save(); softRender(); toast('Added to the list.'); return;
+    }
     var t = e.target.closest && e.target.closest('[data-tm],[data-shaken],[data-gosteep],[data-notify]'); if (!t || t.disabled) return;
     if (t.hasAttribute('data-shaken')) { markShaken(); save(); softRender(); toast('Shake recorded on every steeping batch.'); return; }
     if (t.hasAttribute('data-gosteep')) { goSteep(); return; }
@@ -968,6 +997,11 @@ function initSteepTools(){
     else if (a === 'shake-reset') { TM.shake.run = false; TM.shake.left = TM.shake.dur; TM.shake.done = false; }
     paintTimers();
   });
+  document.addEventListener('change', function(e){
+    var t = e.target; if (!t || !t.hasAttribute) return;
+    if (t.hasAttribute('data-usage')) { if (setUsageDays(t.value)) { save(); softRender(); toast('Saved: 100ml lasts about ' + t.value + ' days.'); } else toast('Type a number of days from 1 to 90.'); }
+    else if (t.hasAttribute('data-batchsteep')) { if (setBatchSteep(t.value)) { save(); softRender(); toast('Saved.'); } else toast('Type a number of days from 0 to 30.'); }
+  });
   setInterval(clockTick, 1000);
   setInterval(timerTick, 200);
   setInterval(reminderTick, 30000);
@@ -975,15 +1009,18 @@ function initSteepTools(){
 }
 function steepSummaryHtml(){
   var list = steeping(); if (!list.length) return '';
-  var ready = readyBatches().length, next = list.filter(function(b){ return Date.now() < b.t + STEEP_READY; }).sort(function(a, b){ return a.t - b.t; })[0];
-  return '<div class="card steepsum onorange"><div style="min-width:0"><b>Steeping</b><div class="small muted">' + list.length + (list.length === 1 ? ' batch' : ' batches') + (ready ? ' \u00b7 ' + ready + ' ready to try' : '') + (next ? ' \u00b7 next ready in ' + left(next.t + STEEP_READY - Date.now()) : '') + '</div></div><button type="button" class="btn secondary sm" data-gosteep>Open</button></div>';
+  var ready = readyBatches().length, next = list.filter(function(b){ return Date.now() < readyAt(b); }).sort(function(a, b){ return a.t - b.t; })[0];
+  return '<div class="card steepsum onorange"><div style="min-width:0"><b>Steeping</b><div class="small muted">' + list.length + (list.length === 1 ? ' batch' : ' batches') + (ready ? ' \u00b7 ' + ready + ' ready to try' : '') + (next ? ' \u00b7 next ready in ' + left(readyAt(next) - Date.now()) : '') + '</div></div><button type="button" class="btn secondary sm" data-gosteep>Open</button></div>';
 }
 function orderSupplier(o){
   var shops = (o.shops && o.shops.length) ? o.shops.slice() : [];
   if (!shops.length) for (var k in (o.items || {})) if (ingById[k] && shops.indexOf(ingById[k].shop) < 0) shops.push(ingById[k].shop);
   return shops.join(' & ') || 'Order';
 }
-function orderItemsText(o){ var parts = []; for (var k in (o.items || {})) if (ingById[k]) parts.push(ingById[k].name + ' ' + mlShort(o.items[k]) + 'ml'); return parts.join(', '); }
+function isNicId(id){ return id === 'nic' || id === 'nicvg'; }
+/* nic is counted in 10ml shots, everything else in ml */
+function amtText(id, ml){ if (isNicId(id)) { var n = Math.round(ml / 10 * 100) / 100; return n + (Math.abs(n - 1) < 0.005 ? ' shot' : ' shots'); } return mlShort(ml) + ' ml'; }
+function orderItemsText(o){ var parts = []; for (var k in (o.items || {})) if (ingById[k]) parts.push(ingById[k].name + ' ' + amtText(k, +o.items[k] || 0)); return parts.join(', '); }
 function isDelivered(o){ return (o.status || 'ordered') === 'delivered'; }
 /* orders placed with Order now wait (pending) until you press Delivered; older orders were added to stock when they were logged */
 function orderInStock(o){ return !o.pending || isDelivered(o); }
@@ -1065,6 +1102,7 @@ function bottleSvg(id, s){
     '<path d="M20 16h20l3 10H17z" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<rect x="15" y="25" width="30" height="9" rx="2.5" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<rect x="10" y="34" width="40" height="78" rx="10" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1.5"/>' +
+    (s.oo > 0 ? '<g clip-path="url(#' + c + ')"><rect class="onorder" x="10" y="' + (35 + BOTTLE_H * (1 - s.pctOn / 100)).toFixed(1) + '" width="40" height="80" fill="var(--sel)" opacity=".22"/></g>' : '') +
     '<g clip-path="url(#' + c + ')"><g class="liq" data-liq="' + id + '" data-lvl="' + lvl + '" style="transform:translateY(' + lvl + 'px)"><path class="wave" d="M-30 36 q7.5 -3.5 15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0 V116 H-30 Z" fill="' + (s.low || s.out ? 'var(--out)' : 'var(--sel)') + '"/></g></g>' +
     '<rect x="15" y="42" width="3.5" height="44" rx="1.75" fill="#fff" opacity=".14"/></svg>';
 }
@@ -1072,7 +1110,8 @@ function bottleInnerHtml(id, s){
   var name = ingById[id].name;
   return bottleSvg(id, s) + '<div class="bname">' + esc(name) + '</div>' +
     '<div class="bamt num"' + (s.none ? ' style="color:var(--muted)"' : '') + '>' + esc(s.amt) + (s.out ? '<span class="warn">Out</span>' : (s.low ? '<span class="warn">Low</span>' : '')) + '</div>' +
-    (s.none ? '' : '<div class="bpct num">' + Math.round(s.pct) + '% left</div>');
+    (s.none ? '' : '<div class="bpct num">' + Math.round(s.pct) + '% left</div>') +
+    (s.oo > 0 ? '<div class="bpct num" style="color:var(--sel)">+' + esc(amtText(id, s.oo)) + ' on order</div>' : '');
 }
 /* fill up from empty when Stock opens; afterwards changes slide from the old level */
 function animateBottles(root, opening){
@@ -1133,26 +1172,29 @@ function pickVariation(id, vars, want){
   return best;
 }
 function unitOf(id){ var pk = packsOf(id); return pk ? pk[0][1] : priceOf(id); }
-function lineCost(id, n){ var m = multiOf(id), u = packsOf(id) ? unitOf(id) : ((m > 0 && n >= 3) ? m : priceOf(id)); return Math.round(n * u * 100) / 100; }
+function multiPack(id){ var pk = packsOf(id); return !!(pk && pk.length > 1); }
+/* nic shots are bought as the cheapest mix of packs; everything else uses the 3+ price when it applies */
+function lineCost(id, n){ if (multiPack(id)) return n > 0 ? packBuy(id, n * sizeOf(id)).cost : 0; var m = multiOf(id), u = packsOf(id) ? unitOf(id) : ((m > 0 && n >= 3) ? m : priceOf(id)); return Math.round(n * u * 100) / 100; }
 /* nic shots stay as singles; this only says when a pack would have been cheaper for the same order */
 function packTip(id, n){
-  var pk = packsOf(id); if (!pk || pk.length < 2 || !(n > 0)) return '';
-  var pb = packBuy(id, n * sizeOf(id)), now = lineCost(id, n);
-  if (!(pb.cost < now - 0.004) || !Object.keys(pb.packs).some(function(k){ return +k > 1; })) return '';
-  return 'Cheaper as ' + bottleText(id, pb).replace(/&times;/g, '\u00d7') + (pb.shots > n ? ' (' + pb.shots + ' shots)' : '') + ': ' + gbp(pb.cost) + ' instead of ' + gbp(now) + '.';
+  if (!multiPack(id) || !(n > 0)) return '';
+  var pb = packBuy(id, n * sizeOf(id));
+  if (!Object.keys(pb.packs).some(function(k){ return +k > 1; })) return '';
+  return 'Ordered as ' + bottleText(id, pb).replace(/&times;/g, '\u00d7') + (pb.shots > n ? ' (' + pb.shots + ' shots, cheaper than ' + n + ')' : '') + ': ' + gbp(pb.cost) + ' instead of ' + gbp(Math.round(n * unitOf(id) * 100) / 100) + ' as singles.';
 }
 /* what to buy: anything short for the plan or running low, plus anything you added. The number is yours once you type it. */
 function shopList(){
   var sh = shopping(), st = stockNow(), cart = state.cart || {}, rows = [], onOrder = onOrderQty();
   sh.rows.forEach(function(r){
     var id = r.ing.id, size = sizeOf(id), short = r4(Math.max(0, r.need - r.have)), s = status(id, st)[1], low = s === 'low' || s === 'out';
-    var sugg = short > 0 ? Math.ceil(short / size - 1e-9) : (low ? Math.max(1, Math.ceil((ingById[id].warn - Math.max(0, st.left[id])) / size - 1e-9)) : 0);
+    var oo = onOrder[id] || 0, ooMl = oo * size, shortLeft = r4(Math.max(0, short - ooMl)), lowLeft = low && Math.max(0, st.left[id]) + ooMl < ingById[id].warn;
+    /* what's already on order counts towards what you need; suggest only the rest */
+    var sugg = shortLeft > 0 ? Math.ceil(shortLeft / size - 1e-9) : (lowLeft ? Math.max(1, Math.ceil((ingById[id].warn - Math.max(0, st.left[id]) - ooMl) / size - 1e-9)) : 0);
     var typed = Object.prototype.hasOwnProperty.call(cart, id);
-    if (!short && !low && !typed && !onOrder[id]) return;
+    if (!short && !low && !typed && !oo) return;
     var n = typed ? Math.max(0, Math.round(+cart[id] || 0)) : sugg;
-    if (onOrder[id]) n = onOrder[id];
-    var oos = isOos(id);
-    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, typed:typed, onOrder:onOrder[id] || 0, oos:oos, unit:unitOf(id), cost:(onOrder[id] || oos) ? 0 : lineCost(id, n), tip:(onOrder[id] || oos) ? '' : packTip(id, n)});
+    var oos = isOos(id), pb = multiPack(id) && n > 0 ? packBuy(id, n * size) : null;
+    rows.push({ing:r.ing, id:id, size:size, need:r.need, have:r.have, short:short, low:low, out:s === 'out', sugg:sugg, n:n, buy:pb ? pb.shots : n, pb:pb, typed:typed, onOrder:oo, oos:oos, unit:unitOf(id), cost:oos ? 0 : lineCost(id, n), tip:oos ? '' : packTip(id, n)});
   });
   var total = 0;
   var shops = SHOPS.map(function(shop){
@@ -1183,7 +1225,10 @@ function shopDelText(g){
 /* the Vapable lines that can go straight into the basket, and the ones that can't (no IDs yet) */
 function basketItems(L){
   var g = listShop(L, 'Vapable'), ok = [], miss = [];
-  (g ? g.rows : []).forEach(function(r){ if (!(r.n > 0) || r.onOrder || r.oos) return; var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
+  (g ? g.rows : []).forEach(function(r){
+    if (!(r.n > 0) || r.oos) return;
+    if (r.pb && packLinks(r.id, r.pb)) { packLinks(r.id, r.pb).forEach(function(x){ ok.push(x); }); return; }
+    var link = vapLink(r.id, r.n); if (link) ok.push({id:r.id, n:r.n, name:r.ing.name, link:link}); else miss.push(r.ing.name); });
   return {ok:ok, miss:miss};
 }
 /* one Vapable tab, stepped through each add-to-cart link 1.5 seconds apart, then the basket. You log in and check out yourself. */
@@ -1201,6 +1246,16 @@ function fillBasket(items, onStep){
     i++; basketRun.timer = setTimeout(next, VAP_GAP);
   })();
   return true;
+}
+/* one add-to-cart link per pack size, using each pack's own option ID */
+function packLinks(id, pb){
+  var c = ingById[id].vap; if (!c || !c.packs) return null;
+  var out = [];
+  for (var k in pb.packs){ var v = c.packs[k]; if (!v) return null;
+    var a = {}; for (var x in c.attr) a[x] = c.attr[x]; a['attribute_pack-size'] = v[1];
+    var q = 'add-to-cart=' + c.pid + '&variation_id=' + v[0]; for (var y in a) q += '&' + encodeURIComponent(y) + '=' + encodeURIComponent(a[y]);
+    out.push({id:id, n:pb.packs[k], name:ingById[id].name + (+k === 1 ? ' (single shots)' : ' (' + k + ' pack)'), link:VAP_SHOP + '?' + q + '&quantity=' + pb.packs[k]}); }
+  return out;
 }
 function basketStepsHtml(items, miss, nic){
   return '<ol class="bsteps">' + items.map(function(x){ return '<li><a href="' + esc(x.link) + '" target="_blank" rel="noopener" data-bstep>Add ' + x.n + ' × ' + esc(x.name) + '</a></li>'; }).join('') +
@@ -1226,7 +1281,7 @@ function paintShopList(root){
   });
   var tt = q('[data-total]'); if (tt) tt.textContent = gbp(L.total);
   var b = basketItems(L), st = q('[data-bsteps]'); if (st) st.innerHTML = basketStepsHtml(b.ok, b.miss, nicOnList(L));
-  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.onOrder && !r.oos; });
+  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.oos; });
   return L;
 }
 function setQty(id, v){
@@ -1244,13 +1299,13 @@ function saveIds(id, o){ state.cartIds = state.cartIds || {}; state.cartIds[id] 
 /* ---------- order flow: Order now, "Ordered?" when you come back, then Delivered ---------- */
 var ASK_KEY = 'mixbench.orderAsk', askShowing = false;
 function onOrderQty(){ var q = {}; state.orders.forEach(function(o){ if (o.pending && !isDelivered(o)) for (var k in (o.qty || {})) q[k] = (q[k] || 0) + (+o.qty[k] || 0); }); return q; }
-function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.onOrder && !r.oos) n += r.n; }); return n; }
+function nicOnList(L){ var g = listShop(L, 'Vape and Go'), n = 0; (g ? g.rows : []).forEach(function(r){ if (r.id === 'nic' && r.n > 0 && !r.oos) n += r.n; }); return n; }
 /* exactly what you chose, per shop, at the moment you pressed Order now */
 function orderSnapshot(L){
   var snap = {t:Date.now(), shops:{}};
   L.shops.forEach(function(g){
     var q = {}, any = false, sub = 0;
-    g.rows.forEach(function(r){ if (r.n > 0 && !r.onOrder && !r.oos) { q[r.id] = r.n; sub += r.cost; any = true; } });
+    g.rows.forEach(function(r){ if (r.n > 0 && !r.oos) { q[r.id] = r.buy; sub += r.cost; any = true; } });
     if (any) snap.shops[g.shop] = {q:q, total:Math.round((g.sub + g.post) * 100) / 100};
   });
   return snap;
@@ -1293,7 +1348,9 @@ function saveOrders(snap, refs){
   for (var shop in snap.shops){
     var x = snap.shops[shop], items = {}, qty = {};
     for (var id in x.q) if (ingById[id]) { qty[id] = x.q[id]; items[id] = x.q[id] * sizeOf(id); }
-    var o = {id:uid(), t:Date.now(), items:items, qty:qty, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true};
+    var o = {id:uid(), t:Date.now(), items:items, qty:qty, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true}, cart = state.cart || {};
+    /* the typed amounts are now on order, so they leave the list (and come back if the order is cancelled) */
+    o.cartWas = {}; for (var c in qty) if (Object.prototype.hasOwnProperty.call(cart, c)) { o.cartWas[c] = cart[c]; delete cart[c]; }
     state.orders.push(o); made.push(o);
   }
   setAsk(null); return made;
@@ -1307,8 +1364,19 @@ function markDelivered(o){
 function undoDelivered(o){
   var cart = state.cart = state.cart || {};
   for (var k in (o.cleared || {})) if (!Object.prototype.hasOwnProperty.call(cart, k)) cart[k] = o.cleared[k];
-  delete o.cleared; delete o.delivered; o.status = 'ordered';
+  /* back on its way: it leaves stock until Delivered is pressed again (older orders too) */
+  delete o.cleared; delete o.delivered; delete o.cancelled; o.status = 'ordered'; o.pending = true;
 }
+/* Cancel: an order whose items already count in your stock (logged before Order now existed) keeps them;
+   it moves to Previous orders marked cancelled. An Order now order is removed and its list amounts come back. */
+function cancelOrder(o){
+  if (orderInStock(o)) { o.cancelled = true; o.status = 'delivered'; o.delivered = Date.now(); return 'kept'; }
+  var cart = state.cart = state.cart || {};
+  for (var k in (o.cartWas || {})) if (!Object.prototype.hasOwnProperty.call(cart, k)) cart[k] = o.cartWas[k];
+  state.orders = state.orders.filter(function(x){ return x.id !== o.id; });
+  return 'removed';
+}
+var UNDO_DELIVERED_TEXT = 'The items come off your stock again and the order goes back to Current orders until you press Delivered.';
 function setOrderStatus(o, st){
   if (st === 'delivered') { if (!isDelivered(o)) markDelivered(o); return; }
   if (isDelivered(o)) undoDelivered(o);
@@ -1319,6 +1387,150 @@ function orderQtyText(o){
   return orderItemsText(o);
 }
 function stepName(o){ return STEPS[stepIdx(o)][1]; }
+/* ---------- shared: steep time per recipe, the next batch, costs ---------- */
+function steepDaysOf(rid){ var v = +((state.steeps || {})[rid]); return v >= 1 && v <= 30 ? Math.round(v) : 3; }
+function readyAt(b){ return b.t + (+b.steep >= 1 ? +b.steep : 3) * DAY; }
+function bestAt(b){ return b.t + Math.max(7, (+b.steep >= 1 ? +b.steep : 3) + 2) * DAY; }
+/* batches mixed within 3 days of each other count as one session (e.g. 180ml over 2 days) */
+function mixSessions(){
+  var out = [];
+  state.batches.filter(function(b){ return +b.ml > 0; }).slice().sort(function(a, b){ return a.t - b.t; }).forEach(function(b){
+    var x = out[out.length - 1];
+    if (x && b.t - x.end <= 3 * DAY) { x.ml += +b.ml; x.end = b.t; x.batches.push(b); } else out.push({start:b.t, end:b.t, ml:+b.ml, batches:[b]});
+  });
+  return out;
+}
+/* ml a day: from your history once there are two sessions at least 5 days apart, otherwise your setting */
+function usageRate(){
+  var ss = mixSessions(), u = state.usage || {ml:100, days:10};
+  if (ss.length >= 2) { var span = (ss[ss.length - 1].start - ss[0].start) / DAY, made = 0;
+    for (var i = 0; i < ss.length - 1; i++) made += ss[i].ml;
+    if (span >= 5 && made > 0) return {perDay:made / span, from:'history', sessions:ss.length}; }
+  return {perDay:u.ml / u.days, from:'setting'};
+}
+function nextBatch(){
+  var ss = mixSessions(), rate = usageRate(); if (!ss.length || !(rate.perDay > 0)) return {rate:rate, none:true};
+  var runout = 0;
+  ss.forEach(function(x){ var left = Math.max(0, runout - x.start) * rate.perDay; runout = x.start + (left + x.ml) / rate.perDay * DAY; });
+  var steepD = state.batchSteep >= 0 ? +state.batchSteep : 5;
+  return {rate:rate, runout:runout, due:runout - steepD * DAY, steep:steepD, last:ss[ss.length - 1]};
+}
+function dayText(t){ return new Date(t).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}); }
+function nextBatchText(){
+  var nb = nextBatch();
+  if (nb.none) return 'Next batch due: make your first batch and Mix Bench works out when the next is due.';
+  var r = nb.rate, now = Date.now();
+  return 'Next batch due: ' + dayText(nb.due) + (nb.due <= now ? ' (now)' : '') + '. Your juice runs out about ' + dayText(nb.runout) + ', and the new batch needs ' + nb.steep + ' days to steep. ' +
+    (r.from === 'history' ? 'You use about ' + mlShort(Math.round(r.perDay * 10) / 10) + 'ml a day, from your last ' + r.sessions + ' batches.' : 'Based on your setting: ' + mlShort(state.usage.ml) + 'ml lasts about ' + state.usage.days + ' days.');
+}
+/* the next batch: your plan if you have one, otherwise the same as your last session */
+function nextBatchParts(){
+  var out = [];
+  RECIPES.forEach(function(r){ if ((state.plan[r.id] || 0) > 0 && r.parts.length && fits(r.id)) out.push({rid:r.id, ml:state.plan[r.id]}); });
+  if (out.length) return {from:'plan', list:out};
+  var nb = nextBatch(); if (nb.none) return {from:'none', list:[]};
+  nb.last.batches.forEach(function(b){ if (recById[b.recipe] && recById[b.recipe].parts.length && fits(b.recipe)) out.push({rid:b.recipe, ml:+b.ml}); });
+  return {from:'last', list:out};
+}
+function needFor(parts, times){
+  var need = {}; parts.forEach(function(p){ var m = mlFor(p.rid, p.ml); for (var k in m) need[k] = (need[k] || 0) + m[k] * (times || 1); });
+  return need;
+}
+/* stock for the next batch, counting what's on order */
+var DELIVERY_DAYS = 3;
+function nextBatchStock(){
+  var nbp = nextBatchParts(); if (!nbp.list.length) return null;
+  var need = needFor(nbp.list), st = stockNow(), oo = onOrderQty(), short = [];
+  for (var k in need) { var have = Math.max(0, st.left[k]) + (oo[k] || 0) * sizeOf(k), lack = r4(need[k] - have); if (lack > 0.0001) short.push({id:k, need:need[k], have:have, lack:lack, bottles:Math.ceil(lack / sizeOf(k) - 1e-9)}); }
+  var nb = nextBatch();
+  return {from:nbp.from, list:nbp.list, short:short, orderBy:nb.none ? 0 : nb.due - DELIVERY_DAYS * DAY};
+}
+/* cost of a batch from its amounts, at today's prices */
+function perMl(id){ return unitOf(id) / sizeOf(id); }
+function costSplit(m){
+  var c = {nic:0, flav:0, base:0};
+  for (var k in m) if (ingById[k]) c[isNicId(k) ? 'nic' : (k === 'pg' || k === 'vg' ? 'base' : 'flav')] += (+m[k] || 0) * perMl(k);
+  c.total = c.nic + c.flav + c.base; return c;
+}
+function costLine(m, ml){
+  var c = costSplit(m); if (!(c.total > 0)) return '';
+  return 'Cost ' + gbp(c.total) + ' (nic ' + gbp(c.nic) + ', flavour ' + gbp(c.flav) + ', base ' + gbp(c.base) + ') · ' + gbp(ml > 0 ? c.total / ml * 10 : 0) + ' per 10ml bottle';
+}
+/* "I've made this": what the batch would take that stock doesn't have (nothing is ever bought for you here) */
+function madeShortfall(rid){
+  var m = mlFor(rid, state.plan[rid] || 0), st = stockNow(), out = [];
+  for (var k in m) { var have = Math.max(0, st.left[k]), lack = r4(m[k] - have); if (lack > 0.0001) out.push({id:k, need:m[k], have:have}); }
+  return out;
+}
+function ordersFor(ids){ return state.orders.filter(function(o){ return !isDelivered(o) && ids.some(function(k){ return (o.items || {})[k] > 0; }); }); }
+function nicSafety(rid){
+  var m = mlFor(rid, state.plan[rid] || 0), nicMl = (m.nic || 0) + (m.nicvg || 0), mg = planNb(rid) === 'zero' ? 0 : planMg(rid);
+  return {mg:mg, nicMl:nicMl, shots:Math.round(nicMl / 10 * 100) / 100, kind:m.nicvg ? NIC_NAME.vg : (m.nic ? NIC_NAME['5050'] : '')};
+}
+function nicSafetyHtml(rid){
+  var n = nicSafety(rid);
+  return '<div class="nicsafe"><div class="nicsafe-mg num">' + n.mg + ' mg</div><div class="nicsafe-sub">' + (n.mg ? 'Nic: <b class="num">' + mlShort(n.nicMl) + ' ml</b> (' + n.shots + ' shot' + (n.shots === 1 ? '' : 's') + ' of ' + esc(n.kind) + ')' : 'No nicotine in this batch') + '</div></div>';
+}
+function recipeStars(rid){ var b = lastTaste(rid); return b && b.taste && b.taste.stars ? starsText(b.taste.stars) : ''; }
+/* on its way: shown as a faint fill above what you have */
+function onOrderMl(id){ return (onOrderQty()[id] || 0) * sizeOf(id); }
+/* the next-batch reminder banner: on or after the due date, until you dismiss it for the day */
+function batchDueNow(){ var nb = nextBatch(); return !nb.none && Date.now() >= nb.due; }
+function batchBannerHtml(){
+  if (!batchDueNow()) return '';
+  var snooze = ''; try { snooze = localStorage.getItem('mixbench.batchSnooze') || ''; } catch (e) {}
+  if (snooze === londonDay(Date.now())) return '';
+  var nb = nextBatch();
+  return '<div class="shake-banner batch-banner" role="status"><div><b>Time to mix your next batch</b><div class="small">Due ' + esc(dayText(nb.due)) + '. Your juice runs out about ' + esc(dayText(nb.runout)) + '.</div></div><div class="tbtns2"><button type="button" class="btn sm" data-batchplan>Open Plan</button><button type="button" class="btn sm secondary" data-batchsnooze>Not today</button></div></div>';
+}
+function batchSettingsHtml(){
+  var u = state.usage || {ml:100, days:10};
+  return '<div class="usage-row small"><label>100ml lasts me about <input class="num" type="number" min="1" max="90" step="1" data-usage value="' + Math.round(u.days * 100 / u.ml) + '" aria-label="Days 100ml lasts"> days</label>' +
+    '<label>Steep before it’s needed <input class="num" type="number" min="0" max="30" step="1" data-batchsteep value="' + (state.batchSteep >= 0 ? state.batchSteep : 5) + '" aria-label="Days to steep before the next batch is needed"> days</label></div>' +
+    '<p class="muted small" style="margin:4px 0 0">' + (usageRate().from === 'history' ? 'Your history is used now; the 100ml setting is only a fallback.' : 'Used until you have two batches at least 5 days apart.') + '</p>';
+}
+function setUsageDays(v){ v = Math.round(+v); if (!(v >= 1 && v <= 90)) return false; state.usage = {ml:100, days:v}; return true; }
+function setBatchSteep(v){ v = Math.round(+v); if (!(v >= 0 && v <= 30)) return false; state.batchSteep = v; return true; }
+function nextBatchCardHtml(withStock){
+  var ns = withStock ? nextBatchStock() : null, body = '';
+  if (ns) {
+    var what = ns.from === 'plan' ? 'your plan' : 'a batch like your last one (' + ns.list.map(function(p){ return mlShort(p.ml) + 'ml ' + recById[p.rid].name; }).join(', ') + ')';
+    body = ns.short.length ? '<p class="small" style="margin:8px 0 4px;color:var(--low);font-weight:600">Not enough stock for ' + esc(what) + ', even counting what’s on order. Short of:</p><ul class="small" style="margin:0;padding-left:18px">' +
+        ns.short.map(function(x){ return '<li>' + esc(ingById[x.id].name) + ': need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + ' (order ' + x.bottles + ' × ' + (isNicId(x.id) ? '10ml shot' : sizeLabel(x.id)) + ')</li>'; }).join('') + '</ul>' +
+        (ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '') + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add these to the Shop list</button>'
+      : '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough stock for ' + esc(what) + '.</p>';
+  }
+  return '<div class="card nextbatch"><b>' + esc(nextBatchText().split('. ')[0]) + '</b><p class="small muted" style="margin:4px 0 0">' + esc(nextBatchText().split('. ').slice(1).join('. ')) + '</p>' + body +
+    '<details data-box="nb:set"' + ((typeof openBox !== 'undefined' && openBox['nb:set']) || ((typeof ui !== 'undefined') && (ui.prevOpen || {})['nb:set']) ? ' open' : '') + '><summary class="small">Usage settings</summary>' + batchSettingsHtml() + '</details></div>';
+}
+function addShortToCart(){ var ns = nextBatchStock(); if (!ns) return 0; state.cart = state.cart || {}; ns.short.forEach(function(x){ var cur = +state.cart[x.id] || 0; state.cart[x.id] = Math.max(cur, x.bottles); }); return ns.short.length; }
+/* free delivery helper: items you'll need for your next two batches, not already in stock, on order or on the list */
+function freePostTips(L, g){
+  if (g.st !== 'fee' && g.st !== 'unknown') return [];
+  var nbp = nextBatchParts(); if (!nbp.list.length) return [];
+  var need = needFor(nbp.list, 2), st = stockNow(), oo = onOrderQty(), onList = {}, out = [];
+  L.rows.forEach(function(r){ onList[r.id] = r.buy || r.n || 0; });
+  for (var k in need) { var i = ingById[k]; if (!i || i.shop !== 'Vapable' || isOos(k)) continue;
+    var lack = need[k] - Math.max(0, st.left[k]) - ((oo[k] || 0) + (onList[k] || 0)) * sizeOf(k);
+    if (lack > 0.0001) { var n = Math.ceil(lack / sizeOf(k) - 1e-9); out.push({id:k, n:n, cost:lineCost(k, n)}); } }
+  return out.sort(function(a, b){ return a.cost - b.cost; }).slice(0, 4);
+}
+function freePostHtml(L, g){
+  var tips = freePostTips(L, g); if (g.st !== 'fee' && g.st !== 'unknown') return '';
+  return '<div class="freepost"><b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small">' +
+    tips.map(function(t){ return '<li>' + t.n + ' × ' + esc(ingById[t.id].name) + ' (' + gbp(t.cost) + ') <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></li>'; }).join('') + '</ul>' : '') + '</div>';
+}
+function addTip(v){ var p = String(v).split(':'), id = p[0], n = +p[1]; if (!ingById[id] || !(n > 0)) return; state.cart = state.cart || {}; var L = shopList(), r = L.rows.filter(function(x){ return x.id === id; })[0]; state.cart[id] = (r ? r.n : 0) + n; }
+/* due-date notification (the iPhone app, the same way as the 1pm shake reminder) */
+function batchNotifyTick(){
+  if (!batchDueNow() || !canNotify() || Notification.permission !== 'granted') return;
+  var nb = nextBatch(), key = londonDay(nb.due), seen = ''; try { seen = localStorage.getItem('mixbench.batchNotified') || ''; } catch (e) {}
+  if (seen === key) return;
+  try { localStorage.setItem('mixbench.batchNotified', key); } catch (e) {}
+  var body = 'Time to mix your next batch. Your juice runs out about ' + dayText(nb.runout) + '.';
+  try { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(r){ r.showNotification('Mix Bench', {body:body, icon:'icons/icon-192.png', tag:'batch'}); }); return; } } catch (e) {}
+  try { new Notification('Mix Bench', {body:body}); } catch (e) {}
+}
 /* ---------- saving: this phone + your Claude account ---------- */
 var cloud = {ref:null, mode:'phone', saving:false, again:false, timer:null, db:null, base:''};
 function save(){
@@ -1681,7 +1893,7 @@ var rendering = false;
 function renderTabs(){
   var st = stockNow(), lowN = 0;
   ING.forEach(function(i){ var s=status(i.id,st)[1]; if (s==='low'||s==='out') lowN++; });
-  var toBuy = shopList().rows.filter(function(r){ return r.n>0; }).length;
+  var toBuy = shopList().rows.filter(function(r){ return r.n > 0 && !r.oos; }).length;
   document.getElementById('tabs').innerHTML = TABS.map(function(t){
     var n = t[0]==='shop' ? toBuy : (t[0]==='stock' ? lowN : (t[0]==='steep' ? readyBatches().length + (shakeDue() ? 1 : 0) : 0));
     return '<button data-tab="' + t[0] + '"' + (current===t[0]?' aria-current="page"':'') + '><span class="badge" data-n="' + n + '">' + ICONS[t[0]] + '</span>' + t[1] + '</button>';
@@ -1784,6 +1996,7 @@ function bindParcels(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function(b){
     b.onclick = function(){
       var v = b.getAttribute('data-step').split(':'), o = state.orders.filter(function(x){ return x.id === v[0]; })[0]; if (!o) return;
+      if (v[1] === 'delivered' && !isDelivered(o)) confetti(b);
       setOrderStatus(o, v[1]); save(); var y = window.scrollY; render(); window.scrollTo(0, y);
       if (v[1] === 'delivered') toast('Marked as delivered.');
     };
@@ -1816,7 +2029,7 @@ function bindParcels(){
 function render(){
   syncRecipes();
   var app = document.getElementById('app');
-  var html = '<div class="brandbar">' + logoSvg() + '<span>Mix Bench</span></div>' + shakeBannerHtml() + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, log:viewLog})[current]();
+  var html = '<div class="brandbar">' + logoSvg() + '<span>Mix Bench</span></div>' + batchBannerHtml() + shakeBannerHtml() + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, log:viewLog})[current]();
   rendering = true; try { app.innerHTML = html; } finally { rendering = false; }
   ({plan:bindPlan, steep:bindSteepTab, shop:bindShop, stock:bindStock, log:bindLog})[current]();
   bindParcels();
@@ -1826,23 +2039,23 @@ function render(){
 
 /* ---------- Plan ---------- */
 function howSteps(rec, ml){
-  var m = mlFor(rec.id, ml), steps = [], n = function(x){ return '<b>' + mlShort(x) + 'ml</b>'; };
+  var m = mlFor(rec.id, ml), steps = [], n = function(x){ return '<b>' + mlShort(x) + 'ml</b>'; }, syr = function(x){ return x < 1 - 1e-9 ? '1ml' : (x <= 3.0001 ? '2ml' : '10ml'); };
   var nicMl = (m.nic || 0) + (m.nicvg || 0), hasNic = nicMl > 0;
   steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 60ml bottle.' + (ml > 55 ? ' <b>Split it across two bottles.</b>' : ''));
-  rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 4.0001 ? 1 : 0) - (m[y[0]] > 4.0001 ? 1 : 0); }).forEach(function(p){
+  rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 3.0001 ? 1 : 0) - (m[y[0]] > 3.0001 ? 1 : 0); }).forEach(function(p){
     var a = m[p[0]]; if (!(a > 0)) return;
-    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + (a <= 4.0001 ? '2ml' : '10ml') + ' syringe)</span>');
+    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe)</span>');
   });
   if (hasNic) {
     var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
-    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(10ml syringe)</span>' : ''));
+    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe)</span>' : ''));
   }
   ['pg','vg'].forEach(function(id){
-    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(10ml syringe)</span>');
+    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe)</span>');
   });
   steps.push('Cap it and shake for 2 to 3 minutes.');
   steps.push('Label it with the flavour and date.');
-  return steps.map(function(t){ return {t:t, tick:true}; }).concat([{t:'Steep for 3 days, shaking daily. Tap \u201cI\u2019ve made this\u201d to start the timer.', tick:false}]);
+  return steps.map(function(t){ return {t:t, tick:true}; }).concat([{t:'Steep for ' + steepDaysOf(rec.id) + ' day' + (steepDaysOf(rec.id) === 1 ? '' : 's') + ', shaking daily. Tap \u201cI\u2019ve made this\u201d to start the timer.', tick:false}]);
 }
 /* tick-off progress: stored per recipe and only valid while the amount, nicotine type and ratio are unchanged */
 function stepSig(id){ return [state.plan[id] || 0, planNb(id), state.vgr || 50, JSON.stringify(recById[id].parts)].join('|') + (planMg(id) !== 10 ? '|' + planMg(id) : ''); }
@@ -1914,7 +2127,7 @@ function updateLights(){
 /* ---------- steep timer ---------- */
 var DAY = 86400000, STEEP_READY = 3*DAY, STEEP_BEST = 7*DAY;
 function steeping(){
-  return state.batches.filter(function(b){ return !b.done && Date.now() - b.t < 14*DAY && (recById[b.recipe] || b.name); })
+  return state.batches.filter(function(b){ return !b.done && Date.now() < Math.max(b.t + 14*DAY, bestAt(b) + 7*DAY) && (recById[b.recipe] || b.name); })
     .sort(function(a,b){ return a.t - b.t; });
 }
 function whenShort(t){ var d = new Date(t); return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
@@ -1922,11 +2135,11 @@ function left(ms){ var h = Math.max(0, Math.round(ms/3600000)), d = Math.floor(h
 function steepHtml(){
   var list = steeping(); if (!list.length) return '';
   return '<section class="card"><div style="font-weight:700;margin-bottom:4px">Steeping</div><ul class="list">' + list.map(function(b){
-    var age = Date.now() - b.t, pct = Math.min(100, age/STEEP_BEST*100), r = {name: b.name || (recById[b.recipe] || {}).name || 'Batch'}, msg, col;
-    if (age < STEEP_READY) { msg = 'Ready to try in ' + left(STEEP_READY - age) + ' (' + whenShort(b.t + STEEP_READY) + ')'; col = '#E3A008'; }
-    else if (age < STEEP_BEST) { msg = 'Ready to try now. Best from ' + whenShort(b.t + STEEP_BEST); col = 'var(--ok)'; }
+    var now = Date.now(), pct = Math.min(100, (now - b.t) / (bestAt(b) - b.t) * 100), r = {name: b.name || (recById[b.recipe] || {}).name || 'Batch'}, msg, col;
+    if (now < readyAt(b)) { msg = 'Ready to try in ' + left(readyAt(b) - now) + ' (' + whenShort(readyAt(b)) + ')'; col = '#E3A008'; }
+    else if (now < bestAt(b)) { msg = 'Ready to try now. Best from ' + whenShort(bestAt(b)); col = 'var(--ok)'; }
     else { msg = 'Fully steeped. Enjoy!'; col = 'var(--ok)'; }
-    return '<li><div class="row between" style="align-items:flex-start"><div><button class="linkbtn" style="font-size:14px;font-weight:600;padding:0;text-align:left" data-bdetail="' + b.id + '">' + esc(r.name) + (b.nb === 'zero' ? ' (no nicotine)' : '') + '</button><div class="small muted num">' + esc(batchLine(b)) + '</div>' + (age >= STEEP_READY ? '<span class="pill ready" style="display:inline-block;margin-top:4px">Ready to try</span>' : '') +
+    return '<li><div class="row between" style="align-items:flex-start"><div><button class="linkbtn" style="font-size:14px;font-weight:600;padding:0;text-align:left" data-bdetail="' + b.id + '">' + esc(r.name) + (b.nb === 'zero' ? ' (no nicotine)' : '') + '</button><div class="small muted num">' + esc(batchLine(b)) + '</div>' + (now >= readyAt(b) ? '<span class="pill ready" style="display:inline-block;margin-top:4px">Ready to try</span>' : '') +
       '<div class="small" style="color:' + col + ';font-weight:600">' + esc(msg) + '</div></div>' +
       '<button class="linkbtn" data-steepdone="' + b.id + '" aria-label="Remove ' + esc(r.name) + ' from steeping">Done</button></div>' +
       '<div class="meter"><span style="width:' + pct + '%;background:' + col + '"></span></div></li>';
@@ -1944,10 +2157,11 @@ function bindSteep(){
   };
 }
 function viewSteepTab(){
-  return '<h1>Steeping</h1><p class="lede">Each clock counts down to when the batch is ready to try, 3 days after mixing.</p>' + reminderCardHtml() + '<div data-steep>' + steepCardsHtml() + '</div>' + timerCardsHtml();
+  return '<h1>Steeping</h1><p class="lede">Each clock counts down to when the batch is ready to try, after its recipe\u2019s steep time.</p>' + nextBatchCardHtml(false) + reminderCardHtml() + '<div data-steep>' + steepCardsHtml() + '</div>' + timerCardsHtml();
 }
 function bindSteepTab(){ bindSteep(); paintTimers(); }
 function goSteep(){ current = 'steep'; render(); window.scrollTo(0, 0); }
+function goPlan(){ current = 'plan'; render(); window.scrollTo(0, 0); }
 function mixPicker(){
   var m = state.mix || {}, picks = m.picks || {}, main = m.main || {}, str = m.strength || 'med', parts = mixParts(), pct = {};
   parts.forEach(function(p){ pct[p[0]] = p[1]; });
@@ -1978,17 +2192,20 @@ function viewPlan(){
     var ml = state.plan[r.id]||0, empty = !r.parts.length, key = 'r:' + r.id;
     var title = r.custom ? 'Make your own mix' + (empty ? '' : ': ' + esc(r.name)) : esc(r.name);
     return '<section class="card" data-rec="' + r.id + '"><details data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '>' +
-      '<summary class="recsum onorange"><span class="row" style="gap:10px">' + (empty ? '' : '<span class="lamp ' + L[r.id].col + '" data-lamp="' + r.id + '" role="img" aria-label="' + ({green:'In stock', amber:'Low stock', red:'No stock'})[L[r.id].col] + '"></span>') + '<span>' + title + '</span></span><span class="sub">' + subText(r) + '</span></summary>' +
+      '<summary class="recsum onorange"><span class="row" style="gap:10px">' + (empty ? '' : '<span class="lamp ' + L[r.id].col + '" data-lamp="' + r.id + '" role="img" aria-label="' + ({green:'In stock', amber:'Low stock', red:'No stock'})[L[r.id].col] + '"></span>') + '<span>' + title + (recipeStars(r.id) ? ' <span class="rstars" aria-label="Last rated ' + esc(recipeStars(r.id)) + '">' + recipeStars(r.id) + '</span>' : '') + '</span></span><span class="sub">' + subText(r) + '</span></summary>' +
       (r.custom ? '<label class="f" for="mixname" style="margin-top:0">Name your mix</label><input id="mixname" class="field" data-mixname value="' + esc(r.name) + '" aria-label="Name of your mix" style="font-weight:700;margin-bottom:6px">' + mixPicker() : '') +
       (empty ? '' : '<div class="light ' + L[r.id].col + '" data-light="' + r.id + '" role="status">' + lightHtml(L[r.id]) + '</div>') +
       feedbackHtml(r.id) +
       ratioNote(r.id) +
       '<label class="zero-tick"><input type="checkbox" data-zero="' + r.id + '"' + (state.zero && state.zero[r.id] ? ' checked' : '') + '> Without nicotine?</label>' +
       '<div class="small muted" style="margin-top:10px">Nic strength</div><div class="mgseg">' + MG_STEPS.map(function(v){ var z = state.zero && state.zero[r.id]; return '<button type="button" data-mg="' + r.id + ':' + v + '" class="' + (!z && planMg(r.id) === v ? 'on' : '') + '"' + (z ? ' disabled' : '') + '>' + v + 'mg</button>'; }).join('') + '</div>' +
+      '<div class="row between" style="margin-top:12px"><span class="muted small">Steep for</span><select class="steepsel" data-steepdays="' + r.id + '" aria-label="Steep time for ' + esc(r.name) + '">' + [1,2,3,4,5,6,7,10,14].map(function(d){ return '<option value="' + d + '"' + (steepDaysOf(r.id) === d ? ' selected' : '') + '>' + d + ' day' + (d === 1 ? '' : 's') + '</option>'; }).join('') + '</select></div>' +
+      '<div class="small muted" style="margin-top:4px">Made today, ready ' + esc(dayText(Date.now() + steepDaysOf(r.id) * DAY)) + '</div>' +
       '<div class="row between" style="margin-top:12px"><span class="muted small">How much to make</span>' +
       '<div class="row" style="gap:6px"><div class="stepper"><button data-dec aria-label="Less">&minus;</button>' +
       '<input class="num" data-ml type="number" inputmode="decimal" min="0" step="1" value="' + (ml||'') + '" placeholder="0" aria-label="ml of ' + esc(r.name) + '">' +
       '<button data-inc aria-label="More">+</button></div><span class="unit">ml</span></div></div>' +
+      (ml && !empty && fits(r.id) ? '<div class="small costline" data-cost-rec="' + r.id + '">' + esc(costLine(mlFor(r.id, ml), ml)) + '</div>' : '<div class="small costline" data-cost-rec="' + r.id + '"></div>') +
       '<details' + (ml?' open':'') + '><summary>How to make</summary><div data-howto>' + (empty ? '<p class="muted small" style="margin:4px 0 0">Tick at least one flavour above.</p>' : (fits(r.id) ? howTo(r, ml) : '<p class="muted small" style="margin:4px 0 0">Pick a lower nic strength to see the measurements.</p>')) + '</div></details>' +
       (empty ? '' : '<div><button class="btn" data-made="' + r.id + '" style="margin-top:12px"' + (fits(r.id) && progress(r).n && progress(r).d === progress(r).n ? '' : ' disabled') + '>I\u2019ve made this</button><p class="muted small" data-madehint style="text-align:center;margin:6px 0 0"' + (progress(r).n && progress(r).d === progress(r).n ? ' hidden' : '') + '>Tick every step above to unlock this.</p></div>') +
       (r.custom && !empty ? '<button class="btn secondary" data-mixsave style="margin-top:12px">Save as one of my recipes</button>' : '') +
@@ -2008,7 +2225,7 @@ function viewPlan(){
     return '<section class="card"><div class="row between"><div style="font-weight:700">Parcel on its way</div><div class="small muted">' + (o.ref ? 'Order ' + esc(o.ref) : esc(when(o.t))) + '</div></div>' + parcelHtml(o, true) + '</section>';
   }).join('');
   return steepSummaryHtml() + '<h1>Plan</h1><p class="lede">Set what you want to make. Shop and Stock update as you go.</p>' +
-    settings +
+    nextBatchCardHtml(true) + settings +
     cards +
     '<div class="card"><div class="row between"><span class="muted">Total planned</span><span class="num" style="font-weight:800;font-size:17px" data-total>' + mlShort(total) + ' ml</span></div></div>';
 }
@@ -2074,7 +2291,7 @@ function bindPlan(){
       state.zero = state.zero || {}; var id = cb.getAttribute('data-zero');
       if (cb.checked) state.zero[id] = true; else delete state.zero[id];
       save(); var y = window.scrollY; render(); window.scrollTo(0, y);
-      toast(cb.checked ? 'No nicotine. Recipe adjusted.' : 'Back to 10mg.');
+      toast(cb.checked ? 'No nicotine. Recipe adjusted.' : 'Back to ' + planMg(id) + 'mg.');
     };
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-rec]'), function(card){
@@ -2086,6 +2303,7 @@ function bindPlan(){
       card.querySelector('[data-howto]').innerHTML = howTo(recById[id], v);
       var hd = card.querySelector('[data-howto]').closest('details'); if (v && hd && !hd.open) hd.open = true;
       card.querySelector('.recsum .sub').textContent = subText(recById[id]);
+      var cl = card.querySelector('[data-cost-rec]'); if (cl) cl.textContent = v && fits(id) ? costLine(mlFor(id, v), v) : '';
       var total = 0; RECIPES.forEach(function(r){ total += state.plan[r.id]||0; });
       document.querySelector('[data-total]').textContent = mlShort(total) + ' ml';
       updateMade();
@@ -2102,35 +2320,34 @@ function bindPlan(){
     card.querySelector('[data-dec]').onclick = function(){ set(Math.max(0,(state.plan[id]||0) - 10), true); };
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-made]'), function(b){ b.onclick = function(){ confirmMade(b.getAttribute('data-made')); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-steepdays]'), function(sel){ sel.onchange = function(){ state.steeps = state.steeps || {}; state.steeps[sel.getAttribute('data-steepdays')] = +sel.value; stay(recById[sel.getAttribute('data-steepdays')].name + ' now steeps for ' + sel.value + ' day' + (+sel.value === 1 ? '' : 's') + '.'); }; });
 }
 function confirmMade(onlyId){
-  var kept = {};
-  RECIPES.forEach(function(r){ kept[r.id] = state.plan[r.id]; if (r.id !== onlyId) state.plan[r.id] = 0; });
-  var sh = shopping();
-  RECIPES.forEach(function(r){ state.plan[r.id] = kept[r.id]; });
-  var buys = sh.rows.filter(function(r){ return r.bottles>0; });
-  var batches = RECIPES.filter(function(r){ return r.id === onlyId && state.plan[r.id]>0 && r.parts.length; });
-  var body = '<p class="muted" style="margin-top:0">Batch:</p><ul class="list">' + batches.map(function(r){ return '<li><b>' + esc(r.name) + '</b><div class="small num">' + esc(batchSummary(r, state.plan[r.id], planNb(r.id), state.vgr || 50, planMg(r.id))) + '</div></li>'; }).join('') + '</ul>' +
-    '<p class="muted">Added to stock as bought:</p>' + (buys.length ? '<ul class="list">' + buys.map(function(b){ return '<li>' + esc(b.ing.name) + ' <b class="num">' + mlShort(b.buy) + ' ml</b></li>'; }).join('') + '</ul>' : '<p style="margin:0">Nothing. It all came from stock.</p>');
-  if (buys.length) body += '<label class="f" for="ord-no">Order number (optional)</label><input id="ord-no" class="field" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. Vapable 123456">';
-  sheet({title:'Made this batch?', body:body, confirm:'Yes, update my stock', onConfirm:function(w){
-    var t = Date.now(), items = {};
-    buys.forEach(function(b){ items[b.ing.id] = b.buy; });
-    var refEl = w.querySelector('#ord-no'), ref = refEl ? (refEl.value || '').trim().slice(0,80) : '';
-    if (buys.length) state.orders.push({id:uid(), t:t, items:items, ref:ref, status:'delivered', shops:shopsOf(buys)});
-    batches.forEach(function(r){ state.batches.push(newBatch(r, state.plan[r.id], planNb(r.id), state.vgr || 50, t, planMg(r.id))); state.plan[r.id]=0; delete state.ticks[r.id]; });
-    save(); render(); toast('Stock updated. ' + batches[0].name + ' reset to 0.');
+  var r = recById[onlyId]; if (!r || !(state.plan[onlyId] > 0)) return;
+  var short = madeShortfall(onlyId), orders = ordersFor(short.map(function(x){ return x.id; }));
+  var body = '<p class="muted" style="margin-top:0">Batch:</p><ul class="list"><li><b>' + esc(r.name) + '</b><div class="small num">' + esc(batchSummary(r, state.plan[onlyId], planNb(onlyId), state.vgr || 50, planMg(onlyId))) + '</div></li></ul>' + nicSafetyHtml(onlyId);
+  if (short.length) body += '<div class="shortwarn"><b>You’re short of:</b><ul>' + short.map(function(x){ return '<li>' + esc(ingById[x.id].name) + ': need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + '</li>'; }).join('') + '</ul>' +
+    (orders.length ? '<p class="small" style="margin:6px 0">If it has arrived, mark the order Delivered first:</p>' + orders.map(function(o){ return '<button type="button" class="btn sel" data-madedeliver="' + o.id + '">Mark ' + esc(orderSupplier(o)) + (o.ref ? ' ' + esc(o.ref) : '') + ' (' + esc(dayText(o.t)) + ') Delivered</button>'; }).join('') : '<p class="small" style="margin:6px 0 0">Nothing on order covers it. Nothing is added to your stock here: record what you have under Stock, or record the batch anyway and your stock shows below zero.</p>') + '</div>';
+  var w = sheet({title:'Made this batch?', body:body, confirm:short.length ? 'Record it anyway' : 'Yes, record the batch', onConfirm:function(){
+    var t = Date.now(), b = newBatch(r, state.plan[r.id], planNb(r.id), state.vgr || 50, t, planMg(r.id)); b.steep = steepDaysOf(r.id);
+    state.batches.push(b); state.plan[r.id] = 0; delete state.ticks[r.id];
+    save(); render(); toast('Batch recorded. ' + r.name + ' reset to 0.');
   }});
+  Array.prototype.forEach.call(w.querySelectorAll('[data-madedeliver]'), function(btn){ btn.onclick = function(){
+    var o = state.orders.filter(function(x){ return x.id === btn.getAttribute('data-madedeliver'); })[0]; if (!o) return;
+    confetti(btn); markDelivered(o); save(); render(); toast('Marked Delivered and added to stock.'); setTimeout(function(){ confirmMade(onlyId); }, 50);
+  }; });
 }
 
 /* ---------- Shop ---------- */
 function shopRowHtml(r){
   var nicItem = r.id === 'nic' || r.id === 'nicvg', m = multiOf(r.id);
-  var tag = r.onOrder ? '<span class="pill ordered">Ordered</span>' : (r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : '')));
-  if (r.onOrder) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + r.onOrder + ' \u00d7 ' + (nicItem ? '10ml shot' : sizeLabel(r.id)) + ' on order. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
+  var tag = r.onOrder ? '<span class="pill ordered">Ordered ' + r.onOrder + '</span>' : (r.out ? '<span class="pill out">Out</span>' : (r.low ? '<span class="pill low">Low</span>' : (r.short > 0 ? '<span class="pill">For your plan</span>' : '')));
+  if (r.onOrder && !(r.n > 0) && !r.typed) return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a><div class="have">' + r.onOrder + ' \u00d7 ' + (nicItem ? '10ml shot' : sizeLabel(r.id)) + ' on order, which covers what you need. It leaves this list when you press Delivered.</div></div>' + tag + '</div></li>';
   return '<li><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><a href="' + esc(r.ing.url) + '" target="_blank" rel="noopener">' + esc(r.ing.name) + '</a>' +
     '<div class="have">' + esc(r.ing.shop) + ' · ' + (nicItem ? '10ml shot' : sizeLabel(r.id) + ' bottle') + '</div>' +
-    '<div class="have num">' + (r.need > 0 ? 'Need ' + ml2(r.need) + ' ml, have ' : 'Have ') + ml2(r.have) + ' ml</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + tag + oosTag(r) + '</div></div>' +
+    '<div class="have num">' + (r.need > 0 ? 'Need ' + esc(amtText(r.id, r.need)) + ', have ' : 'Have ') + esc(amtText(r.id, r.have)) + '</div>' +
+    (r.onOrder ? '<div class="have" style="font-weight:700;color:var(--ink)">Ordered ' + r.onOrder + ', still need ' + r.sugg + ' more</div>' : '') + '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + tag + oosTag(r) + '</div></div>' +
     '<div class="qrow"><label><span>£ each</span><input class="num" inputmode="decimal" type="number" min="0" step="0.01" data-lp="' + r.id + '" value="' + r.unit.toFixed(2) + '" aria-label="Price per ' + (nicItem ? 'shot' : 'bottle') + ' for ' + esc(r.ing.name) + '"></label>' +
     '<span class="x" aria-hidden="true">×</span><label><span>' + (nicItem ? 'Shots' : 'Bottles') + '</span><input class="num" inputmode="numeric" type="number" min="0" step="1" data-q="' + r.id + '" value="' + r.n + '" aria-label="How many ' + (nicItem ? 'shots' : 'bottles') + ' of ' + esc(r.ing.name) + ' to order"></label>' +
     '<b class="num qcost" data-cost="' + r.id + '">' + (r.oos ? '-' : gbp(r.cost)) + '</b></div>' +
@@ -2152,9 +2369,9 @@ function ordersShopHtml(){
   }).join('') : '<div class="card empty">No orders on the way.</div>');
   if (prev.length) h += '<h2>Previous orders</h2><section class="card" style="padding-top:4px;padding-bottom:4px">' + prev.map(function(o){
     var key = 'po:' + o.id;
-    return '<details class="prevord" data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '><summary class="prevsum"><span style="min-width:0"><b>' + esc(o.delivered ? 'Delivered ' + whenShort(o.delivered) : when(o.t)) + '</b><span class="small muted"> · ' + (o.ref ? 'Order no. ' + esc(o.ref) + ' · ' : '') + esc(orderSupplier(o)) + '</span></span></summary>' +
-      '<div class="small muted">Ordered ' + esc(when(o.t)) + (o.delivered ? ', delivered ' + esc(when(o.delivered)) : '') + '</div><div class="small" style="margin-top:4px">' + esc(orderQtyText(o)) + '</div>' + (o.total ? '<div class="small num" style="font-weight:700">Total ' + gbp(o.total) + '</div>' : '') +
-      '<button class="linkbtn" data-undeliver="' + o.id + '">Undo Delivered</button></details>';
+    return '<details class="prevord" data-box="' + key + '"' + (openBox[key] ? ' open' : '') + '><summary class="prevsum"><span style="min-width:0"><b>' + esc(o.cancelled ? 'Cancelled ' + whenShort(o.delivered) : (o.delivered ? 'Delivered ' + whenShort(o.delivered) : when(o.t))) + '</b><span class="small muted"> · ' + (o.ref ? 'Order no. ' + esc(o.ref) + ' · ' : '') + esc(orderSupplier(o)) + '</span></span></summary>' +
+      '<div class="small muted">Ordered ' + esc(when(o.t)) + (o.cancelled ? ', cancelled ' + esc(when(o.delivered)) + ' (its stock was kept)' : (o.delivered ? ', delivered ' + esc(when(o.delivered)) : '')) + '</div><div class="small" style="margin-top:4px">' + esc(orderQtyText(o)) + '</div>' + (o.total ? '<div class="small num" style="font-weight:700">Total ' + gbp(o.total) + '</div>' : '') +
+      '<button class="linkbtn" data-undeliver="' + o.id + '">' + (o.cancelled ? 'Undo cancel' : 'Undo Delivered') + '</button></details>';
   }).join('') + '</section>';
   return h;
 }
@@ -2166,11 +2383,11 @@ function viewShop(){
     return '<section class="card"><div class="shop-head"><h3>' + esc(g.shop) + (vap ? '' : ' <span class="small muted" style="font-weight:500">(Nic Nic shots)</span>') + '</h3><span class="num" style="font-weight:700" data-sub="' + esc(g.shop) + '">' + gbp(g.sub) + '</span></div>' +
       '<div class="small" style="font-weight:700;margin-bottom:4px;color:' + (g.st === 'free' ? 'var(--ok)' : 'var(--low)') + '" data-del="' + esc(g.shop) + '">' + esc(shopDelText(g)) + '</div>' +
       (dn ? '<div class="small muted" style="margin-bottom:4px">' + esc(dn) + '</div>' : '') +
-      '<ul class="list">' + g.rows.map(shopRowHtml).join('') + '</ul></section>';
+      '<ul class="list">' + g.rows.map(shopRowHtml).join('') + '</ul>' + (vap ? freePostHtml(L, g) : '') + '</section>';
   }).join('');
   var spare = ING.filter(function(i){ return !L.rows.some(function(r){ return r.id === i.id; }); });
   var add = spare.length ? '<section class="card"><label class="f" for="additem" style="margin-top:0">Add something else to the list</label><select id="additem" class="field" data-additem><option value="">Choose an item</option>' + spare.map(function(i){ return '<option value="' + i.id + '">' + esc(i.name) + ' (' + esc(i.shop) + ')</option>'; }).join('') + '</select></section>' : '';
-  var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.onOrder && !r.oos; });
+  var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.oos; });
   var total = L.rows.length ? '<section class="card"><div class="total"><span>Total to order</span><span class="num" data-total>' + gbp(L.total) + '</span></div>' +
     '<div class="stat" style="margin-top:10px">' + L.shops.filter(function(g){ return g.rows.length; }).map(function(g){ return '<span class="muted">' + esc(g.shop) + ', with postage</span><span class="v num" data-shopline="' + esc(g.shop) + '">' + gbp(g.sub + g.post) + '</span>'; }).join('') + '</div>' +
     (anyTyped ? '<button class="linkbtn" data-cartreset>Go back to the suggested amounts</button>' : '') +
@@ -2228,15 +2445,15 @@ function bindShop(){
   if (ro) ro.onclick = function(){ var snap = orderSnapshot(shopList()); if (Object.keys(snap.shops).length) orderNumberSheet(snap); };
   Array.prototype.forEach.call(root.querySelectorAll('[data-delivered]'), function(b){ b.onclick = function(){
     var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-delivered'); })[0]; if (!o) return;
-    markDelivered(o); save(); keepY(); toast('Added to stock and moved to Previous orders.');
+    confetti(b); markDelivered(o); save(); keepY(); toast('Added to stock and moved to Previous orders.');
   }; });
   Array.prototype.forEach.call(root.querySelectorAll('[data-undeliver]'), function(b){ b.onclick = function(){
     var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-undeliver'); })[0]; if (!o) return;
-    sheet({title:'Undo Delivered?', body:'<p class="muted" style="margin:0">' + (o.pending ? 'The items come off your stock again and ' : '') + 'the order goes back to Current orders.</p>', confirm:'Undo Delivered', onConfirm:function(){ undoDelivered(o); save(); keepY(); toast('Back in Current orders.'); }});
+    sheet({title:o.cancelled ? 'Undo cancel?' : 'Undo Delivered?', body:'<p class="muted" style="margin:0">' + UNDO_DELIVERED_TEXT + '</p>', confirm:o.cancelled ? 'Undo cancel' : 'Undo Delivered', onConfirm:function(){ undoDelivered(o); save(); keepY(); toast('Back in Current orders.'); }});
   }; });
   Array.prototype.forEach.call(root.querySelectorAll('[data-ordcancel]'), function(b){ b.onclick = function(){
-    var id = b.getAttribute('data-ordcancel');
-    sheet({title:'Cancel this order?', body:'<p class="muted" style="margin:0">It is removed from Current orders. Your shopping list stays as it is.</p>', confirm:'Cancel order', cancel:'Keep it', danger:true, onConfirm:function(){ state.orders = state.orders.filter(function(x){ return x.id !== id; }); save(); keepY(); toast('Order removed.'); }});
+    var o = state.orders.filter(function(x){ return x.id === b.getAttribute('data-ordcancel'); })[0]; if (!o) return;
+    sheet({title:'Cancel this order?', body:'<p class="muted" style="margin:0">' + (orderInStock(o) ? 'This order was logged before Order now, so its items already count in your stock. They stay there, and the order moves to Previous orders as cancelled.' : 'It is removed from Current orders and what you typed on the list comes back.') + '</p>', confirm:'Cancel order', cancel:'Keep it', danger:true, onConfirm:function(){ var r = cancelOrder(o); save(); keepY(); toast(r === 'kept' ? 'Cancelled. Your stock was kept.' : 'Order removed.'); }});
   }; });
   bindLogRefs(root);
 }
@@ -2291,8 +2508,8 @@ function bindStock(){
 /* ---------- History ---------- */
 function viewLog(){
   var items = [];
-  state.batches.forEach(function(b){ var r=recById[b.recipe]; items.push({t:b.t, type:'batch', id:b.id, title:'Made ' + (b.name || (r?r.name:'recipe')) + (b.nb === 'zero' ? ' (no nicotine)' : ''), detail:batchLine(b) + '. ' + (Date.now() - b.t < STEEP_READY ? 'Ready to try ' + whenShort(b.t + STEEP_READY) : 'Ready to try'), batch:true}); });
-  state.adjust.forEach(function(a){ var i=ingById[a.ing]; items.push({t:a.t, type:'adjust', id:a.id, title:(a.ml<0?'Spilt ':'Extra ') + (i?i.name:''), detail:(a.ml>0?'+':'') + mlShort(a.ml) + ' ml'}); });
+  state.batches.forEach(function(b){ var r=recById[b.recipe]; items.push({t:b.t, type:'batch', id:b.id, title:'Made ' + (b.name || (r?r.name:'recipe')) + (b.nb === 'zero' ? ' (no nicotine)' : ''), detail:batchLine(b) + '. ' + (Date.now() < readyAt(b) ? 'Ready to try ' + whenShort(readyAt(b)) : 'Ready since ' + whenShort(readyAt(b))) + (batchAmounts(b) ? '. ' + costLine(batchAmounts(b), b.ml) + ' at today\u2019s prices' : ''), batch:true}); });
+  state.adjust.forEach(function(a){ var i=ingById[a.ing]; items.push({t:a.t, type:'adjust', id:a.id, title:(a.ml<0?'Spilt ':'Extra ') + (i?i.name:''), detail:(a.ml>0?'+':'') + amtText(a.ing, a.ml)}); });
   items.sort(function(a,b){ return b.t - a.t; });
   return '<h1>History</h1><p class="lede">Everything that has changed your stock. Tap \u00d7 to undo an entry.</p>' +
     ordersHtml() +
