@@ -187,9 +187,11 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .freepost[hidden]{display:none}
 .tiplist{list-style:none;padding:0;margin:6px 0 0}
 .tiplist li{padding:8px 0;border-top:1px solid var(--line)}
-.tipmain{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.tipbtn{width:auto;flex:none;padding:8px 12px}
+.tipmain{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.tipmain b{font-size:14px}
+.btn.sm.tipbtn{display:block;width:100%;padding:11px 14px;font-size:15px;font-weight:700}
 .btn.tipall{margin-top:8px}
+.freepost ul.tiplist{padding-left:0}
 .tipwhy{font-size:11px}
 .tipwhy.tipout{color:var(--out);font-weight:600}
 .freepost ul{margin:4px 0 0;padding-left:18px}
