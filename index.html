@@ -185,6 +185,9 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .usage-row input{width:64px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center;font-size:16px;margin:0 4px}
 .freepost{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
 .freepost[hidden]{display:none}
+.tiplist li{padding:3px 0}
+.tipwhy{font-size:11px}
+.tipwhy.tipout{color:var(--out);font-weight:600}
 .freepost ul{margin:4px 0 0;padding-left:18px}
 .shake-banner.batch-banner{background:#0A0A0B;color:#fff;border:2px solid var(--sel)}
 .shake-banner.batch-banner .btn{background:var(--sel);color:var(--sel-ink)}
@@ -1540,25 +1543,46 @@ function nextBatchCardHtml(withStock){
 }
 function addShortToCart(){ var ns = nextBatchStock(); if (!ns) return 0; state.cart = state.cart || {}; ns.short.forEach(function(x){ var cur = +state.cart[x.id] || 0; state.cart[x.id] = Math.max(cur, x.bottles); }); return ns.short.length; }
 /* free delivery helper: items you'll need for your next two batches, not already in stock, on order or on the list */
+/* every ingredient (by ID) your recipes use, with the ml one 100ml batch of each recipe takes */
+function recipeUse(){
+  var use = {};
+  RECIPES.forEach(function(r){ if (!r.parts.length || !fits(r.id)) return; var m = mlFor(r.id, 100); for (var k in m) if (m[k] > 0) use[k] = (use[k] || 0) + m[k]; });
+  return use;
+}
+/* Shop suggestions, most urgent first:
+   a. out of stock (0 ml, including never bought) and used in your recipes
+   b. short for your next 2 batches
+   c. runs out soonest for a batch like your next one
+   d. anything else low in Stock
+   Vapable only (never Nic Nic shots from Vape and Go), and nothing already on the list or on order. */
 function freePostTips(L, g){
-  var nbp = nextBatchParts(), st = stockNow(), oo = onOrderQty(), onList = {}, out = [], seen = {};
-  L.rows.forEach(function(r){ onList[r.id] = r.oos ? 0 : (r.buy || r.n || 0); });
-  var need = nbp.list.length ? needFor(nbp.list, 2) : {};
-  for (var k in need) { var i = ingById[k]; if (!i || i.shop !== 'Vapable' || isOos(k)) continue;
-    var lack = need[k] - Math.max(0, st.left[k]) - ((oo[k] || 0) + (onList[k] || 0)) * sizeOf(k);
-    if (lack > 0.0001) { var n = Math.ceil(lack / sizeOf(k) - 1e-9); out.push({id:k, n:n, cost:lineCost(k, n), why:'next batches'}); seen[k] = 1; } }
-  /* anything you're low on or out of that isn't already covered */
-  ING.forEach(function(i){ var k = i.id; if (seen[k] || i.shop !== 'Vapable' || isOos(k)) return;
-    var s = status(k, st)[1]; if (s !== 'low' && s !== 'out') return;
-    var have = Math.max(0, st.left[k]) + ((oo[k] || 0) + (onList[k] || 0)) * sizeOf(k); if (have >= i.warn) return;
-    var n = Math.max(1, Math.ceil((i.warn - have) / sizeOf(k) - 1e-9)); out.push({id:k, n:n, cost:lineCost(k, n), why:s === 'out' ? 'out' : 'low'}); });
-  return out.sort(function(a, b){ return a.cost - b.cost; }).slice(0, 6);
+  var st = stockNow(), oo = onOrderQty(), taken = {}, out = [], seen = {}, use = recipeUse();
+  L.rows.forEach(function(r){ if (r.n > 0 && !r.oos) taken[r.id] = 1; });
+  var ok = function(k){ var i = ingById[k]; return i && i.shop === 'Vapable' && !taken[k] && !(oo[k] > 0) && !seen[k]; };
+  var left = function(k){ return Math.max(0, st.left[k] || 0); };
+  var nbp = nextBatchParts(), one = nbp.list.length ? needFor(nbp.list, 1) : {}, two = nbp.list.length ? needFor(nbp.list, 2) : {};
+  var push = function(k, n, cat, why){ out.push({id:k, n:Math.max(1, n), cost:lineCost(k, Math.max(1, n)), cat:cat, why:why}); seen[k] = 1; };
+  var bottlesFor = function(k, ml){ return Math.max(1, Math.ceil(ml / sizeOf(k) - 1e-9)); };
+  /* a */
+  Object.keys(use).sort().forEach(function(k){ if (ok(k) && left(k) <= 0.0001) push(k, bottlesFor(k, Math.max(two[k] || 0, 1)), 'a', 'Out of stock' + (isOos(k) ? ' (marked out of stock at Vapable, so Order now leaves it out)' : '')); });
+  /* b */
+  Object.keys(two).forEach(function(k){ var lack = two[k] - left(k); if (ok(k) && lack > 0.0001) push(k, bottlesFor(k, lack), 'b', 'Need for next batch' + (one[k] - left(k) > 0.0001 ? '' : 'es')); });
+  /* c: batches left for a batch like your next one (or 100ml of each recipe if there's nothing to go on) */
+  var per = nbp.list.length ? one : use, c = [];
+  Object.keys(per).forEach(function(k){ if (ok(k) && per[k] > 0.0001) c.push({k:k, b:Math.floor(left(k) / per[k] + 1e-9)}); });
+  c.sort(function(x, y){ return x.b - y.b; }).forEach(function(x){ if (ok(x.k)) push(x.k, bottlesFor(x.k, per[x.k]), 'c', 'Runs out after ' + x.b + ' batch' + (x.b === 1 ? '' : 'es')); });
+  /* d */
+  ING.forEach(function(i){ var k = i.id; if (!ok(k)) return; var s = status(k, st)[1]; if (s === 'low' || s === 'out') push(k, bottlesFor(k, i.warn - left(k)), 'd', 'Low stock'); });
+  return out;
 }
 function freePostInner(L, g){
-  var tips = freePostTips(L, g), under = g && (g.st === 'fee' || g.st === 'unknown');
+  var all = freePostTips(L, g), under = !!(g && g.d && g.sub < g.d.free - 0.001);
+  var urgent = all.filter(function(t){ return t.cat === 'a' || t.cat === 'b'; });
+  /* under the free delivery amount: everything urgent and at least 3; over it: only what's still needed */
+  var tips = under ? all.slice(0, Math.max(3, urgent.length)) : urgent;
   if (!tips.length && !under) return '';
-  return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small">' +
-    tips.map(function(t){ return '<li>' + t.n + ' × ' + esc(ingById[t.id].name) + ' (' + gbp(t.cost) + (t.why === 'out' ? ', you’re out' : (t.why === 'low' ? ', you’re low' : '')) + ') <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></li>'; }).join('') + '</ul>' : '');
+  return (under ? '<b class="small">Add ' + gbp(g.d.free - g.sub) + ' for free delivery.</b>' : '') + (tips.length ? '<div class="small muted">You’ll need these for your next batches:</div><ul class="small tiplist">' +
+    tips.map(function(t){ return '<li><div>' + t.n + ' × ' + esc(ingById[t.id].name) + ' <span class="num">' + gbp(t.cost) + '</span> <button type="button" class="linkbtn" data-tipadd="' + t.id + ':' + t.n + '">Add</button></div><div class="muted tipwhy' + (t.cat === 'a' ? ' tipout' : '') + '">' + esc(t.why) + '</div></li>'; }).join('') + '</ul>' : '');
 }
 function freePostHtml(L, g){ var inner = freePostInner(L, g); return '<div class="freepost" data-freepost' + (inner ? '' : ' hidden') + '>' + inner + '</div>'; }
 function addTip(v){ var p = String(v).split(':'), id = p[0], n = +p[1]; if (!ingById[id] || !(n > 0)) return; state.cart = state.cart || {}; var L = shopList(), r = L.rows.filter(function(x){ return x.id === id; })[0]; state.cart[id] = (r ? r.n : 0) + n; }
@@ -2442,7 +2466,7 @@ function viewShop(){
       '<span class="muted">Cost per 10ml bottle</span><span class="v num">' + gbp(sh.ingCost / sh.planned * 10) + '</span></div></section>' : '';
   return '<h1>Shop</h1><p class="lede">What you’re low on or need for your plan. Type how many to order and the total keeps up.</p>' +
     (L.rows.length ? '' : '<div class="card empty">Nothing low or needed for your plan.</div>') +
-    groups + add + total + ordersShopHtml() + cost + settingsHtml();
+    groups + (listShop(L, 'Vapable').rows.length ? '' : '<section class="card">' + freePostHtml(L, listShop(L, 'Vapable')) + '</section>') + add + total + ordersShopHtml() + cost + settingsHtml();
 }
 function orderNumberSheet(snap){
   var lines = snapLines(snap);
