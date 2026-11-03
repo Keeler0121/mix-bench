@@ -452,7 +452,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}, trash:[]};
 }
 function migrate(s){
   var b = blank();
@@ -474,6 +474,7 @@ function migrate(s){
   ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
+  if (Array.isArray(s.trash)) b.trash = s.trash.filter(function(x){ return x && x.rec && x.rec.id && x.kind; }).slice(-30);
   if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
@@ -1652,6 +1653,62 @@ function batchNotifyTick(){
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(r){ r.showNotification('Mix Bench', {body:body, icon:'icons/icon-192.png', tag:'batch'}); }); return; } } catch (e) {}
   try { new Notification('Mix Bench', {body:body}); } catch (e) {}
 }
+/* ---------- shared: recently deleted, and adding a batch you made earlier ---------- */
+var TRASH_KEYS = {batch:'batches', order:'orders', adjust:'adjust'}, TRASH_DAYS = 30;
+function trashList(){ var now = Date.now(); state.trash = (state.trash || []).filter(function(x){ return x && x.rec && now - x.t < TRASH_DAYS * DAY; }); return state.trash; }
+/* removing an entry keeps a copy, so it can be brought back (batches, orders and spills/extras) */
+function deleteEntry(kind, id){
+  var key = TRASH_KEYS[kind]; if (!key) return null;
+  var rec = (state[key] || []).filter(function(x){ return x.id === id; })[0]; if (!rec) return null;
+  state[key] = state[key].filter(function(x){ return x.id !== id; });
+  state.trash = trashList().concat([{kind:kind, rec:jcopy(rec), t:Date.now()}]).slice(-30);
+  return rec;
+}
+function restoreEntry(i){
+  var list = trashList(), t = list[i]; if (!t) return null;
+  var key = TRASH_KEYS[t.kind]; state[key] = state[key] || [];
+  if (!state[key].some(function(x){ return x.id === t.rec.id; })) state[key].push(jcopy(t.rec));
+  if (state.deleted) delete state.deleted[t.rec.id];
+  state.trash = list.filter(function(x, j){ return j !== i; });
+  return t;
+}
+function trashTitle(t){
+  var r = t.rec;
+  if (t.kind === 'batch') { var rt = batchTime(r); return 'Batch: ' + (r.name || (recById[r.recipe] || {}).name || 'recipe') + ', ' + mlShort(+r.ml || 0) + ' ml' + (rt ? ', made ' + dayText(rt) : ''); }
+  if (t.kind === 'order') return 'Order: ' + orderSupplier(r) + (r.ref ? ' ' + r.ref : '') + ', ' + (r.t ? dayText(r.t) : '');
+  var i = ingById[r.ing]; return (r.ml < 0 ? 'Spilt ' : 'Extra ') + (i ? i.name : '') + ' ' + amtText(r.ing, Math.abs(r.ml));
+}
+function trashHtml(btn){
+  var list = trashList(); if (!list.length) return '';
+  return '<h2>Recently deleted</h2><section class="card"><p class="muted small" style="margin:0 0 6px">Kept for ' + TRASH_DAYS + ' days on this device. Restore puts it back exactly as it was.</p><ul class="list">' +
+    list.map(function(t, i){ return '<li><div class="row between" style="gap:10px;align-items:center"><div style="min-width:0"><div style="font-weight:600;font-size:14px">' + esc(trashTitle(t)) + '</div><div class="small muted">Deleted ' + esc(when(t.t)) + '</div></div>' + btn(i) + '</div></li>'; }).reverse().join('') + '</ul></section>';
+}
+/* a batch you made before (or one you lost): the date and mix are yours to set, and stock follows from it */
+function pad2(n){ return String(n).padStart(2, '0'); }
+function localInput(t){ var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function earlierBatchHtml(){
+  var last = state.batches.slice().sort(function(a, b){ return (batchTime(b) || 0) - (batchTime(a) || 0); })[0] || {};
+  var vgr = +last.vgr > 0 ? +last.vgr : (state.vgr || 50), nb = last.nb && last.nb !== 'zero' ? last.nb : (state.nicBase || '5050'), mg = last.nb === 'zero' ? 0 : (+last.mg >= 5 ? Math.round(last.mg) : 10);
+  var opt = function(v, l, sel){ return '<option value="' + v + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>'; };
+  return '<p class="muted small" style="margin-top:0">Adds a batch to History with the date you pick. Your stock is worked out from it, so it takes the ingredients off again.</p>' +
+    '<label class="f" for="eb-r">Recipe</label><select id="eb-r" class="field">' + RECIPES.filter(function(r){ return r.parts.length; }).map(function(r){ return opt(r.id, r.name, r.id === (last.recipe || '')); }).join('') + '</select>' +
+    '<label class="f" for="eb-ml">How much (ml)</label><input id="eb-ml" class="field num" type="number" inputmode="decimal" min="1" step="1" placeholder="e.g. 40">' +
+    '<label class="f" for="eb-t">When you made it</label><input id="eb-t" class="field" type="datetime-local" value="' + localInput(Date.now()) + '" max="' + localInput(Date.now() + 3600000) + '">' +
+    '<label class="f" for="eb-v">PG / VG</label><select id="eb-v" class="field">' + [40,45,50,55,60,70].map(function(v){ return opt(v, ratioName(v), v === vgr); }).join('') + '</select>' +
+    '<label class="f" for="eb-mg">Nic strength</label><select id="eb-mg" class="field">' + [[0, 'No nicotine'], [5, '5mg'], [10, '10mg'], [15, '15mg']].map(function(x){ return opt(x[0], x[1], x[0] === mg); }).join('') + '</select>' +
+    '<label class="f" for="eb-nb">Nic shots used</label><select id="eb-nb" class="field">' + opt('5050', NIC_NAME['5050'], nb === '5050') + opt('vg', NIC_NAME.vg, nb === 'vg') + '</select>';
+}
+/* returns the new batch, or a message if something's missing */
+function addEarlierBatch(root){
+  var q = function(s){ return root.querySelector(s); }, rec = recById[q('#eb-r').value], ml = +q('#eb-ml').value, t = new Date(q('#eb-t').value).getTime();
+  if (!rec) return 'Pick a recipe.';
+  if (!(ml > 0)) return 'Type how much you made.';
+  if (!isFinite(t) || t < 946684800000) return 'Pick the date you made it.';
+  if (t > Date.now() + 3600000) return 'That date is in the future.';
+  var mg = +q('#eb-mg').value, nb = mg === 0 ? 'zero' : q('#eb-nb').value;
+  var b = newBatch(rec, Math.round(ml * 100) / 100, nb, +q('#eb-v').value, t, mg || undefined); b.steep = steepDaysOf(rec.id);
+  state.batches.push(b); return b;
+}
 /* ---------- saving: this phone + your Claude account ---------- */
 var cloud = {ref:null, mode:'phone', saving:false, again:false, timer:null, db:null, base:''};
 function save(){
@@ -1982,7 +2039,7 @@ function sheet(opts){
   wrap.querySelector('[data-cancel]').onclick = close;
   var ok = wrap.querySelector('[data-ok]');
   if (ok) ok.onclick = function(){ if (opts.onConfirm(wrap) !== false) close(); };
-  var anchor = (lastTap && document.getElementById('app').contains(lastTap)) ? (lastTap.closest('section.card') || lastTap) : null;
+  var anchor = (lastTap && document.getElementById('app').contains(lastTap)) ? (lastTap.closest('section.card') || lastTap.closest('.bgrid') || lastTap) : null;
   if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
   else document.getElementById('app').appendChild(wrap);
   wrap.scrollIntoView({block:'center', behavior:'smooth'});
@@ -2621,7 +2678,7 @@ function bindStock(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-adj]'), function(b){ b.onclick = function(e){ e.stopPropagation(); adjustSheet(b.getAttribute('data-adj')); }; });
   Array.prototype.forEach.call(document.querySelectorAll('[data-sopen]'), function(row){
     var flip = function(){ var id = row.getAttribute('data-sopen'); stockOpen[id] = !stockOpen[id]; var y = window.scrollY; render(); window.scrollTo(0, y); };
-    row.onclick = flip; row.onkeydown = function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
+    row.onclick = function(e){ if (e.target.closest && e.target.closest('.sheet-wrap')) return; flip(); }; row.onkeydown = function(e){ if (e.target !== row) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
   });
   var all = document.querySelector('[data-sall]'); if (all) all.onclick = function(){ stockAll = !stockAll; render(); };
   var any = document.querySelector('[data-adj-any]'); if (any) any.onclick = function(){ adjustSheet('nic'); var w=document.querySelector('.sheet-wrap [data-kind="plus"]'); if (w) w.click(); };
@@ -2635,13 +2692,13 @@ function viewLog(){
   items.sort(function(a,b){ return b.t - a.t; });
   return '<h1>History</h1><p class="lede">Everything that has changed your stock. Tap \u00d7 to undo an entry.</p>' +
     ordersHtml() +
-    '<h2>Batches and adjustments</h2><section class="card">' + (items.length ? '<ul class="list">' + items.map(function(it){
+    '<h2>Batches and adjustments</h2><button class="btn secondary" data-earlier style="margin-bottom:10px">Add a batch I made earlier</button><section class="card">' + (items.length ? '<ul class="list">' + items.map(function(it){
       return '<li class="hist-item"><span class="dot" style="margin-top:7px;background:' + (it.type==='batch'?'var(--accent)':(it.type==='order'?'var(--ok)':'var(--low)')) + '"></span><div>' + (it.batch ? '<button class="linkbtn" style="font-size:14px;font-weight:700;padding:0;text-align:left;text-decoration:none" data-bdetail="' + it.id + '">' + esc(it.title) + ' \u203a</button>' : '<div style="font-weight:700">' + esc(it.title) + '</div>') + '<div class="small muted">' + esc(it.detail) + '</div><div class="small muted">' + esc(when(it.t)) + '</div>' +
         (it.type === 'order' ? (it.ref ? '<div class="small" style="font-weight:700">Order no. ' + esc(it.ref) + '</div>' : '') +
           '<button class="linkbtn" data-ref="' + it.id + '">' + (it.ref ? 'Edit order number' : 'Add order number') + '</button>' : '') +
         '</div>' +
         '<button class="x" aria-label="Undo this entry" data-del="' + it.type + ':' + it.id + '">&times;</button></li>';
-    }).join('') + '</ul>' : '<div class="empty">Nothing yet.</div>') + '</section>';
+    }).join('') + '</ul>' : '<div class="empty">Nothing yet.</div>') + '</section>' + trashHtml(function(i){ return '<button class="btn sel sm" data-restore="' + i + '">Restore</button>'; });
 }
 function phoneOrderBody(o){
   return '<div class="small muted" style="margin-top:2px">' + esc(orderItemsText(o)) + '</div>' + parcelHtml(o, false) +
@@ -2674,11 +2731,19 @@ function bindLogRefs(root){
   });
 }
 function bindLogDels(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-restore]'), function(b){ b.onclick = function(){ var t = restoreEntry(+b.getAttribute('data-restore')); if (!t) return; save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Restored.'); }; });
+  var er = document.querySelector('[data-earlier]');
+  if (er) er.onclick = function(){
+    sheet({title:'Add a batch I made earlier', body:earlierBatchHtml(), confirm:'Add batch', onConfirm:function(w){
+      var r = addEarlierBatch(w); if (typeof r === 'string') { toast(r); return false; }
+      save(); render(); toast('Batch added: ' + r.name + ', ' + mlShort(r.ml) + ' ml.');
+    }});
+  };
   Array.prototype.forEach.call(document.querySelectorAll('[data-del]'), function(b){
     b.onclick = function(){
       var parts = b.getAttribute('data-del').split(':'), key = {batch:'batches', order:'orders', adjust:'adjust'}[parts[0]];
-      sheet({title:'Undo this entry?', body:'<p class="muted" style="margin:0">Your stock will be worked out again without it.</p>', confirm:'Undo it', danger:true, onConfirm:function(){
-        state[key] = state[key].filter(function(x){ return x.id !== parts[1]; }); save(); render(); toast('Entry removed.');
+      sheet({title:'Remove this entry?', body:'<p class="muted" style="margin:0">Your stock will be worked out again without it. You can bring it back afterwards from Recently deleted, at the bottom of History.</p>', confirm:'Remove it', danger:true, onConfirm:function(){
+        deleteEntry(parts[0], parts[1]); save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Removed. Restore it from Recently deleted at the bottom of History.');
       }});
     };
   });
