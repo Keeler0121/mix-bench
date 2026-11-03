@@ -452,7 +452,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}, trash:[]};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}, trash:[], flavMul:1.25};
 }
 function migrate(s){
   var b = blank();
@@ -474,6 +474,7 @@ function migrate(s){
   ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
+  if (+s.flavMul === 1 || +s.flavMul === 1.25 || +s.flavMul === 1.5) b.flavMul = +s.flavMul;
   if (Array.isArray(s.trash)) b.trash = s.trash.filter(function(x){ return x && x.rec && x.rec.id && x.kind; }).slice(-30);
   if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
@@ -587,17 +588,24 @@ function bottleText(id, bb){
 }
 /* nb = what the nic shot is made of: '5050' (50 PG / 50 VG) or 'vg' (100 VG). */
 var RATIO_SHORT = {};
-function rates(rec, nb, vgr, mg){
+/* Flavour strength: scales every flavour in a recipe (not sweetener, sour or cooling). Only new plans and new batches use it:
+   batches already made keep the amounts they were recorded with. */
+var FLAV_STEPS = [[1, 'Normal', ''], [1.25, 'Stronger', '+25%'], [1.5, 'Strongest', '+50%']];
+function flavMul(){ var v = +state.flavMul; return (v === 1 || v === 1.25 || v === 1.5) ? v : 1.25; }
+function boostKey(b){ return b && b !== 1 ? '|x' + b : ''; }
+function flavLabel(){ var v = flavMul(), f = FLAV_STEPS.filter(function(x){ return x[0] === v; })[0]; return (f ? f[1] : 'Normal') + ' flavour' + (f && f[2] ? ' ' + f[2] : ''); }
+function rates(rec, nb, vgr, mg, boost){
+  boost = +boost > 0 ? +boost : 1;
   mg = (mg === undefined || mg === null) ? SETTINGS.finalNic : +mg;
   var out = {}, flav = 0, vgLow = false, nicFrac = mg/SETTINGS.shotNic, VG = (vgr || 50)/100, PG = 1 - VG;
-  rec.parts.forEach(function(p){ out[p[0]] = (out[p[0]]||0) + p[1]/100; flav += p[1]/100; });
+  rec.parts.forEach(function(p){ var f = (p[0] in ADDITIVE) ? 1 : boost; out[p[0]] = (out[p[0]]||0) + p[1]*f/100; flav += p[1]*f/100; });
   var nk = nb === 'vg' ? 'nicvg' : 'nic';
   out[nk] = nicFrac;
   if (nb === 'zero') { delete out.nic; delete out.nicvg; out.pg = PG - flav; out.vg = VG; }
   else if (nb === 'vg') { if (VG < nicFrac - 1e-9) { out.pg = 1 - nicFrac - flav; out.vg = 0; vgLow = true; } else { out.pg = PG - flav; out.vg = VG - nicFrac; } }
   else { out.pg = PG - nicFrac*0.5 - flav; out.vg = VG - nicFrac*0.5; }
   /* not enough room for the PG this ratio needs: drop PG to zero and let VG fill the gap */
-  var k = rec.id + '|' + nb + '|' + (vgr || 50) + '|' + mg;
+  var k = rec.id + '|' + nb + '|' + (vgr || 50) + '|' + mg + boostKey(boost);
   /* the shots alone leave no room for this much flavour */
   if (nb !== 'zero' && flav + nicFrac > 1 + 1e-9) { RATIO_SHORT[k] = 'full'; out.pg = 0; out.vg = 0; return out; }
   if (out.pg < -1e-9) { out.vg = Math.max(0, out.vg + out.pg); out.pg = 0; RATIO_SHORT[k] = true; } else if (vgLow) RATIO_SHORT[k] = 'vg'; else delete RATIO_SHORT[k];
@@ -608,8 +616,8 @@ var RATE_CACHE = {};
 function planNb(rid){ return (state.zero && state.zero[rid]) ? 'zero' : (state.nicBase || '5050'); }
 var MG_STEPS = [5, 10, 15];
 function planMg(rid){ var v = state.mgs && +state.mgs[rid]; return MG_STEPS.indexOf(v) >= 0 ? v : SETTINGS.finalNic; }
-function RT(recId, nb, vgr, mg){ nb = nb || planNb(recId); vgr = vgr || state.vgr || 50; mg = (mg === undefined || mg === null) ? planMg(recId) : mg; var k = recId + '|' + nb + '|' + vgr + '|' + mg; if (!RATE_CACHE[k]) RATE_CACHE[k] = rates(recById[recId], nb, vgr, mg); return RATE_CACHE[k]; }
-function ratioShort(recId){ RT(recId); return RATIO_SHORT[recId + '|' + planNb(recId) + '|' + (state.vgr || 50) + '|' + planMg(recId)] || false; }
+function RT(recId, nb, vgr, mg){ nb = nb || planNb(recId); vgr = vgr || state.vgr || 50; mg = (mg === undefined || mg === null) ? planMg(recId) : mg; var bm = flavMul(), k = recId + '|' + nb + '|' + vgr + '|' + mg + boostKey(bm); if (!RATE_CACHE[k]) RATE_CACHE[k] = rates(recById[recId], nb, vgr, mg, bm); return RATE_CACHE[k]; }
+function ratioShort(recId){ RT(recId); return RATIO_SHORT[recId + '|' + planNb(recId) + '|' + (state.vgr || 50) + '|' + planMg(recId) + boostKey(flavMul())] || false; }
 function fits(recId){ return ratioShort(recId) !== 'full'; }
 function ratioNote(recId){
   var f = ratioShort(recId); if (!f) return '';
@@ -704,7 +712,7 @@ function batchLine(b){
 }
 function newBatch(rec, ml, nb, vgr, t, mg){
   mg = nb === 'zero' ? 0 : (mg || SETTINGS.finalNic);
-  var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg), m = {}, k;
+  var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg, flavMul()), m = {}, k;
   for (k in rt) if (rt[k] > 0) m[k] = r4(rt[k] * ml);
   var i = mixInfo(m);
   return {id:uid(), t:t, recipe:rec.id, name:rec.name, parts:rec.parts.map(function(p){ return [p[0], p[1]]; }), ml:ml, nb:nb, vgr:vgr,
@@ -727,7 +735,7 @@ function batchDetailHtml(b){
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
 var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes'];
-var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavMul'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -874,7 +882,7 @@ function makeAgain(b){
   return r;
 }
 function batchSummary(rec, ml, nb, vgr, mg){
-  var i = mixInfo(rates({id:'b_sum', parts:rec.parts}, nb, vgr, mg));
+  var i = mixInfo(rates({id:'b_sum', parts:rec.parts}, nb, vgr, mg, flavMul()));
   return mlShort(ml) + ' ml · ' + (i ? pgvg(i.vg) : pgvg(vgr)) + ' · ' + (nb === 'zero' ? '0mg' : mg + 'mg') + ' · ' + SHOT_SHORT[nb || '5050'];
 }
 function syncTimesHtml(){
@@ -2398,12 +2406,15 @@ function viewPlan(){
       '</details></section>';
   }).join('');
   var nicLbl = NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'], vgr = state.vgr || 50;
-  var settings = '<section class="card"><details data-box="settings"' + (openBox.settings ? ' open' : '') + '><summary class="recsum"><span>Mix settings</span><span class="sub" style="white-space:normal;text-align:right">' + nicLbl + '<br>' + pgvg(vgr) + '</span></summary>' +
+  var settings = '<section class="card"><details data-box="settings"' + (openBox.settings ? ' open' : '') + '><summary class="recsum"><span>Mix settings</span><span class="sub" style="white-space:normal;text-align:right">' + nicLbl + '<br>' + pgvg(vgr) + '<br>' + flavLabel() + '</span></summary>' +
     '<div class="small muted">Which 20mg shots are you using?</div><div class="grid2" style="margin-top:6px">' +
     '<button class="btn secondary" data-nicbase="5050">Nic Nic 20mg<br><span class="small" style="font-weight:600">(50 PG / 50 VG)</span></button><button class="btn secondary" data-nicbase="vg">Vapable 20mg<br><span class="small" style="font-weight:600">(100 VG)</span></button></div>' +
     '<p class="muted small" style="margin:8px 0 14px">Each type has its own stock. Pick the nic strength on each recipe; the amounts adjust to match.</p>' +
     '<div class="small muted">PG / VG ratio</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px">' +
     [40,45,50,55,60,70].map(function(v){ return '<button class="btn secondary" data-vgr="' + v + '" style="padding:9px 6px;font-size:12.5px">' + ratioName(v) + '</button>'; }).join('') + '</div>' +
+    '<div class="small muted" style="margin-top:14px">Flavour strength</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">' +
+    FLAV_STEPS.map(function(f){ return '<button class="btn secondary" data-flavmul="' + f[0] + '" style="padding:9px 4px;font-size:12.5px">' + f[1] + (f[2] ? '<br><span class="small" style="font-weight:600">' + f[2] + '</span>' : '') + '</button>'; }).join('') + '</div>' +
+    '<p class="muted small" style="margin:8px 0 0">Adds more of every flavour in your recipes. Sweetener, sour and cooling stay as they are. Batches you\u2019ve already made are not changed. Higher nic strengths leave less room, and a recipe that no longer fits says so.</p>' +
     '<p class="muted small" style="margin:10px 0 0"><b>VG</b> is thicker and smoother. <b>PG</b> is thinner and gives more throat hit. 50 PG / 50 VG is the same as Bar Juice.</p></details></section>';
   var coming = state.orders.filter(function(o){ return (o.status || 'ordered') !== 'delivered'; }).sort(function(a,b){ return b.t - a.t; });
   var banner = coming.map(function(o){
@@ -2424,6 +2435,11 @@ function bindPlan(){
     var on = b.getAttribute('data-nicbase') === state.nicBase;
     b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.onclick = function(){ if (on) return; state.nicBase = b.getAttribute('data-nicbase'); stay('Recipes now use ' + NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'] + ' shots.'); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-flavmul]'), function(b){
+    var on = +b.getAttribute('data-flavmul') === flavMul();
+    b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.onclick = function(){ if (on) return; state.flavMul = +b.getAttribute('data-flavmul'); RATE_CACHE = {}; stay('Flavour strength: ' + flavLabel() + '.'); };
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-vgr]'), function(b){
     var on = +b.getAttribute('data-vgr') === (state.vgr || 50);
