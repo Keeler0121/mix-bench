@@ -1938,13 +1938,20 @@ document.addEventListener('click', function(e){
     save(); var y = window.scrollY; render(); window.scrollTo(0, y); return; }
   var t = e.target.closest && e.target.closest('[data-bdetail]'); if (!t) return;
   var b = state.batches.filter(function(x){ return x.id === t.getAttribute('data-bdetail'); })[0]; if (!b) return;
-  var w = sheet({title:(b.name || (recById[b.recipe] || {}).name || 'Batch') + ', ' + mlShort(b.ml) + ' ml', cancel:'Close', confirm:recById[b.recipe] ? 'Make again' : '', onConfirm:function(){
-    var r = makeAgain(b); if (!r) return; openBox['r:' + r.id] = true; save(); current = 'plan'; render();
-    var c = document.querySelector('[data-rec="' + r.id + '"]'); if (c) c.scrollIntoView({block:'start'}); toast(r.name + ' loaded into Plan.');
+  var w = sheet({title:(b.name || (recById[b.recipe] || {}).name || 'Batch') + ', ' + mlShort(b.ml) + ' ml', cancel:'Close', confirm:'Save', extra:recById[b.recipe] ? '<button type="button" class="btn secondary" data-makeagain>Make again</button>' : '', onConfirm:function(box){
+    /* what you tapped is saved as you go; this also takes any note you were still typing */
+    var n = box.querySelector('[data-tnotes]'); if (n) tasteApply(n);
+    save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Saved.');
   }, body:'<p class="muted small" style="margin-top:0">Made ' + esc(when(b.t)) + (b.nb === 'zero' ? ', no nicotine' : (b.nb === 'vg' ? ', Vapable 20mg (100 VG) shots' : (b.nb ? ', Nic Nic 20mg (50 PG / 50 VG) shots' : ''))) + (b.finished ? ', finished ' + esc(when(b.finished)) : '') + '</p>' + batchDetailHtml(b) + tasteFormHtml(b)});
   w.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; if (tasteApply(el)) { save(); var box = w.querySelector('[data-taste]'); box.outerHTML = tasteFormHtml(b); } });
   w.addEventListener('change', function(ev){ if (ev.target.hasAttribute && ev.target.hasAttribute('data-tnotes') && tasteApply(ev.target)) save(); });
   w.querySelector('[data-cancel]').addEventListener('click', function(){ var y = window.scrollY; render(); window.scrollTo(0, y); });
+  var again = w.querySelector('[data-makeagain]');
+  if (again) again.onclick = function(){
+    var n = w.querySelector('[data-tnotes]'); if (n) tasteApply(n);
+    var r = makeAgain(b); if (!r) return; w.remove(); openBox['r:' + r.id] = true; save(); current = 'plan'; render();
+    var c = document.querySelector('[data-rec="' + r.id + '"]'); if (c) c.scrollIntoView({block:'start'}); toast(r.name + ' loaded into Plan.');
+  };
 });
 
 /* ---------- iPhone app: first open, client ID, install help, offline storage ---------- */
@@ -2033,7 +2040,7 @@ function sheet(opts){
   var wrap = document.createElement('div'); wrap.className='sheet-wrap';
   wrap.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(opts.title) + '"><h3>' + esc(opts.title) + '</h3>' + (opts.body||'') +
     '<div style="margin-top:16px">' +
-    (opts.confirm ? '<button class="btn ' + (opts.danger?'danger':'') + '" data-ok>' + esc(opts.confirm) + '</button>' : '') +
+    (opts.confirm ? '<button class="btn ' + (opts.danger?'danger':'') + '" data-ok>' + esc(opts.confirm) + '</button>' : '') + (opts.extra || '') +
     '<button class="btn secondary" data-cancel>' + esc(opts.cancel || 'Cancel') + '</button></div></div>';
   function close(){ wrap.remove(); }
   wrap.querySelector('[data-cancel]').onclick = close;
