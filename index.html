@@ -268,6 +268,10 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .led-ready{font-size:clamp(22px,7vw,34px);letter-spacing:.08em;padding:6px 0}
 .led-sm{font-size:clamp(32px,10vw,48px);line-height:1;letter-spacing:.06em;padding:14px 10px}
 .tm-done{margin:2px 0 8px;padding:8px 10px;border-radius:8px;background:var(--sel);color:var(--sel-ink);font-weight:700;text-align:center}
+.topup{margin:14px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.topup > summary{cursor:pointer;font-weight:600;font-size:14px;margin:0;list-style:none}
+.tu-row{display:grid;grid-template-columns:minmax(0,1fr) 110px;align-items:center;gap:10px;margin:6px 0}
+.tu-row .field{width:100%;text-align:right}
 .tbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .tbtns .btn{width:100%;margin:0}
 .tbtns2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -1666,6 +1670,52 @@ function batchNotifyTick(){
 var DENSITY = {pg:1.036, vg:1.261, nic:1.15, nicvg:1.26};
 function densityOf(id){ return DENSITY[id] || 1.04; }
 function gramsText(id, ml){ var g = ml * densityOf(id); return (g >= 10 ? g.toFixed(1) : g.toFixed(2)) + ' g'; }
+/* ---------- shared: topping up a batch's flavour, by weight ---------- */
+/* the flavours in a batch that can be topped up (not nic, PG, VG, sweetener, sour or cooling) */
+function topupFlavours(b){ var m = batchAmounts(b) || {}, out = []; for (var k in m) if (ingById[k] && !isNicId(k) && k !== 'pg' && k !== 'vg' && !(k in ADDITIVE) && m[k] > 0) out.push(k); return out; }
+/* grams to add per flavour: your juice weight x that flavour's share of the batch x the strength (0.25 = +25%) */
+function topupSuggest(b, juiceG, pct){
+  var m = batchAmounts(b) || {}, ml = 0, g = 0, out = {}, k;
+  for (k in m) { ml += m[k]; g += m[k] * densityOf(k); }
+  if (!(ml > 0)) return out;
+  var dJuice = g / ml;
+  topupFlavours(b).forEach(function(f){ out[f] = juiceG * (m[f] / ml) * densityOf(f) / dJuice * pct; });
+  return out;
+}
+function topupHtml(b){
+  var fl = topupFlavours(b); if (!fl.length) return '';
+  var done = (b.topups || []).map(function(t){ var parts = []; for (var k in t.g) if (ingById[k]) parts.push(ingById[k].name + ' ' + t.g[k] + ' g'); return '<div class="small muted">Topped up ' + esc(dayText(t.t)) + ': ' + esc(parts.join(', ')) + '</div>'; }).join('');
+  return '<details class="topup" data-topup><summary>Top up flavour (weigh it in grams)</summary>' +
+    '<p class="muted small" style="margin:6px 0">Type the weight of the juice you have left and pick a strength, and Mix Bench works out the grams for each flavour. Or type what you added. Record it to take the flavour off your Stock.</p>' +
+    '<div style="display:flex;gap:10px"><div style="flex:1"><label class="f" style="margin-top:0">Juice left (g)</label><input class="field num" data-tu-g type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 30.5"></div>' +
+    '<div style="flex:1"><label class="f" style="margin-top:0">Strength</label><select class="field" data-tu-p aria-label="Top-up strength"><option value="0.25">+25%</option><option value="0.5">+50%</option></select></div></div>' +
+    '<label class="f">Grams added</label>' + fl.map(function(k){ return '<div class="tu-row"><span>' + esc(ingById[k].name) + '</span><input class="field num" data-tu-in="' + k + '" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-label="Grams of ' + esc(ingById[k].name) + ' added"></div>'; }).join('') +
+    '<button type="button" class="btn" data-tu-save style="margin-top:10px">Record top-up</button>' + done + '</details>';
+}
+/* takes the flavours off Stock (as weighed grams) and notes the top-up on the batch */
+function recordTopup(b, added){
+  var t = Date.now(), parts = [], k;
+  for (k in added) { state.adjust.push({id:uid(), t:t, ing:k, ml:-r4(added[k] / densityOf(k)), note:'Top-up for ' + (b.name || (recById[b.recipe] || {}).name || 'batch')}); parts.push(ingById[k].name + ' ' + added[k] + ' g'); }
+  b.topups = (b.topups || []).concat([{t:t, g:added}]);
+  return parts;
+}
+function bindTopup(root, b, after){
+  var box = root.querySelector('[data-topup]'); if (!box) return;
+  var recompute = function(){
+    var g = +box.querySelector('[data-tu-g]').value, p = +box.querySelector('[data-tu-p]').value; if (!(g > 0)) return;
+    var s = topupSuggest(b, g, p); topupFlavours(b).forEach(function(k){ var i = box.querySelector('[data-tu-in="' + k + '"]'); if (i) i.value = (Math.round(s[k] * 100) / 100).toFixed(2); });
+  };
+  box.addEventListener('input', function(e){ if (e.target.hasAttribute('data-tu-g')) recompute(); });
+  box.addEventListener('change', function(e){ if (e.target.hasAttribute('data-tu-p')) recompute(); });
+  box.querySelector('[data-tu-save]').addEventListener('click', function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    var added = {}, any = false; Array.prototype.forEach.call(box.querySelectorAll('[data-tu-in]'), function(i){ var v = Math.round(+i.value * 100) / 100; if (v > 0) { added[i.getAttribute('data-tu-in')] = v; any = true; } });
+    if (!any) { toast('Type the grams you added.'); return; }
+    var parts = recordTopup(b, added); save();
+    box.innerHTML = '<summary>Top up flavour</summary><p class="small" style="margin:8px 0 0;font-weight:600;color:var(--ok)">Recorded and taken off your Stock: ' + esc(parts.join(', ')) + '.</p>';
+    toast('Top-up recorded.'); if (after) after();
+  });
+}
 /* ---------- shared: recently deleted, and adding a batch you made earlier ---------- */
 var TRASH_KEYS = {batch:'batches', order:'orders', adjust:'adjust'}, TRASH_DAYS = 30;
 function trashList(){ var now = Date.now(); state.trash = (state.trash || []).filter(function(x){ return x && x.rec && now - x.t < TRASH_DAYS * DAY; }); return state.trash; }
@@ -1957,7 +2007,8 @@ document.addEventListener('click', function(e){
     /* what you tapped is saved as you go; this also takes any note you were still typing */
     var n = box.querySelector('[data-tnotes]'); if (n) tasteApply(n);
     save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Saved.');
-  }, body:'<p class="muted small" style="margin-top:0">Made ' + esc(when(b.t)) + (b.nb === 'zero' ? ', no nicotine' : (b.nb === 'vg' ? ', Vapable 20mg (100 VG) shots' : (b.nb ? ', Nic Nic 20mg (50 PG / 50 VG) shots' : ''))) + (b.finished ? ', finished ' + esc(when(b.finished)) : '') + '</p>' + batchDetailHtml(b) + tasteFormHtml(b)});
+  }, body:'<p class="muted small" style="margin-top:0">Made ' + esc(when(b.t)) + (b.nb === 'zero' ? ', no nicotine' : (b.nb === 'vg' ? ', Vapable 20mg (100 VG) shots' : (b.nb ? ', Nic Nic 20mg (50 PG / 50 VG) shots' : ''))) + (b.finished ? ', finished ' + esc(when(b.finished)) : '') + '</p>' + batchDetailHtml(b) + topupHtml(b) + tasteFormHtml(b)});
+  bindTopup(w, b);
   w.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; if (tasteApply(el)) { save(); var box = w.querySelector('[data-taste]'); box.outerHTML = tasteFormHtml(b); } });
   w.addEventListener('change', function(ev){ if (ev.target.hasAttribute && ev.target.hasAttribute('data-tnotes') && tasteApply(ev.target)) save(); });
   w.querySelector('[data-cancel]').addEventListener('click', function(){ var y = window.scrollY; render(); window.scrollTo(0, y); });
@@ -2719,7 +2770,7 @@ function bindStock(){
 function viewLog(){
   var items = [];
   state.batches.forEach(function(b){ var r=recById[b.recipe]; items.push({t:b.t, type:'batch', id:b.id, title:'Made ' + (b.name || (r?r.name:'recipe')) + (b.nb === 'zero' ? ' (no nicotine)' : ''), detail:batchLine(b) + '. ' + (Date.now() < readyAt(b) ? 'Ready to try ' + whenShort(readyAt(b)) : 'Ready since ' + whenShort(readyAt(b))) + (batchAmounts(b) ? '. ' + costLine(batchAmounts(b), b.ml) + ' at today\u2019s prices' : ''), batch:true}); });
-  state.adjust.forEach(function(a){ var i=ingById[a.ing]; items.push({t:a.t, type:'adjust', id:a.id, title:(a.ml<0?'Spilt ':'Extra ') + (i?i.name:''), detail:(a.ml>0?'+':'') + amtText(a.ing, a.ml)}); });
+  state.adjust.forEach(function(a){ var i=ingById[a.ing]; items.push({t:a.t, type:'adjust', id:a.id, title:(a.note ? 'Top-up: ' : (a.ml<0?'Spilt ':'Extra ')) + (i?i.name:''), detail:(a.ml>0?'+':'') + amtText(a.ing, a.ml) + (a.note ? ' \u00b7 ' + a.note : '')}); });
   items.sort(function(a,b){ return b.t - a.t; });
   return '<h1>History</h1><p class="lede">Everything that has changed your stock. Tap \u00d7 to undo an entry.</p>' +
     ordersHtml() +
