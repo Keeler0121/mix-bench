@@ -939,7 +939,7 @@ function steepCardsHtml(){
     return '<div class="card steepcard"><div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0"><button class="linkbtn" style="font-size:15px;font-weight:700;padding:0;text-align:left;text-decoration:none" data-bdetail="' + b.id + '">' + esc(nm) + (b.nb === 'zero' ? ' (no nicotine)' : '') + ' ›</button><div class="small muted num">' + esc(batchLine(b)) + '</div></div>' +
       (Date.now() >= ready ? '<span class="pill ready">Ready to try</span>' : '') + '</div>' +
       '<div class="led" data-cd="' + ready + '" role="timer" aria-label="Time until ' + esc(nm) + ' is ready">' + ledInner(ready - Date.now()) + '</div>' +
-      '<div class="small muted">Mixed ' + esc(whenShort(b.t)) + ' · ready ' + esc(whenShort(ready)) + ' · best from ' + esc(whenShort(best)) + '</div>' +
+      '<div class="small muted">Mixed ' + esc(whenShort(b.t)) + (topupAt(b) ? ' · topped up ' + esc(whenShort(topupAt(b))) + ' (48 hour steep)' : '') + ' · ready ' + esc(whenShort(ready)) + ' · best from ' + esc(whenShort(best)) + '</div>' +
       '<div class="row between" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="small' + (shakenOn(b, day) ? '' : ' muted') + '">' + (shakenOn(b, day) ? 'Shaken today' + (ls && londonDay(ls) === day ? ' at ' + new Date(ls).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : ' (made today)') : (ls ? 'Last shaken ' + esc(whenShort(ls)) : 'Not shaken yet')) + '</span>' +
       '<button class="linkbtn" data-steepdone="' + b.id + '">Done</button></div></div>';
   }).join('');
@@ -1463,8 +1463,10 @@ function orderQtyText(o){
 function stepName(o){ return STEPS[stepIdx(o)][1]; }
 /* ---------- shared: steep time per recipe, the next batch, costs ---------- */
 function steepDaysOf(rid){ var v = +((state.steeps || {})[rid]); return v >= 1 && v <= 30 ? Math.round(v) : 3; }
-function readyAt(b){ return (batchTime(b) || 0) + (+b.steep >= 1 ? +b.steep : 3) * DAY; }
-function bestAt(b){ return (batchTime(b) || 0) + Math.max(7, (+b.steep >= 1 ? +b.steep : 3) + 2) * DAY; }
+/* a topped-up batch steeps for 48 hours from its last top-up (never earlier than its normal ready date) */
+function topupAt(b){ var t = 0; (b.topups || []).forEach(function(x){ if (+x.t > t) t = +x.t; }); return t; }
+function readyAt(b){ var r = (batchTime(b) || 0) + (+b.steep >= 1 ? +b.steep : 3) * DAY, tu = topupAt(b); return tu ? Math.max(r, tu + 2 * 86400000) : r; }
+function bestAt(b){ var r = (batchTime(b) || 0) + Math.max(7, (+b.steep >= 1 ? +b.steep : 3) + 2) * DAY, tu = topupAt(b); return tu ? Math.max(r, tu + 5 * 86400000) : r; }
 /* a batch's time in ms, whatever shape it was saved in (ms, seconds or a date string); null if it can't be read */
 function batchTime(b){
   var t = b && b.t;
@@ -1671,6 +1673,8 @@ var DENSITY = {pg:1.036, vg:1.261, nic:1.15, nicvg:1.26};
 function densityOf(id){ return DENSITY[id] || 1.04; }
 function gramsText(id, ml){ var g = ml * densityOf(id); return (g >= 10 ? g.toFixed(1) : g.toFixed(2)) + ' g'; }
 /* ---------- shared: topping up a batch's flavour, by weight ---------- */
+/* the batch as it is now: a sync swaps in a fresh copy of your data, so a box that is still open must look it up again */
+function batchById(id){ return state.batches.filter(function(x){ return x.id === id; })[0] || null; }
 /* the flavours in a batch that can be topped up (not nic, PG, VG, sweetener, sour or cooling) */
 function topupFlavours(b){ var m = batchAmounts(b) || {}, out = []; for (var k in m) if (ingById[k] && !isNicId(k) && k !== 'pg' && k !== 'vg' && !(k in ADDITIVE) && m[k] > 0) out.push(k); return out; }
 /* grams to add per flavour: your juice weight x that flavour's share of the batch x the strength (0.25 = +25%) */
@@ -1697,6 +1701,7 @@ function recordTopup(b, added){
   var t = Date.now(), parts = [], k;
   for (k in added) { state.adjust.push({id:uid(), t:t, ing:k, ml:-r4(added[k] / densityOf(k)), note:'Top-up for ' + (b.name || (recById[b.recipe] || {}).name || 'batch')}); parts.push(ingById[k].name + ' ' + added[k] + ' g'); }
   b.topups = (b.topups || []).concat([{t:t, g:added}]);
+  delete b.done;   /* back on Steeping, with a 48 hour timer */
   return parts;
 }
 function bindTopup(root, b, after){
@@ -1708,12 +1713,12 @@ function bindTopup(root, b, after){
   box.addEventListener('input', function(e){ if (e.target.hasAttribute('data-tu-g')) recompute(); });
   box.addEventListener('change', function(e){ if (e.target.hasAttribute('data-tu-p')) recompute(); });
   box.querySelector('[data-tu-save]').addEventListener('click', function(ev){
-    ev.preventDefault(); ev.stopPropagation();
+    ev.preventDefault(); ev.stopPropagation(); b = batchById(b.id) || b;
     var added = {}, any = false; Array.prototype.forEach.call(box.querySelectorAll('[data-tu-in]'), function(i){ var v = Math.round(+i.value * 100) / 100; if (v > 0) { added[i.getAttribute('data-tu-in')] = v; any = true; } });
     if (!any) { toast('Type the grams you added.'); return; }
     var parts = recordTopup(b, added); save();
-    box.innerHTML = '<summary>Top up flavour</summary><p class="small" style="margin:8px 0 0;font-weight:600;color:var(--ok)">Recorded and taken off your Stock: ' + esc(parts.join(', ')) + '.</p>';
-    toast('Top-up recorded.'); if (after) after();
+    box.innerHTML = '<summary>Top up flavour</summary><p class="small" style="margin:8px 0 0;font-weight:600;color:var(--ok)">Recorded and taken off your Stock: ' + esc(parts.join(', ')) + '.</p><p class="small" style="margin:6px 0 0">It\u2019s back on Steeping with a 48 hour timer. Taste it after that.</p>';
+    toast('Top-up recorded. 48 hour steep started.'); if (after) after();
   });
 }
 /* ---------- shared: recently deleted, and adding a batch you made earlier ---------- */
@@ -2009,13 +2014,13 @@ document.addEventListener('click', function(e){
     save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast('Saved.');
   }, body:'<p class="muted small" style="margin-top:0">Made ' + esc(when(b.t)) + (b.nb === 'zero' ? ', no nicotine' : (b.nb === 'vg' ? ', Vapable 20mg (100 VG) shots' : (b.nb ? ', Nic Nic 20mg (50 PG / 50 VG) shots' : ''))) + (b.finished ? ', finished ' + esc(when(b.finished)) : '') + '</p>' + batchDetailHtml(b) + topupHtml(b) + tasteFormHtml(b)});
   bindTopup(w, b);
-  w.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; if (tasteApply(el)) { save(); var box = w.querySelector('[data-taste]'); box.outerHTML = tasteFormHtml(b); } });
+  w.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; var lb = tasteApply(el); if (lb) { save(); var box = w.querySelector('[data-taste]'); box.outerHTML = tasteFormHtml(lb); } });
   w.addEventListener('change', function(ev){ if (ev.target.hasAttribute && ev.target.hasAttribute('data-tnotes') && tasteApply(ev.target)) save(); });
   w.querySelector('[data-cancel]').addEventListener('click', function(){ var y = window.scrollY; render(); window.scrollTo(0, y); });
   var again = w.querySelector('[data-makeagain]');
   if (again) again.onclick = function(){
     var n = w.querySelector('[data-tnotes]'); if (n) tasteApply(n);
-    var r = makeAgain(b); if (!r) return; w.remove(); openBox['r:' + r.id] = true; save(); current = 'plan'; render();
+    var r = makeAgain(batchById(b.id) || b); if (!r) return; w.remove(); openBox['r:' + r.id] = true; save(); current = 'plan'; render();
     var c = document.querySelector('[data-rec="' + r.id + '"]'); if (c) c.scrollIntoView({block:'start'}); toast(r.name + ' loaded into Plan.');
   };
 });
