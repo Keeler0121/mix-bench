@@ -1,5 +1,5 @@
 /* Mix Bench service worker: keeps the app working with no signal. Change VERSION to make phones fetch a new copy. */
-var VERSION = 'mixbench-2026-11-03-3';
+var VERSION = 'mixbench-2026-11-05-1';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', function(e){

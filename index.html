@@ -710,9 +710,9 @@ function batchLine(b){
   if (!i) return s + ' · ratio unknown' + extra;
   return s + ' · ' + (batchRecorded(b) ? ratioLabel(i) : 'ratio not saved') + ' · ' + mlShort(i.mg) + 'mg' + extra;
 }
-function newBatch(rec, ml, nb, vgr, t, mg){
+function newBatch(rec, ml, nb, vgr, t, mg, boost){
   mg = nb === 'zero' ? 0 : (mg || SETTINGS.finalNic);
-  var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg, flavMul()), m = {}, k;
+  var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg, boost === undefined ? flavMul() : boost), m = {}, k;
   for (k in rt) if (rt[k] > 0) m[k] = r4(rt[k] * ml);
   var i = mixInfo(m);
   return {id:uid(), t:t, recipe:rec.id, name:rec.name, parts:rec.parts.map(function(p){ return [p[0], p[1]]; }), ml:ml, nb:nb, vgr:vgr,
@@ -1661,6 +1661,11 @@ function batchNotifyTick(){
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(r){ r.showNotification('Mix Bench', {body:body, icon:'icons/icon-192.png', tag:'batch'}); }); return; } } catch (e) {}
   try { new Notification('Mix Bench', {body:body}); } catch (e) {}
 }
+/* ---------- shared: weights, so you can measure on a scale ---------- */
+/* approximate grams per ml: PG 1.036, VG 1.261, the 20mg shots about 1.15 (50/50) and 1.26 (100 VG), PG-based flavour concentrates about 1.04 */
+var DENSITY = {pg:1.036, vg:1.261, nic:1.15, nicvg:1.26};
+function densityOf(id){ return DENSITY[id] || 1.04; }
+function gramsText(id, ml){ var g = ml * densityOf(id); return (g >= 10 ? g.toFixed(1) : g.toFixed(2)) + ' g'; }
 /* ---------- shared: recently deleted, and adding a batch you made earlier ---------- */
 var TRASH_KEYS = {batch:'batches', order:'orders', adjust:'adjust'}, TRASH_DAYS = 30;
 function trashList(){ var now = Date.now(); state.trash = (state.trash || []).filter(function(x){ return x && x.rec && now - x.t < TRASH_DAYS * DAY; }); return state.trash; }
@@ -1704,7 +1709,9 @@ function earlierBatchHtml(){
     '<label class="f" for="eb-t">When you made it</label><input id="eb-t" class="field" type="datetime-local" value="' + localInput(Date.now()) + '" max="' + localInput(Date.now() + 3600000) + '">' +
     '<label class="f" for="eb-v">PG / VG</label><select id="eb-v" class="field">' + [40,45,50,55,60,70].map(function(v){ return opt(v, ratioName(v), v === vgr); }).join('') + '</select>' +
     '<label class="f" for="eb-mg">Nic strength</label><select id="eb-mg" class="field">' + [[0, 'No nicotine'], [5, '5mg'], [10, '10mg'], [15, '15mg']].map(function(x){ return opt(x[0], x[1], x[0] === mg); }).join('') + '</select>' +
-    '<label class="f" for="eb-nb">Nic shots used</label><select id="eb-nb" class="field">' + opt('5050', NIC_NAME['5050'], nb === '5050') + opt('vg', NIC_NAME.vg, nb === 'vg') + '</select>';
+    '<label class="f" for="eb-nb">Nic shots used</label><select id="eb-nb" class="field">' + opt('5050', NIC_NAME['5050'], nb === '5050') + opt('vg', NIC_NAME.vg, nb === 'vg') + '</select>' +
+    '<label class="f" for="eb-f">Flavour strength it was made at</label><select id="eb-f" class="field">' + FLAV_STEPS.map(function(f){ return opt(f[0], f[1] + (f[2] ? ' ' + f[2] : ''), f[0] === 1); }).join('') + '</select>' +
+    '<p class="muted small" style="margin:6px 0 0">Normal is how every batch was made before the Flavour strength setting.</p>';
 }
 /* returns the new batch, or a message if something's missing */
 function addEarlierBatch(root){
@@ -1714,7 +1721,7 @@ function addEarlierBatch(root){
   if (!isFinite(t) || t < 946684800000) return 'Pick the date you made it.';
   if (t > Date.now() + 3600000) return 'That date is in the future.';
   var mg = +q('#eb-mg').value, nb = mg === 0 ? 'zero' : q('#eb-nb').value;
-  var b = newBatch(rec, Math.round(ml * 100) / 100, nb, +q('#eb-v').value, t, mg || undefined); b.steep = steepDaysOf(rec.id);
+  var b = newBatch(rec, Math.round(ml * 100) / 100, nb, +q('#eb-v').value, t, mg || undefined, +q('#eb-f').value || 1); b.steep = steepDaysOf(rec.id);
   state.batches.push(b); return b;
 }
 /* ---------- saving: this phone + your Claude account ---------- */
@@ -2237,14 +2244,14 @@ function howSteps(rec, ml){
   steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 60ml bottle.' + (ml > 55 ? ' <b>Split it across two bottles.</b>' : ''));
   rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 3.0001 ? 1 : 0) - (m[y[0]] > 3.0001 ? 1 : 0); }).forEach(function(p){
     var a = m[p[0]]; if (!(a > 0)) return;
-    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe)</span>');
+    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe \u00b7 ' + gramsText(p[0], a) + ')</span>');
   });
   if (hasNic) {
     var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
-    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe)</span>' : ''));
+    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe \u00b7 ' + gramsText(m.nicvg ? 'nicvg' : 'nic', rem) + ')</span>' : ''));
   }
   ['pg','vg'].forEach(function(id){
-    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe)</span>');
+    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe \u00b7 ' + gramsText(id, a) + ')</span>');
   });
   steps.push('Cap it and shake for 2 to 3 minutes.');
   steps.push('Label it with the flavour and date.');
@@ -2680,13 +2687,14 @@ function adjustSheet(ingId){
   var opts = ING.map(function(i){ return '<option value="' + i.id + '"' + (i.id===ingId?' selected':'') + '>' + esc(i.name) + '</option>'; }).join('');
   sheet({title:'Spill or extra', body:
     '<label class="f" for="adj-ing">Ingredient</label><select id="adj-ing" class="field">' + opts + '</select>' +
-    '<label class="f" for="adj-ml">Amount (ml)</label><input id="adj-ml" class="field num" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 5">' +
+    '<label class="f" for="adj-ml">Amount</label><div class="grid2"><input id="adj-ml" class="field num" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 5"><select id="adj-unit" class="field" aria-label="Unit"><option value="ml">ml</option><option value="g">grams (weighed)</option></select></div>' +
     '<div class="grid2" style="margin-top:12px"><button class="btn secondary" data-kind="minus" aria-pressed="true">Spilt or lost</button><button class="btn secondary" data-kind="plus" aria-pressed="false">Extra I have</button></div>',
     confirm:'Save', onConfirm:function(w){
       var ml = +w.querySelector('#adj-ml').value;
       if (!(ml>0)) { toast('Type an amount first.'); return false; }
       var kind = w.querySelector('[data-kind][aria-pressed="true"]').getAttribute('data-kind');
       var ing = w.querySelector('#adj-ing').value;
+      if (w.querySelector('#adj-unit').value === 'g') ml = r4(ml / densityOf(ing));
       state.adjust.push({id:uid(), t:Date.now(), ing:ing, ml: kind==='minus' ? -ml : ml});
       save(); render(); toast(kind==='minus' ? 'Taken off stock.' : 'Added to stock.');
     }});
