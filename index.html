@@ -603,7 +603,7 @@ var RATIO_SHORT = {};
 /* Flavour strength: scales every flavour in a recipe (not sweetener, sour or cooling). Only new plans and new batches use it:
    batches already made keep the amounts they were recorded with. */
 var FLAV_STEPS = [[1, 'Normal', ''], [1.25, 'Stronger', '+25%'], [1.5, 'Strongest', '+50%']];
-function flavMul(){ var v = +state.flavBoost; return (v === 1 || v === 1.25 || v === 1.5) ? v : 1; }
+function flavMul(){ return 1; }
 function boostKey(b){ return b && b !== 1 ? '|x' + b : ''; }
 function flavLabel(){ var v = flavMul(), f = FLAV_STEPS.filter(function(x){ return x[0] === v; })[0]; return (f ? f[1] : 'Normal') + ' flavour' + (f && f[2] ? ' ' + f[2] : ''); }
 function rates(rec, nb, vgr, mg, boost){
@@ -2479,15 +2479,12 @@ function viewPlan(){
       '</details></section>';
   }).join('');
   var nicLbl = NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'], vgr = state.vgr || 50;
-  var settings = '<section class="card"><details data-box="settings"' + (openBox.settings ? ' open' : '') + '><summary class="recsum"><span>Mix settings</span><span class="sub" style="white-space:normal;text-align:right">' + nicLbl + '<br>' + pgvg(vgr) + '<br>' + flavLabel() + '</span></summary>' +
+  var settings = '<section class="card"><details data-box="settings"' + (openBox.settings ? ' open' : '') + '><summary class="recsum"><span>Mix settings</span><span class="sub" style="white-space:normal;text-align:right">' + nicLbl + '<br>' + pgvg(vgr) + '</span></summary>' +
     '<div class="small muted">Which 20mg shots are you using?</div><div class="grid2" style="margin-top:6px">' +
     '<button class="btn secondary" data-nicbase="5050">Nic Nic 20mg<br><span class="small" style="font-weight:600">(50 PG / 50 VG)</span></button><button class="btn secondary" data-nicbase="vg">Vapable 20mg<br><span class="small" style="font-weight:600">(100 VG)</span></button></div>' +
     '<p class="muted small" style="margin:8px 0 14px">Each type has its own stock. Pick the nic strength on each recipe; the amounts adjust to match.</p>' +
     '<div class="small muted">PG / VG ratio</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px">' +
     [40,45,50,55,60,70].map(function(v){ return '<button class="btn secondary" data-vgr="' + v + '" style="padding:9px 6px;font-size:12.5px">' + ratioName(v) + '</button>'; }).join('') + '</div>' +
-    '<div class="small muted" style="margin-top:14px">Extra flavour on top</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">' +
-    FLAV_STEPS.map(function(f){ return '<button class="btn secondary" data-flavmul="' + f[0] + '" style="padding:9px 4px;font-size:12.5px">' + f[1] + (f[2] ? '<br><span class="small" style="font-weight:600">' + f[2] + '</span>' : '') + '</button>'; }).join('') + '</div>' +
-    '<p class="muted small" style="margin:8px 0 0">Recipes already have the stronger amounts built in, so leave this on Normal. Raise it only to go stronger still. Adds more of every flavour. Sweetener, sour and cooling stay as they are. Batches you\u2019ve already made are not changed. Higher nic strengths leave less room, and a recipe that no longer fits says so.</p>' +
     '<p class="muted small" style="margin:10px 0 0"><b>VG</b> is thicker and smoother. <b>PG</b> is thinner and gives more throat hit. 50 PG / 50 VG is the same as Bar Juice.</p></details></section>';
   var coming = state.orders.filter(function(o){ return (o.status || 'ordered') !== 'delivered'; }).sort(function(a,b){ return b.t - a.t; });
   var banner = coming.map(function(o){
@@ -2508,11 +2505,6 @@ function bindPlan(){
     var on = b.getAttribute('data-nicbase') === state.nicBase;
     b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.onclick = function(){ if (on) return; state.nicBase = b.getAttribute('data-nicbase'); stay('Recipes now use ' + NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'] + ' shots.'); };
-  });
-  Array.prototype.forEach.call(document.querySelectorAll('[data-flavmul]'), function(b){
-    var on = +b.getAttribute('data-flavmul') === flavMul();
-    b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    b.onclick = function(){ if (on) return; state.flavBoost = +b.getAttribute('data-flavmul'); RATE_CACHE = {}; stay('Extra flavour: ' + flavLabel() + '.'); };
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-vgr]'), function(b){
     var on = +b.getAttribute('data-vgr') === (state.vgr || 50);
