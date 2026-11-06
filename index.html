@@ -2087,7 +2087,7 @@ document.addEventListener('change', function(e){
   rd.readAsText(f);
 });
 function startPwa(){
-  if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+  if ('serviceWorker' in navigator) { try { var had = !!navigator.serviceWorker.controller, again = false; navigator.serviceWorker.addEventListener('controllerchange', function(){ if (had && !again) { again = true; location.reload(); } }); navigator.serviceWorker.register('sw.js').then(function(r){ try { r.update(); } catch (e) {} }); } catch (e) {} }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   if (firstRunNeeded()) {
     var pending = false; try { pending = !!localStorage.getItem('mixbench.importPending'); } catch (e) {}

@@ -1,9 +1,9 @@
 /* Mix Bench service worker: keeps the app working with no signal. Change VERSION to make phones fetch a new copy. */
-var VERSION = 'mixbench-2026-11-06-2';
+var VERSION = 'mixbench-2026-11-06-3';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', function(e){
-  e.waitUntil(caches.open(VERSION).then(function(c){ return c.addAll(CORE); }).then(function(){ return self.skipWaiting(); }));
+  e.waitUntil(caches.open(VERSION).then(function(c){ return Promise.all(CORE.map(function(u){ return fetch(new Request(u, {cache:'reload'})).then(function(r){ if (r && r.ok) return c.put(u, r); }); })); }).then(function(){ return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function(e){
   e.waitUntil(caches.keys().then(function(keys){ return Promise.all(keys.filter(function(k){ return k !== VERSION; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); }));
@@ -17,7 +17,7 @@ self.addEventListener('fetch', function(e){
     /* the app itself: answer from the cache at once, refresh the cache in the background */
     e.respondWith(caches.open(VERSION).then(function(c){
       return c.match(req, {ignoreSearch:true}).then(function(hit){
-        var net = fetch(req).then(function(r){ if (r && r.ok) c.put(req, r.clone()); return r; }).catch(function(){ return hit || c.match('./index.html'); });
+        var net = fetch(req, {cache:'no-cache'}).then(function(r){ if (r && r.ok) c.put(req, r.clone()); return r; }).catch(function(){ return hit || c.match('./index.html'); });
         return hit || net;
       });
     }));
