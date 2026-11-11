@@ -329,6 +329,26 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .bdet{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35}
 .bdet .linkbtn{font-size:12px}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* flavour learning and steep taste checks */
+.learn{border-color:var(--sel)}
+.learn-h{display:flex;align-items:center;gap:8px;font-weight:700}
+.learn-ic{display:inline-flex;width:26px;height:26px;border-radius:8px;align-items:center;justify-content:center;background:var(--sel);color:var(--sel-ink);font-size:14px}
+.learn-item + .learn-item{border-top:1px solid var(--line);margin-top:10px;padding-top:6px}
+.learn-list > div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.learn-past{margin-top:8px}
+.learn-past > summary{cursor:pointer;font-weight:600}
+.scheck{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--soft)}
+@media (prefers-reduced-motion: no-preference){
+  .learn.new{animation:learnIn .5s cubic-bezier(.2,.8,.2,1.2) both}
+  .learn.new .learn-ic{animation:learnSpark 2.4s ease-in-out .5s infinite}
+  .scheck{animation:checkIn .35s ease-out both}
+  .tchip,.fqchip,.fqopt,.fqrec{transition:transform .12s ease, background-color .15s ease, border-color .15s ease}
+  .tchip:active,.fqchip:active,.fqopt:active,.fqrec:active{transform:scale(.96)}
+}
+@keyframes learnIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes learnSpark{0%,100%{transform:rotate(0) scale(1)}10%{transform:rotate(-12deg) scale(1.15)}20%{transform:rotate(10deg) scale(1.1)}30%{transform:rotate(0) scale(1)}}
+@keyframes checkIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -439,7 +459,7 @@ function mixParts(){
   var anyMain = flav.some(function(i){ return main[i.id]; });
   var w = function(i){ return (anyMain && main[i.id]) ? 2 : 1; };
   var wsum = flav.reduce(function(a, i){ return a + w(i); }, 0) || 1;
-  flav.forEach(function(i){ var v = picks[i.id]; out.push([i.id, (v !== null && v !== undefined && +v >= 0) ? +v : Math.max(0.5, r05(total * w(i) / wsum))]); });
+  flav.forEach(function(i){ var v = picks[i.id], tn = ((state.flavTune || {})[i.id] || {f:1}).f || 1; out.push([i.id, (v !== null && v !== undefined && +v >= 0) ? +v : Math.max(0.5, r05(total * w(i) / wsum * tn))]); });
   mixFlavours().forEach(function(i){ if ((i.id in picks) && (i.id in ADDITIVE)) { var v = picks[i.id]; out.push([i.id, (v !== null && v !== undefined && +v >= 0) ? +v : ADDITIVE[i.id]]); } });
   return out.filter(function(p){ return p[1] > 0; });
 }
@@ -464,7 +484,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, showGrams:false, learnSeen:{}, flavTune:{}, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
 }
 function migrate(s){
   var b = blank();
@@ -483,12 +503,13 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes','learnSeen','flavTune'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
   if (+s.flavBoost === 1 || +s.flavBoost === 1.25 || +s.flavBoost === 1.5) b.flavBoost = +s.flavBoost;
   if (Array.isArray(s.trash)) b.trash = s.trash.filter(function(x){ return x && x.rec && x.rec.id && x.kind; }).slice(-30);
   if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
+  b.showGrams = !!s.showGrams;
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -748,8 +769,8 @@ function batchDetailHtml(b){
 
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
-var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes'];
-var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavBoost'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes','learnSeen','flavTune'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavBoost','showGrams'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -853,7 +874,7 @@ function suggestFor(rid){
   var t = b.taste, f = t.flav || {}, parts = r.parts.map(function(p){ return [p[0], p[1]]; }), changes = [], words = [];
   var move = function(p, dir){ var step = Math.max(0.5, r05(p * 0.1)); return Math.max(0.5, r05(p + dir * step)); };
   parts.forEach(function(p){
-    var v = f[p[0]], n = p[1], nm = ingById[p[0]] ? ingById[p[0]].name : p[0];
+    var v = learnUsed(b.id, p[0]) ? '' : f[p[0]], n = p[1], nm = ingById[p[0]] ? ingById[p[0]].name : p[0];
     if (v === 'strong') { n = move(p[1], -1); words.push(nm + ' too strong'); }
     else if (v === 'weak') { n = move(p[1], 1); words.push(nm + ' too weak'); }
     else if (v === 'right') words.push(nm + ' just right');
@@ -884,9 +905,106 @@ function acceptSuggestion(rid){
   var s = suggestFor(rid); if (!s) return false;
   if (rid === 'mix') { state.mix.picks = state.mix.picks || {}; s.changes.forEach(function(c){ if (c[2] > 0) state.mix.picks[c[0]] = c[2]; else delete state.mix.picks[c[0]]; }); }
   else { state.recipeEdits = state.recipeEdits || {}; state.recipeEdits[rid] = s.parts; }
+  for (var fk in (s.t.flav || {})) learnUse(s.b.id, fk);
   state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; return true;
 }
 function ignoreSuggestion(rid){ var s = suggestFor(rid); if (!s) return; state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; }
+
+/* ---------- shared: what Mix Bench learns about each flavour ----------
+   Every "too weak" or "too strong" you tap on a batch is a vote for that flavour. Once a flavour gets two more votes
+   one way than the other (across any of your recipes), Mix Bench offers to change it in every recipe that uses it.
+   Each vote is only used once: by this, or by the recipe's own "Use these amounts". */
+function learnUsed(bid, id){ return !!(state.learnSeen && state.learnSeen[bid + ':' + id]); }
+function learnUse(bid, id){ state.learnSeen = state.learnSeen || {}; state.learnSeen[bid + ':' + id] = 1; }
+function recipesWith(id){ return RECIPES.filter(function(r){ return r.parts.some(function(p){ return p[0] === id; }); }); }
+function learnings(){
+  var v = {}, out = [];
+  state.batches.forEach(function(b){
+    var f = b.taste && b.taste.flav; if (!f) return;
+    for (var id in f) { if (!ingById[id] || (id in ADDITIVE) || learnUsed(b.id, id) || f[id] === 'right') continue;
+      var x = v[id] = v[id] || {weak:0, strong:0, batches:[], recs:{}}; x[f[id]] = (x[f[id]] || 0) + 1; x.batches.push(b.id); x.recs[b.recipe] = true; }
+  });
+  for (var id in v) {
+    var x = v[id], net = x.weak - x.strong; if (Math.abs(net) < 2) continue;
+    var recs = recipesWith(id); if (!recs.length) continue;
+    var f = net > 0 ? 1 + 0.1 * Math.min(3, net - 1) : 1 - 0.1 * Math.min(3, -net - 1);
+    out.push({id:id, up:net > 0, votes:Math.abs(net), f:f, batches:x.batches, recs:recs, from:Object.keys(x.recs).filter(function(r){ return recById[r]; })});
+  }
+  return out;
+}
+function r1x(x){ return Math.round(x * 10) / 10; }
+function learnApply(L){
+  state.recipeEdits = state.recipeEdits || {};
+  L.recs.forEach(function(r){
+    if (r.id === 'mix') { var pk = (state.mix || {}).picks || {}; if (pk[L.id] !== null && pk[L.id] !== undefined && +pk[L.id] > 0) pk[L.id] = r1x(+pk[L.id] * L.f); return; }
+    state.recipeEdits[r.id] = r.parts.map(function(p){ return p[0] === L.id ? [p[0], Math.max(0.5, r1x(p[1] * L.f))] : [p[0], p[1]]; });
+  });
+  state.flavTune = state.flavTune || {}; var o = state.flavTune[L.id] || {f:1};
+  state.flavTune[L.id] = {f:Math.round(o.f * L.f * 1000) / 1000, t:Date.now()};
+  L.batches.forEach(function(bid){ learnUse(bid, L.id); });
+  if (typeof syncRecipes === 'function') syncRecipes();
+}
+function learnSkip(L){ L.batches.forEach(function(bid){ learnUse(bid, L.id); }); }
+function learnHtml(){
+  var list = learnings(), tune = state.flavTune || {}, past = Object.keys(tune).filter(function(id){ return ingById[id]; });
+  /* with nothing new to ask, the card stays for two weeks after the last change */
+  if (!list.length && !past.some(function(id){ return Date.now() - (+tune[id].t || 0) < 14 * DAY; })) return '';
+  if (!list.length && !past.length) return '';
+  var h = '<section class="card learn' + (list.length ? ' new' : '') + '"><div class="learn-h"><span class="learn-ic" aria-hidden="true">✨</span><span>' + (list.length ? 'Mix Bench has learned something' : 'What Mix Bench has learned') + '</span></div>';
+  list.forEach(function(L){
+    var nm = ingById[L.id].name, pct = Math.round(Math.abs(L.f - 1) * 100);
+    h += '<div class="learn-item"><p style="margin:6px 0">' + esc(nm) + ' has tasted <b>too ' + (L.up ? 'weak' : 'strong') + '</b> to you in ' + L.votes + ' batches. ' + (L.up ? 'Raise' : 'Lower') + ' it by ' + pct + '% in every recipe that uses it?</p>' +
+      '<div class="small learn-list">' + L.recs.map(function(r){ var p = r.parts.filter(function(q){ return q[0] === L.id; })[0]; return '<div><span>' + esc(r.custom ? 'Your own mix' : r.name) + '</span><span class="num">' + mlShort(p[1]) + '% → <b>' + mlShort(Math.max(0.5, r1x(p[1] * L.f))) + '%</b></span></div>'; }).join('') + '</div>' +
+      '<div class="fb-btns"><button type="button" class="btn sm" data-learn="' + L.id + '">' + (L.up ? 'Raise' : 'Lower') + ' it everywhere</button><button type="button" class="btn secondary sm" data-learnskip="' + L.id + '">Not now</button></div></div>';
+  });
+  if (past.length) h += '<details class="learn-past"><summary class="small">' + (list.length ? 'Earlier changes' : 'Your flavour changes so far') + '</summary><div class="small learn-list">' + past.map(function(id){ var x = tune[id], p = Math.round((x.f - 1) * 100); return '<div><span>' + esc(ingById[id].name) + '</span><span class="num">' + (p > 0 ? '+' : '') + p + '% · ' + esc(dayText(x.t)) + '</span></div>'; }).join('') + '</div></details>';
+  return h + '<p class="muted small" style="margin:8px 0 0">Comes from the Too weak and Too strong you tap when you rate a batch.</p></section>';
+}
+/* ---------- shared: taste checks while a batch steeps (day 3 and day 7) ---------- */
+var CHECK_OPTS = [['good','Tastes good'],['weak','Still weak'],['strong','Too strong']];
+function checkDue(b){
+  if (b.done) return null; var age = (Date.now() - b.t) / DAY, c = b.checks || {};
+  if (age >= 7 && !c.d7 && c.d3 && c.d3 !== 'good') return 'd7';
+  if (age >= 3 && age < 14 && !c.d3) return 'd3';
+  return null;
+}
+function checkHtml(b){
+  var k = checkDue(b), c = b.checks || {}, out = '';
+  if (k) out = '<div class="scheck"><div class="small" style="font-weight:700">' + (k === 'd3' ? 'Day 3 taste check' : 'Day 7 taste check') + '</div><div class="small muted" style="margin:2px 0 6px">' + (k === 'd3' ? 'Try a little. Weak now often just needs longer to steep.' : 'It was weak on day 3. How is it now?') + '</div>' +
+    chips('scheck', CHECK_OPTS, '', b.id + ':' + k) + '</div>';
+  var tip = checkTip(b); if (tip) out += '<div class="small" style="margin-top:6px">' + tip + '</div>';
+  return out;
+}
+function checkTip(b){
+  var c = b.checks || {}, rid = b.recipe; if (!recById[rid]) return '';
+  if (c.d3 === 'weak' && c.d7 === 'good') return steepDaysOf(rid) < 7 ? 'It needed a week to come through. <button class="linkbtn" data-steepset="' + rid + ':7">Steep ' + esc(recById[rid].name) + ' for 7 days from now on</button>' : '';
+  if (c.d3 === 'weak' && c.d7 === 'weak') return 'Still weak after a week, so it needs more flavour, not more time. Rate it below and Mix Bench suggests new amounts.';
+  if (c.d3 === 'good' && steepDaysOf(rid) > 3) return 'Ready by day 3. <button class="linkbtn" data-steepset="' + rid + ':3">Steep ' + esc(recById[rid].name) + ' for 3 days from now on</button>';
+  return '';
+}
+function checkApply(el){
+  var v = el.getAttribute('data-scheck'), p = v ? v.split(':') : null; if (!p || p.length < 3) return false;
+  var b = batchById(p[0]); if (!b) return false;
+  b.checks = b.checks || {}; b.checks[p[1]] = p[2]; b.checks[p[1] + 't'] = Date.now();
+  /* a strong or still-weak verdict also counts on the rating, for every flavour in it */
+  if ((p[1] === 'd7' || p[2] === 'strong') && p[2] !== 'good') { b.taste = b.taste || {}; b.taste.flav = b.taste.flav || {}; batchFlavIds(b).forEach(function(id){ if (!(id in ADDITIVE) && !b.taste.flav[id]) b.taste.flav[id] = p[2]; }); b.taste.t = Date.now(); }
+  return true;
+}
+
+/* the buttons in the learning card, the steep taste checks and the grams switch (phone and laptop) */
+function refreshKeep(){ save(); var y = window.scrollY; render(); window.scrollTo(0, y); }
+document.addEventListener('click', function(e){
+  var t = e.target.closest && e.target.closest('[data-learn],[data-learnskip],[data-scheck],[data-steepset]'); if (!t) return;
+  if (t.hasAttribute('data-learn') || t.hasAttribute('data-learnskip')) {
+    var id = t.getAttribute('data-learn') || t.getAttribute('data-learnskip'), L = learnings().filter(function(x){ return x.id === id; })[0]; if (!L) return;
+    if (t.hasAttribute('data-learn')) { confetti(t); learnApply(L); refreshKeep(); toast(ingById[id].name + ' ' + (L.up ? 'raised' : 'lowered') + ' in ' + L.recs.length + ' recipe' + (L.recs.length > 1 ? 's' : '') + '.'); }
+    else { learnSkip(L); refreshKeep(); toast('Left as it is.'); }
+    return;
+  }
+  if (t.hasAttribute('data-scheck')) { if (checkApply(t)) { var g = t.getAttribute('data-scheck').split(':')[2]; if (g === 'good') confetti(t); refreshKeep(); toast(g === 'good' ? 'Lovely. Noted.' : (g === 'weak' ? 'Noted. Mix Bench asks again on day 7.' : 'Noted as too strong.')); } return; }
+  if (t.hasAttribute('data-steepset')) { var p = steepSet(t); refreshKeep(); toast(recById[p[0]].name + ' now steeps for ' + p[1] + ' days.'); }
+});
+function steepSet(el){ var p = el.getAttribute('data-steepset').split(':'); state.steeps = state.steeps || {}; state.steeps[p[0]] = +p[1]; return p; }
 /* put a past batch's recipe, amount, ratio, shot type and strength back into Plan */
 function makeAgain(b){
   var r = recById[b.recipe]; if (!r) return null;
@@ -950,6 +1068,7 @@ function steepCardsHtml(){
       (Date.now() >= ready ? '<span class="pill ready">Ready to try</span>' : '') + '</div>' +
       '<div class="led" data-cd="' + ready + '" role="timer" aria-label="Time until ' + esc(nm) + ' is ready">' + ledInner(ready - Date.now()) + '</div>' +
       '<div class="small muted">Mixed ' + esc(whenShort(b.t)) + (topupAt(b) ? ' · topped up ' + esc(whenShort(topupAt(b))) + ' (48 hour steep)' : '') + ' · ready ' + esc(whenShort(ready)) + ' · best from ' + esc(whenShort(best)) + '</div>' +
+      checkHtml(b) +
       '<div class="row between" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="small' + (shakenOn(b, day) ? '' : ' muted') + '">' + (shakenOn(b, day) ? 'Shaken today' + (ls && londonDay(ls) === day ? ' at ' + new Date(ls).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : ' (made today)') : (ls ? 'Last shaken ' + esc(whenShort(ls)) : 'Not shaken yet')) + '</span>' +
       '<button class="linkbtn" data-steepdone="' + b.id + '">Done</button></div></div>';
   }).join('');
@@ -1682,52 +1801,59 @@ function batchNotifyTick(){
 var DENSITY = {pg:1.036, vg:1.261, nic:1.15, nicvg:1.26};
 function densityOf(id){ return DENSITY[id] || 1.04; }
 function gramsText(id, ml){ var g = ml * densityOf(id); return (g >= 10 ? g.toFixed(1) : g.toFixed(2)) + ' g'; }
-/* ---------- shared: topping up a batch's flavour, by weight ---------- */
+/* grams are shown only if you switch them on (for a scale that reads to 0.01 g) */
+function gramsOn(){ return !!state.showGrams; }
+function gramsSep(id, ml){ return gramsOn() ? ' \u00b7 ' + gramsText(id, ml) : ''; }
+/* ---------- shared: topping up a batch's flavour, with a syringe ---------- */
 /* the batch as it is now: a sync swaps in a fresh copy of your data, so a box that is still open must look it up again */
 function batchById(id){ return state.batches.filter(function(x){ return x.id === id; })[0] || null; }
 /* the flavours in a batch that can be topped up (not nic, PG, VG, sweetener, sour or cooling) */
 function topupFlavours(b){ var m = batchAmounts(b) || {}, out = []; for (var k in m) if (ingById[k] && !isNicId(k) && k !== 'pg' && k !== 'vg' && !(k in ADDITIVE) && m[k] > 0) out.push(k); return out; }
-/* grams to add per flavour: your juice weight x that flavour's share of the batch x the strength (0.25 = +25%) */
-function topupSuggest(b, juiceG, pct){
-  var m = batchAmounts(b) || {}, ml = 0, g = 0, out = {}, k;
-  for (k in m) { ml += m[k]; g += m[k] * densityOf(k); }
+/* ml to add per flavour: the juice you have left x that flavour's share of the batch x the strength (0.25 = +25%) */
+function topupSuggest(b, juiceMl, pct){
+  var m = batchAmounts(b) || {}, ml = 0, out = {}, k;
+  for (k in m) ml += m[k];
   if (!(ml > 0)) return out;
-  var dJuice = g / ml;
-  topupFlavours(b).forEach(function(f){ out[f] = juiceG * (m[f] / ml) * densityOf(f) / dJuice * pct; });
+  topupFlavours(b).forEach(function(f){ out[f] = juiceMl * (m[f] / ml) * pct; });
   return out;
 }
+/* a top-up as text: newer ones are in ml, older ones were weighed in grams */
+function topupText(t){ var parts = [], k; if (t.ml) for (k in t.ml) { if (ingById[k]) parts.push(ingById[k].name + ' ' + mlShort(t.ml[k]) + 'ml'); } else for (k in (t.g || {})) if (ingById[k]) parts.push(ingById[k].name + ' ' + t.g[k] + ' g'); return parts.join(', '); }
 function topupHtml(b){
   var fl = topupFlavours(b); if (!fl.length) return '';
-  var done = (b.topups || []).map(function(t){ var parts = []; for (var k in t.g) if (ingById[k]) parts.push(ingById[k].name + ' ' + t.g[k] + ' g'); return '<div class="small muted">Topped up ' + esc(dayText(t.t)) + ': ' + esc(parts.join(', ')) + '</div>'; }).join('');
-  return '<details class="topup" data-topup><summary>Top up flavour (weigh it in grams)</summary>' +
-    '<p class="muted small" style="margin:6px 0">Type the weight of the juice you have left and pick a strength, and Mix Bench works out the grams for each flavour. Or type what you added. Record it to take the flavour off your Stock.</p>' +
-    '<div style="display:flex;gap:10px"><div style="flex:1"><label class="f" style="margin-top:0">Juice left (g)</label><input class="field num" data-tu-g type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 30.5"></div>' +
-    '<div style="flex:1"><label class="f" style="margin-top:0">Strength</label><select class="field" data-tu-p aria-label="Top-up strength"><option value="0.25">+25%</option><option value="0.5">+50%</option></select></div></div>' +
-    '<label class="f">Grams added</label>' + fl.map(function(k){ return '<div class="tu-row"><span>' + esc(ingById[k].name) + '</span><input class="field num" data-tu-in="' + k + '" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-label="Grams of ' + esc(ingById[k].name) + ' added"></div>'; }).join('') +
+  var done = (b.topups || []).map(function(t){ return '<div class="small muted">Topped up ' + esc(dayText(t.t)) + ': ' + esc(topupText(t)) + '</div>'; }).join('');
+  var left = Math.max(0, Math.round(+b.ml || 0));
+  return '<details class="topup" data-topup><summary>Too weak? Top up the flavour</summary>' +
+    '<p class="muted small" style="margin:6px 0">Say roughly how much juice is left in the bottle and pick how much stronger. Mix Bench works out the ml of each flavour to add with a 1ml syringe. Record it to take the flavour off your Stock.</p>' +
+    '<div style="display:flex;gap:10px"><div style="flex:1"><label class="f" style="margin-top:0">Juice left (ml)</label><input class="field num" data-tu-ml type="number" min="0" step="1" inputmode="decimal" placeholder="e.g. 30" value="' + (left || '') + '"></div>' +
+    '<div style="flex:1"><label class="f" style="margin-top:0">Stronger by</label><select class="field" data-tu-p aria-label="Top-up strength"><option value="0.15">+15%</option><option value="0.25" selected>+25%</option><option value="0.5">+50%</option></select></div></div>' +
+    '<label class="f">ml to add</label>' + fl.map(function(k){ return '<div class="tu-row"><span>' + esc(ingById[k].name) + '</span><input class="field num" data-tu-in="' + k + '" type="number" min="0" step="0.05" inputmode="decimal" placeholder="0.00" aria-label="ml of ' + esc(ingById[k].name) + ' to add"></div>'; }).join('') +
+    '<p class="muted small" style="margin:6px 0 0">Change any amount to what you actually added before you record it.</p>' +
     '<button type="button" class="btn" data-tu-save style="margin-top:10px">Record top-up</button>' + done + '</details>';
 }
-/* takes the flavours off Stock (as weighed grams) and notes the top-up on the batch */
+/* takes the flavours off Stock and notes the top-up on the batch */
 function recordTopup(b, added){
   var t = Date.now(), parts = [], k;
-  for (k in added) { state.adjust.push({id:uid(), t:t, ing:k, ml:-r4(added[k] / densityOf(k)), note:'Top-up for ' + (b.name || (recById[b.recipe] || {}).name || 'batch')}); parts.push(ingById[k].name + ' ' + added[k] + ' g'); }
-  b.topups = (b.topups || []).concat([{t:t, g:added}]);
+  for (k in added) { state.adjust.push({id:uid(), t:t, ing:k, ml:-r4(added[k]), note:'Top-up for ' + (b.name || (recById[b.recipe] || {}).name || 'batch')}); parts.push(ingById[k].name + ' ' + mlShort(added[k]) + 'ml'); }
+  b.topups = (b.topups || []).concat([{t:t, ml:added}]);
   delete b.done;   /* back on Steeping, with a 48 hour timer */
   return parts;
 }
 function bindTopup(root, b, after){
   var box = root.querySelector('[data-topup]'); if (!box) return;
   var recompute = function(){
-    var g = +box.querySelector('[data-tu-g]').value, p = +box.querySelector('[data-tu-p]').value; if (!(g > 0)) return;
-    var s = topupSuggest(b, g, p); topupFlavours(b).forEach(function(k){ var i = box.querySelector('[data-tu-in="' + k + '"]'); if (i) i.value = (Math.round(s[k] * 100) / 100).toFixed(2); });
+    var ml = +box.querySelector('[data-tu-ml]').value, p = +box.querySelector('[data-tu-p]').value; if (!(ml > 0)) return;
+    var s = topupSuggest(b, ml, p); topupFlavours(b).forEach(function(k){ var i = box.querySelector('[data-tu-in="' + k + '"]'); if (i) i.value = (Math.round(s[k] * 20) / 20).toFixed(2); });
   };
-  box.addEventListener('input', function(e){ if (e.target.hasAttribute('data-tu-g')) recompute(); });
+  box.addEventListener('toggle', function(){ if (box.open) recompute(); });
+  box.addEventListener('input', function(e){ if (e.target.hasAttribute('data-tu-ml')) recompute(); });
   box.addEventListener('change', function(e){ if (e.target.hasAttribute('data-tu-p')) recompute(); });
   box.querySelector('[data-tu-save]').addEventListener('click', function(ev){
     ev.preventDefault(); ev.stopPropagation(); b = batchById(b.id) || b;
     var added = {}, any = false; Array.prototype.forEach.call(box.querySelectorAll('[data-tu-in]'), function(i){ var v = Math.round(+i.value * 100) / 100; if (v > 0) { added[i.getAttribute('data-tu-in')] = v; any = true; } });
-    if (!any) { toast('Type the grams you added.'); return; }
+    if (!any) { toast('Type the ml you added.'); return; }
     var parts = recordTopup(b, added); save();
-    box.innerHTML = '<summary>Top up flavour</summary><p class="small" style="margin:8px 0 0;font-weight:600;color:var(--ok)">Recorded and taken off your Stock: ' + esc(parts.join(', ')) + '.</p><p class="small" style="margin:6px 0 0">It\u2019s back on Steeping with a 48 hour timer. Taste it after that.</p>';
+    box.innerHTML = '<summary>Top up flavour</summary><p class="small" style="margin:8px 0 0;font-weight:600;color:var(--ok)">Recorded and taken off your Stock: ' + esc(parts.join(', ')) + '.</p><p class="small" style="margin:6px 0 0">It’s back on Steeping with a 48 hour timer. Taste it after that.</p>';
     toast('Top-up recorded. 48 hour steep started.'); if (after) after();
   });
 }
@@ -2310,14 +2436,14 @@ function howSteps(rec, ml){
   steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 60ml bottle.' + (ml > 55 ? ' <b>Split it across two bottles.</b>' : ''));
   rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 3.0001 ? 1 : 0) - (m[y[0]] > 3.0001 ? 1 : 0); }).forEach(function(p){
     var a = m[p[0]]; if (!(a > 0)) return;
-    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe \u00b7 ' + gramsText(p[0], a) + ')</span>');
+    steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe' + gramsSep(p[0], a) + ')</span>');
   });
   if (hasNic) {
     var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
-    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe \u00b7 ' + gramsText(m.nicvg ? 'nicvg' : 'nic', rem) + ')</span>' : ''));
+    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe' + gramsSep(m.nicvg ? 'nicvg' : 'nic', rem) + ')</span>' : ''));
   }
   ['pg','vg'].forEach(function(id){
-    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe \u00b7 ' + gramsText(id, a) + ')</span>');
+    var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe' + gramsSep(id, a) + ')</span>');
   });
   steps.push('Cap it and shake for 2 to 3 minutes.');
   steps.push('Label it with the flavour and date.');
@@ -2485,13 +2611,14 @@ function viewPlan(){
     '<p class="muted small" style="margin:8px 0 14px">Each type has its own stock. Pick the nic strength on each recipe; the amounts adjust to match.</p>' +
     '<div class="small muted">PG / VG ratio</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px">' +
     [40,45,50,55,60,70].map(function(v){ return '<button class="btn secondary" data-vgr="' + v + '" style="padding:9px 6px;font-size:12.5px">' + ratioName(v) + '</button>'; }).join('') + '</div>' +
+    '<label class="zero-tick" style="margin-top:14px"><input type="checkbox" data-grams' + (gramsOn() ? ' checked' : '') + '> Show grams too (only for a scale that reads to 0.01 g)</label>' +
     '<p class="muted small" style="margin:10px 0 0"><b>VG</b> is thicker and smoother. <b>PG</b> is thinner and gives more throat hit. 50 PG / 50 VG is the same as Bar Juice.</p></details></section>';
   var coming = state.orders.filter(function(o){ return (o.status || 'ordered') !== 'delivered'; }).sort(function(a,b){ return b.t - a.t; });
   var banner = coming.map(function(o){
     return '<section class="card"><div class="row between"><div style="font-weight:700">Parcel on its way</div><div class="small muted">' + (o.ref ? 'Order ' + esc(o.ref) : esc(when(o.t))) + '</div></div>' + parcelHtml(o, true) + '</section>';
   }).join('');
   return steepSummaryHtml() + '<h1>Plan</h1><p class="lede">Set what you want to make. Shop and Stock update as you go.</p>' +
-    nextBatchCardHtml(true) + settings +
+    nextBatchCardHtml(true) + learnHtml() + settings +
     cards +
     '<div class="card"><div class="row between"><span class="muted">Total planned</span><span class="num" style="font-weight:800;font-size:17px" data-total>' + mlShort(total) + ' ml</span></div></div>';
 }
@@ -2506,6 +2633,7 @@ function bindPlan(){
     b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.onclick = function(){ if (on) return; state.nicBase = b.getAttribute('data-nicbase'); stay('Recipes now use ' + NIC_NAME[state.nicBase === 'vg' ? 'vg' : '5050'] + ' shots.'); };
   });
+  var gsw = document.querySelector('[data-grams]'); if (gsw) gsw.onchange = function(){ state.showGrams = gsw.checked; stay(gsw.checked ? 'Grams shown next to each amount.' : 'Grams hidden.'); };
   Array.prototype.forEach.call(document.querySelectorAll('[data-vgr]'), function(b){
     var on = +b.getAttribute('data-vgr') === (state.vgr || 50);
     b.style.background = on ? 'var(--sel)' : ''; b.style.color = on ? 'var(--sel-ink)' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false');
