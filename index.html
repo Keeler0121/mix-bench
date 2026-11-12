@@ -1953,6 +1953,9 @@ function initCloud(){
       return ref.get().then(function(snap){
         cloud.ref = ref; cloud.mode = 'cloud'; cloud.db = db; cloud.base = 'data/users/' + id + '/';
         var remote = snap.exists ? (snap.data() || {}).state : null;
+        /* never let an empty copy (a new browser, or a cleared phone) replace saved data that has history in it */
+        var hist = function(x){ return x ? (x.batches || []).length + (x.orders || []).length + (x.adjust || []).length : 0; };
+        if (remote && hist(remote) > 0 && hist(state) === 0) state.savedAt = 0;
         if (remote && (+remote.savedAt||0) > (+state.savedAt||0)){
           state = migrate(remote); lastSaved = jcopy(state);
           try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
