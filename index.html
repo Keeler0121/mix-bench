@@ -440,7 +440,7 @@ var KIT = [
   ['10ml bottles','https://vapable.com/product-category/diy/bottles/'],
   ['Syringes (1ml, 2ml and 10ml)','https://vapable.com/product-category/diy/bottles/'],
   ['Nitrile gloves','https://vapable.com/product/powder-free-nitrile-gloves/'],
-  ['60ml empty bottle, for mixing batches up to 50ml','https://vapable.com/product-category/diy/bottles/']
+  ['100ml amber glass dropper bottles, for batches up to 90ml','https://www.amazon.co.uk/s?k=100ml+amber+glass+dropper+bottle']
 ];
 var ingById = {}; ING.forEach(function(i){ ingById[i.id]=i; });
 var recById = {}; RECIPES.forEach(function(r){ recById[r.id]=r; });
@@ -2436,7 +2436,7 @@ function render(){
 function howSteps(rec, ml){
   var m = mlFor(rec.id, ml), steps = [], n = function(x){ return '<b>' + mlShort(x) + 'ml</b>'; }, syr = function(x){ return x < 1 - 1e-9 ? '1ml' : (x <= 3.0001 ? '2ml' : '10ml'); };
   var nicMl = (m.nic || 0) + (m.nicvg || 0), hasNic = nicMl > 0;
-  steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 60ml bottle.' + (ml > 55 ? ' <b>Split it across two bottles.</b>' : ''));
+  steps.push((hasNic ? 'Gloves on. ' : '') + 'Open a clean, dry 100ml glass bottle.' + (ml > 90 ? ' <b>Split it across two bottles.</b>' : ''));
   rec.parts.slice().sort(function(x, y){ return (m[x[0]] > 3.0001 ? 1 : 0) - (m[y[0]] > 3.0001 ? 1 : 0); }).forEach(function(p){
     var a = m[p[0]]; if (!(a > 0)) return;
     steps.push('Add ' + n(a) + ' ' + esc(ingById[p[0]].name) + ' <span class="muted">(' + syr(a) + ' syringe' + gramsSep(p[0], a) + ')</span>');
