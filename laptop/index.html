@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mix Bench</title>
-<meta name="mb-version" content="2026-11-18-10">
+<meta name="mb-version" content="2026-11-18-11">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -245,7 +245,6 @@ dialog{width:min(620px,94vw);max-height:90vh;overflow:auto}
 .bcard:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .bottle{display:block;width:56px;height:110px;margin:0 auto 8px;overflow:visible}
 .liq{transition:transform 1s cubic-bezier(.25,.8,.25,1)}
-.slosh .wave{animation:slosh .9s linear 2}
 @keyframes slosh{from{transform:translateX(0)}to{transform:translateX(-30px)}}
 .bname{font-weight:600;font-size:12.5px;line-height:1.25;overflow-wrap:anywhere}
 .bamt{font-weight:700;font-size:13.5px;margin-top:3px}
@@ -401,12 +400,45 @@ details[data-bstepsbox] > summary{cursor:pointer;text-decoration:underline;text-
 .updcard .btn{width:auto;padding:11px 18px}
 .side-ver{margin-top:6px;font-size:11.5px;color:var(--muted)}
 
+/* Today card */
+.today{border-color:var(--ink)}
+.today-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:800;font-size:17px;margin-bottom:4px}
+.tline{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.today-h + .tline{border-top:0}
+.tdot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.tline.act .tdot{background:var(--sel)}
+.tline.warn .tdot{background:var(--out)}
+.tline.ok .tdot{background:var(--ok)}
+.ttext{flex:1;min-width:160px;font-size:14px}
+.tline.act .ttext,.tline.warn .ttext{font-weight:600}
+.tbtns{display:flex;gap:6px;flex-wrap:wrap}
+.tbtns .btn{width:auto;padding:7px 12px}
+@media (prefers-reduced-motion: no-preference){
+  .tline{animation:checkIn .35s ease-out both}
+  .tline.act .tdot,.tline.warn .tdot{animation:tpulse 1.8s ease-in-out infinite}
+}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 0 rgba(242,140,40,.45)}50%{box-shadow:0 0 0 5px rgba(242,140,40,0)}}
+
+/* living bottles: the liquid keeps gently moving while Stock is on screen */
+.bwave{animation:bwave 3.4s linear infinite}
+.bwave.back{animation-duration:5.2s;animation-direction:reverse}
+.bbob{animation:bbob 3.2s ease-in-out infinite}
+.bub{opacity:0;animation:bub 3.8s ease-in infinite}
+.bub.b2{animation-delay:1.3s;animation-duration:4.4s}
+.bub.b3{animation-delay:2.4s;animation-duration:3.3s}
+.bcard:hover .bwave{animation-duration:1.6s}
+.bottle.lowb .bglass{stroke:var(--out)}
+@keyframes bwave{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+@keyframes bbob{0%,100%{transform:translateY(0)}50%{transform:translateY(1.8px)}}
+@keyframes bub{0%{transform:translateY(0);opacity:0}12%{opacity:.75}85%{opacity:.5}100%{transform:translateY(-58px);opacity:0}}
+@media (prefers-reduced-motion: reduce){.bwave,.bbob,.bub{animation:none!important}.bub{display:none}}
+
 </style></head><body>
 <div class="app"><aside id="side"></aside><main><div id="main"></div></main></div>
 <script>
 (function(){
 'use strict';
-var APP_VERSION = "2026-11-18-10";
+var APP_VERSION = "2026-11-18-11";
 var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
 var SHOPS = ['Vapable','Vape and Go'];
 var COURIERS = {
@@ -1070,6 +1102,45 @@ document.addEventListener('keydown', function(e){
     e.preventDefault(); var b = document.querySelector('.mixmode .mm-nav .btn.sel'); if (b) mixModeAct(b.getAttribute('data-mm'));
   }
 });
+
+/* ---------- shared: Today, one card at the top of Plan that says what needs doing ---------- */
+function batchSnoozedToday(){ var s = ''; try { s = localStorage.getItem('mixbench.batchSnooze') || ''; } catch (e) {} return s === londonDay(Date.now()); }
+function todayLines(){
+  var out = [], list = steeping(), nb = nextBatch(), nm = function(b){ return b.name || (recById[b.recipe] || {}).name || 'Batch'; };
+  if (shakeDue()) out.push({k:'act', t:'Shake your ' + (list.length === 1 ? 'steeping bottle' : list.length + ' steeping bottles') + ', 2 min 30 sec each.', b:[['Shaken today', 'data-shaken'], ['Shake timer', 'data-gosteep']]});
+  if (batchDueNow() && !batchSnoozedToday()) out.push({k:'act', t:'Time to mix your next batch. It was due ' + dayText(nb.due) + '.', b:[['Not today', 'data-batchsnooze']]});
+  readyBatches().filter(function(b){ return !hasTaste(b.taste); }).slice(0, 3).forEach(function(b){ out.push({k:'ok', t:nm(b) + ' is ready to try.', b:[['Rate it', 'data-bdetail="' + b.id + '"']]}); });
+  list.forEach(function(b){ var c = checkDue(b); if (c) out.push({k:'act', t:(c === 'd3' ? 'Day 3' : 'Day 7') + ' taste check: ' + nm(b) + '.', b:[['Taste check', 'data-gosteep']]}); });
+  var ns = nextBatchStock(), L = shopList();
+  if (ns) {
+    var need = ns.short.filter(function(x){ return listQty(x.id) * sizeOf(x.id) < x.lack - 1e-6; });
+    if (need.length) out.push({k:'warn', t:'Running short for your next batch: ' + need.map(function(x){ return ingById[x.id].name; }).join(', ') + '.', b:[['Add to Shop list', 'data-batchshop']]});
+  }
+  var toBuy = L.rows.filter(function(r){ return r.n > 0 && !r.oos && !r.onOrder; });
+  if (toBuy.length) out.push({k:ns && ns.orderBy && ns.orderBy < Date.now() + 2 * DAY ? 'warn' : '', t:toBuy.length + ' item' + (toBuy.length === 1 ? '' : 's') + ' on your Shop list' + (ns && ns.orderBy ? (ns.orderBy > Date.now() ? '. Order by ' + dayText(ns.orderBy) + '.' : '. Order as soon as you can.') : '.'), b:[['Open Shop', 'data-today-go="shop"']]});
+  var coming = state.orders.filter(function(o){ return !isDelivered(o) && !o.cancelled; }).length;
+  if (coming) out.push({k:'', t:coming + (coming === 1 ? ' parcel' : ' parcels') + ' on the way.', b:[['Track', 'data-today-go="shop"']]});
+  var lr = learnings(); if (lr.length) out.push({k:'ok', t:'Mix Bench has learned something about ' + ingById[lr[0].id].name + '.', b:[['See it', 'data-today-go="learn"']]});
+  var waiting = list.filter(function(b){ return Date.now() < readyAt(b); }).sort(function(a, b){ return readyAt(a) - readyAt(b); });
+  if (waiting.length) out.push({k:'', t:waiting.length + (waiting.length === 1 ? ' batch' : ' batches') + ' steeping. Next ready in ' + left(readyAt(waiting[0]) - Date.now()) + '.', b:[['Steeping', 'data-gosteep']]});
+  if (!nb.none && !batchDueNow()) out.push({k:'', t:'Next batch due ' + dayText(nb.due) + '.', b:[]});
+  return out;
+}
+function todayHtml(){
+  var lines = todayLines(), d = new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  return '<section class="card today"><div class="today-h"><span>Today</span><span class="small muted">' + esc(d) + '</span></div>' +
+    (lines.length ? lines.map(function(l, i){
+      return '<div class="tline ' + l.k + '" style="animation-delay:' + (i * 60) + 'ms"><span class="tdot" aria-hidden="true"></span><span class="ttext">' + esc(l.t) + '</span>' +
+        (l.b.length ? '<span class="tbtns">' + l.b.map(function(x, j){ return '<button type="button" class="btn sm' + (j ? ' secondary' : '') + '" ' + (/=/.test(x[1]) ? x[1] : x[1]) + '>' + esc(x[0]) + '</button>'; }).join('') + '</span>' : '') + '</div>';
+    }).join('') : '<div class="tline ok"><span class="tdot"></span><span class="ttext">Nothing to do today. Enjoy your vape.</span></div>') + '</section>';
+}
+function goView(v){ if (typeof ui !== 'undefined' && ui) { ui.view = v; render(); var m = document.querySelector('main'); if (m) m.scrollTop = 0; } else { current = v; render(); window.scrollTo(0, 0); } }
+document.addEventListener('click', function(e){
+  var t = e.target.closest && e.target.closest('[data-today-go]'); if (!t) return;
+  var v = t.getAttribute('data-today-go');
+  if (v === 'learn') { var c = document.querySelector('.learn'); if (c) c.scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  goView(v);
+});
 /* ---------- shared: what Mix Bench learns about each flavour ----------
    Every "too weak" or "too strong" you tap on a batch is a vote for that flavour. Once a flavour gets two more votes
    one way than the other (across any of your recipes), Mix Bench offers to change it in every recipe that uses it.
@@ -1428,15 +1499,23 @@ function stepFx(root, instant){
 /* a mini vape bottle whose orange liquid shows the % left */
 var BOTTLE_H = 76;
 function bottleSvg(id, s){
-  var lvl = (BOTTLE_H * (1 - s.pct / 100)).toFixed(1), c = 'b' + id.replace(/[^a-z0-9]/gi, '');
-  return '<svg class="bottle' + (s.big ? ' big' : '') + '" viewBox="0 0 60 118" aria-hidden="true" focusable="false"><defs><clipPath id="' + c + '"><rect x="11.5" y="35.5" width="37" height="75" rx="8.5"/></clipPath></defs>' +
+  var lvl = (BOTTLE_H * (1 - s.pct / 100)).toFixed(1), c = 'b' + id.replace(/[^a-z0-9]/gi, ''), col = (ingById[id] && ingById[id].col) || '#F28C28';
+  var wave = 'M-30 36 q7.5 -3.5 15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0 V116 H-30 Z', has = s.pct > 0.5;
+  return '<svg class="bottle' + (s.big ? ' big' : '') + (s.low || s.out ? ' lowb' : '') + '" viewBox="0 0 60 118" aria-hidden="true" focusable="false"><defs><clipPath id="' + c + '"><rect x="11.5" y="35.5" width="37" height="75" rx="8.5"/></clipPath>' +
+    '<linearGradient id="g' + c + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".95"/><stop offset="1" stop-color="' + col + '" stop-opacity=".65"/></linearGradient>' +
+    '<linearGradient id="s' + c + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient></defs>' +
     '<rect x="25" y="1" width="10" height="15" rx="3" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<path d="M20 16h20l3 10H17z" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
     '<rect x="15" y="25" width="30" height="9" rx="2.5" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1"/>' +
-    '<rect x="10" y="34" width="40" height="78" rx="10" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1.5"/>' +
+    '<rect class="bglass" x="10" y="34" width="40" height="78" rx="10" fill="#0A0A0B" stroke="var(--bottle-edge)" stroke-width="1.5"/>' +
     (s.oo > 0 ? '<g clip-path="url(#' + c + ')"><rect class="onorder" x="10" y="' + (35 + BOTTLE_H * (1 - s.pctOn / 100)).toFixed(1) + '" width="40" height="80" fill="var(--sel)" opacity=".22"/></g>' : '') +
-    '<g clip-path="url(#' + c + ')"><g class="liq" data-liq="' + id + '" data-lvl="' + lvl + '" style="transform:translateY(' + lvl + 'px)"><path class="wave" d="M-30 36 q7.5 -3.5 15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0 V116 H-30 Z" fill="' + (s.low || s.out ? 'var(--out)' : 'var(--sel)') + '"/></g></g>' +
-    '<rect x="15" y="42" width="3.5" height="44" rx="1.75" fill="#fff" opacity=".14"/></svg>';
+    '<g clip-path="url(#' + c + ')"><g class="liq" data-liq="' + id + '" data-lvl="' + lvl + '" style="transform:translateY(' + lvl + 'px)"><g class="bbob">' +
+      (has ? '<path class="wave bwave back" d="' + wave + '" fill="' + col + '" opacity=".45" transform="translate(-12 -1.5)"/>' : '') +
+      '<path class="wave bwave" d="' + wave + '" fill="url(#g' + c + ')"/>' +
+      (has ? '<circle class="bub" cx="22" cy="108" r="1.4" fill="#fff"/><circle class="bub b2" cx="34" cy="110" r="1" fill="#fff"/><circle class="bub b3" cx="40" cy="107" r="1.2" fill="#fff"/>' : '') +
+    '</g></g></g>' +
+    '<rect x="10" y="34" width="40" height="78" rx="10" fill="url(#s' + c + ')" pointer-events="none"/>' +
+    '<rect x="14.5" y="40" width="3.5" height="50" rx="1.75" fill="#fff" opacity=".22"/><rect x="14.5" y="94" width="3.5" height="6" rx="1.75" fill="#fff" opacity=".14"/></svg>';
 }
 function bottleInnerHtml(id, s){
   var name = ingById[id].name;
@@ -1939,9 +2018,10 @@ function nextBatchCardHtml(withStock){
     /* anything already on the Shop list (enough of it) isn't asked for again */
     var listed = ns.short.filter(function(x){ return listQty(x.id) * sizeOf(x.id) >= x.lack - 1e-6; }), need = ns.short.filter(function(x){ return listed.indexOf(x) < 0; });
     var orderByTxt = ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '';
-    var listedTxt = listed.length ? '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">' + (need.length ? 'Already on your Shop list: ' : 'Not enough stock yet for ' + esc(what) + ', but everything missing is on your Shop list: ') + esc(listed.map(function(x){ return ingById[x.id].name; }).join(', ')) + '.</p>' : '';
-    if (ns.short.length && !need.length) body = listedTxt + orderByTxt;
-    else body = need.length ? '<p class="small" style="margin:8px 0 4px;color:var(--low);font-weight:600">Not enough stock for ' + esc(what) + ', even counting what’s on order. Short of:</p><ul class="small" style="margin:0;padding-left:18px">' +
+    /* your Shop list counts like stock that's coming: only what isn't on it is mentioned */
+    var listedTxt = '';
+    if (ns.short.length && !need.length) body = '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough for ' + esc(what) + ', counting your Shop list.</p>' + orderByTxt.replace('Order by', 'Order your Shop list by');
+    else body = need.length ? '<p class="small" style="margin:8px 0 4px;color:var(--low);font-weight:600">Not enough stock for ' + esc(what) + ', even counting what’s on order and your Shop list. Short of:</p><ul class="small" style="margin:0;padding-left:18px">' +
         need.map(function(x){ return '<li>' + esc(ingById[x.id].name) + ': need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + ' (order ' + x.bottles + ' × ' + (isNicId(x.id) ? '10ml shot' : sizeLabel(x.id)) + ')</li>'; }).join('') + '</ul>' +
         listedTxt + orderByTxt + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add these to the Shop list</button>'
       : '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough stock for ' + esc(what) + '.</p>';
@@ -2337,7 +2417,7 @@ function render(){
     var b = n[0] === 'shop' ? toBuy : (n[0] === 'stock' ? lowN : (n[0] === 'steep' ? readyBatches().length + (shakeDue() ? 1 : 0) : 0));
     return '<button class="nav" data-act="nav" data-v="' + n[0] + '"' + (ui.view === n[0] ? ' aria-current="page"' : '') + '>' + n[1] + (b ? '<span class="badge">' + b + '</span>' : '') + '</button>';
   }).join('') + '<div class="side-foot"><div id="savestat"></div><div class="side-ver">Version ' + esc(versionText(APP_VERSION)) + '</div></div>';
-  var y = $('main').scrollTop, html = '<div class="wrap">' + updateHtml() + batchBannerHtml() + shakeBannerHtml() + '</div>' + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, log:viewLog})[ui.view]();
+  var y = $('main').scrollTop, html = '<div class="wrap">' + updateHtml() + (ui.view === 'plan' ? '' : batchBannerHtml() + shakeBannerHtml()) + '</div>' + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, log:viewLog})[ui.view]();
   rendering = true; try { $('#main').innerHTML = html; } finally { rendering = false; }
   $('main').scrollTop = y; paintSave();
   afterRender(ui.view, $('#main'));
@@ -2424,9 +2504,9 @@ function viewPlan(){
     (complete ? '' : '<p class="muted small" style="text-align:center;margin:8px 0 0">Tick every step to unlock this.</p>') + '</div></div>' +
     (r.custom ? '<button class="btn secondary" style="margin-top:12px" data-act="mixsave">Save as one of my recipes</button>' : '') +
     (r.user ? '<button class="btn secondary" style="margin-top:12px" data-act="delrec" data-id="' + r.id + '">Delete this recipe</button>' : '');
-  return '<div class="wrap"><h1>Plan</h1><p class="lede">Pick a recipe, set how much to make and tick the steps off as you go. Shop and Stock update as you plan.</p>' + nextBatchCardHtml(true) + learnHtml() + settings +
+  return '<div class="wrap"><h1>Plan</h1><p class="lede">Pick a recipe, set how much to make and tick the steps off as you go. Shop and Stock update as you plan.</p>' + todayHtml() + nextBatchCardHtml(true) + learnHtml() + settings +
     '<div class="cols plan-cols"><div><div class="card" style="padding:10px"><div class="rlist">' + list + '</div></div>' +
-    '<div class="card row between"><span class="muted">Total planned</span><b class="num" style="font-size:18px">' + mlShort(totalPlanned()) + ' ml</b></div>' + steepSummaryHtml() + '</div><div>' + detail + work + '</div></div></div>';
+    '<div class="card row between"><span class="muted">Total planned</span><b class="num" style="font-size:18px">' + mlShort(totalPlanned()) + ' ml</b></div>' + '</div><div>' + detail + work + '</div></div></div>';
 }
 
 /* ---------- Shop ---------- */
@@ -2492,7 +2572,7 @@ function viewStock(){
       (open ? '<div class="bdet num">' + esc(i.shop) + '<br>ordered ' + mlShort(st.ordered[i.id]) + ' ml · used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? '<br>adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '<br><button class="linkbtn" data-act="adj" data-id="' + i.id + '">Spill or extra</button>' + listBtnsHtml(i.id, 'data-act="slist" data-v') + '</div>' : (listQty(i.id) > 0 ? '<div class="listtag">On shopping list</div>' : '')) + '</div>';
   }).join('');
   return '<div class="wrap"><div class="row between wrapflex" style="align-items:flex-start"><div><h1>Stock</h1><p class="lede">What you have left. Click a bottle for ordered and used.</p></div><div class="row"><button class="btn secondary" data-act="sall">' + (ui.stockAll ? 'Hide details' : 'Show details') + '</button><button class="btn" data-act="adj" data-id="nic">Add or remove stock</button></div></div>' +
-    '<div class="bgrid">' + cards + '</div><p class="muted small" style="margin-top:14px">% left is what’s left out of everything you’ve bought or added. Spills count as used. The liquid turns red when it’s nearly empty.</p></div>';
+    '<div class="bgrid">' + cards + '</div><p class="muted small" style="margin-top:14px">% left is what’s left out of everything you’ve bought or added. Spills count as used. Each bottle shows its flavour’s colour, and its outline turns red when it’s nearly empty.</p></div>';
 }
 function adjustDialog(ingId){
   var opts = ING.map(function(i){ return '<option value="' + i.id + '"' + (i.id === ingId ? ' selected' : '') + '>' + esc(i.name) + '</option>'; }).join('');
