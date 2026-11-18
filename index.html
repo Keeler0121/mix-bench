@@ -349,6 +349,31 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 @keyframes learnIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes learnSpark{0%,100%{transform:rotate(0) scale(1)}10%{transform:rotate(-12deg) scale(1.15)}20%{transform:rotate(10deg) scale(1.1)}30%{transform:rotate(0) scale(1)}}
 @keyframes checkIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* the 2 minute shake timer */
+.mixt{display:flex;align-items:center;gap:14px;margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
+.mixt[hidden]{display:none}
+.mixt-ring{position:relative;width:84px;height:84px;flex:none}
+.mixt-ring svg{width:84px;height:84px;transform:rotate(-90deg)}
+.mixt-bg{fill:none;stroke:var(--line);stroke-width:7}
+.mixt-fg{fill:none;stroke:var(--sel);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.mixt-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',ui-monospace,monospace;font-size:21px;font-weight:700;color:var(--ink)}
+.mixt-side{min-width:0}
+.mixt-msg{font-weight:700;font-size:15px;margin-bottom:6px}
+.mixt-btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mixt-btns .btn{width:auto;padding:7px 12px;background:var(--card);border:1px solid var(--line)}
+.steps li.done .mixt span,.steps li.done .mixt .mixt-t{color:var(--ink);text-decoration:none}
+.mixt.done .mixt-fg{stroke:var(--ok)}
+.mixt.done .mixt-msg{color:var(--ok)}
+@media (prefers-reduced-motion: no-preference){
+  .mixt:not([hidden]){animation:checkIn .35s ease-out both}
+  .mixt.run .mixt-ring{animation:mixtShake 1.1s ease-in-out infinite}
+  .mixt.last .mixt-t{animation:mixtPulse .5s ease-in-out infinite alternate}
+  .mixt.done .mixt-ring{animation:mixtPop .5s cubic-bezier(.2,.8,.2,1.4) both}
+}
+@keyframes mixtShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+@keyframes mixtPulse{to{transform:scale(1.12);color:var(--sel)}}
+@keyframes mixtPop{0%{transform:scale(.9)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -927,6 +952,52 @@ function acceptSuggestion(rid){
 }
 function ignoreSuggestion(rid){ var s = suggestFor(rid); if (!s) return; state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; }
 
+
+/* ---------- shared: 2 minute shake timer, started by ticking "Cap it and shake" ---------- */
+var MIXT = {rid:null, end:0, dur:120000, left:0, run:false, done:false, shown:0};
+function isShakeStep(t){ return /^Cap it and shake/.test(t); }
+function mixTimerHtml(rid){
+  var C = 2 * Math.PI * 34;
+  return '<div class="mixt" data-mixt="' + rid + '" hidden><div class="mixt-ring"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34" class="mixt-bg"/><circle cx="40" cy="40" r="34" class="mixt-fg" data-mixt-fg stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="0"/></svg>' +
+    '<span class="mixt-t num" data-mixt-t role="timer" aria-live="off">02:00</span></div><div class="mixt-side"><div class="mixt-msg" data-mixt-msg>Shake it!</div>' +
+    '<div class="mixt-btns"><button type="button" class="btn secondary sm" data-mixt-act="pause">Pause</button><button type="button" class="btn secondary sm" data-mixt-act="reset">Restart</button><button type="button" class="linkbtn" data-mixt-act="close">Close</button></div></div></div>';
+}
+function mixTimerStart(rid){
+  if (!TM.audio) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) TM.audio = new AC(); } catch (x) {} }
+  try { if (TM.audio && TM.audio.state === 'suspended') TM.audio.resume(); } catch (x) {}
+  MIXT = {rid:rid, end:Date.now() + 120000, dur:120000, left:120000, run:true, done:false, shown:Date.now()};
+  mixTimerPaint();
+}
+function mixTimerStop(rid){ if (!rid || MIXT.rid === rid) { MIXT.rid = null; MIXT.run = false; mixTimerPaint(); } }
+function mixTimerPaint(){
+  var left = MIXT.run ? Math.max(0, MIXT.end - Date.now()) : MIXT.left, C = 2 * Math.PI * 34;
+  if (MIXT.run && left <= 0 && !MIXT.done) {
+    MIXT.run = false; MIXT.done = true; MIXT.left = 0; MIXT.finished = Date.now(); beep();
+    var box = document.querySelector('[data-mixt="' + MIXT.rid + '"]'); if (box && typeof confetti === 'function') confetti(box);
+    toast('2 minutes up. Stop shaking.');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mixt]'), function(el){
+    var on = MIXT.rid && el.getAttribute('data-mixt') === MIXT.rid;
+    el.hidden = !on; if (!on) return;
+    el.classList.toggle('run', MIXT.run); el.classList.toggle('done', MIXT.done); el.classList.toggle('last', MIXT.run && left < 10000);
+    var s = Math.ceil(left / 1000);
+    el.querySelector('[data-mixt-t]').textContent = two(Math.floor(s / 60)) + ':' + two(s % 60);
+    el.querySelector('[data-mixt-fg]').setAttribute('stroke-dashoffset', (C * (1 - left / MIXT.dur)).toFixed(1));
+    el.querySelector('[data-mixt-msg]').textContent = MIXT.done ? 'Done! Stop shaking.' : (MIXT.run ? (left < 10000 ? 'Nearly there…' : 'Shake it!') : 'Paused');
+    var pb = el.querySelector('[data-mixt-act="pause"]'); pb.textContent = MIXT.run ? 'Pause' : (MIXT.done ? 'Again' : 'Resume');
+  });
+}
+setInterval(function(){ if (MIXT.rid) mixTimerPaint(); }, 250);
+document.addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('[data-mixt-act]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  var a = b.getAttribute('data-mixt-act'), rid = MIXT.rid;
+  if (a === 'close') { mixTimerStop(); return; }
+  if (a === 'reset' || (a === 'pause' && MIXT.done)) { mixTimerStart(rid); return; }
+  if (MIXT.run) { MIXT.left = Math.max(0, MIXT.end - Date.now()); MIXT.run = false; }
+  else { MIXT.end = Date.now() + MIXT.left; MIXT.run = true; }
+  mixTimerPaint();
+});
 /* ---------- shared: what Mix Bench learns about each flavour ----------
    Every "too weak" or "too strong" you tap on a batch is a vote for that flavour. Once a flavour gets two more votes
    one way than the other (across any of your recipes), Mix Bench offers to change it in every recipe that uses it.
@@ -1314,6 +1385,7 @@ function animateBottles(root, opening){
 }
 /* after every render: gentle screen change, sliding rows, rails, bottles */
 function afterRender(view, el){
+  if (MIXT.rid) setTimeout(mixTimerPaint, 0);
   var changed = view !== fx.view;
   if (changed && fx.view && el) replay(el, 'view-in');
   fx.view = view;
@@ -2501,7 +2573,7 @@ function howTo(rec, ml){
   return '<ol class="steps">' + howSteps(rec, ml).map(function(st){
     if (!st.tick) return '<li class="note">' + st.t + '</li>';
     k++;
-    return '<li' + (done[k] ? ' class="done"' : '') + '><label class="tick"><input type="checkbox" data-tick="' + rec.id + ':' + k + '"' + (done[k] ? ' checked' : '') + ' aria-label="Mark step ' + (k + 1) + ' done"><span>' + st.t + '</span></label></li>';
+    return '<li' + (done[k] ? ' class="done"' : '') + '><label class="tick"><input type="checkbox" data-tick="' + rec.id + ':' + k + '"' + (done[k] ? ' checked' : '') + (isShakeStep(st.t) ? ' data-shakestep' : '') + ' aria-label="Mark step ' + (k + 1) + ' done"><span>' + st.t + '</span></label>' + (isShakeStep(st.t) ? mixTimerHtml(rec.id) : '') + '</li>';
   }).join('') + '</ol>';
 }
 /* green: plenty, amber: can only make a little (under 50ml), red: can't make what's planned / anything */
@@ -2733,6 +2805,7 @@ function bindPlan(){
       var c = e.target.closest && e.target.closest('[data-tick]'); if (!c) return;
       var p = c.getAttribute('data-tick').split(':');
       setTick(id, +p[1], c.checked); c.closest('li').classList.toggle('done', c.checked);
+      if (c.hasAttribute('data-shakestep')) { if (c.checked) mixTimerStart(id); else mixTimerStop(id); }
       card.querySelector('.recsum .sub').textContent = subText(recById[id]); updateMade(); stepFx(card, false);
     });
     card.querySelector('[data-inc]').onclick = function(){ set((state.plan[id]||0) + 10, true); };
