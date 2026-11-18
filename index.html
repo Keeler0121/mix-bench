@@ -355,7 +355,9 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 .mixt[hidden]{display:none}
 .obox{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px}
 .obox-h{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px;margin-bottom:2px}
-.obox .disc{max-width:140px}
+.disc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.disc-row label{color:var(--muted)}
+.obox .disc{width:110px;flex:none;padding:8px 10px}
 .listbtns{display:grid;gap:6px;margin-top:10px}
 .listbtns .btn{width:100%}
 .listtag{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:999px;background:var(--sel);color:var(--sel-ink);font-size:11px;font-weight:700}
@@ -1503,7 +1505,7 @@ function shopOrderHtml(L, b, desk){
     var vap = g.shop === 'Vapable', can = shopCanOrder(g, desk), nic = vap ? 0 : nicOnList(L), d = discOf(g.shop);
     var h = '<div class="obox"><div class="obox-h"><span>' + esc(g.shop) + ' basket</span><span class="num" data-shoppay="' + esc(g.shop) + '">' + gbp(g.pay) + '</span></div>' +
       '<div class="small muted" data-oline="' + esc(g.shop) + '">' + esc(shopLineText(g)) + '</div>' +
-      '<label class="f" for="disc-' + (vap ? 'v' : 'g') + '">Discount or points to use (£)</label><input id="disc-' + (vap ? 'v' : 'g') + '" class="field num disc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" data-disc="' + esc(g.shop) + '" value="' + (d ? d.toFixed(2) : '') + '">' +
+      '<div class="disc-row"><label class="small" for="disc-' + (vap ? 'v' : 'g') + '">Discount or points (£)</label><input id="disc-' + (vap ? 'v' : 'g') + '" class="field num disc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" data-disc="' + esc(g.shop) + '" value="' + (d ? d.toFixed(2) : '') + '"></div>' +
       '<button class="btn sel' + (desk ? ' block' : '') + '" style="margin-top:10px" ' + (desk ? 'data-act="ordernow" ' : '') + 'data-ordernow="' + esc(g.shop) + '"' + (can ? '' : ' disabled') + '>Order now on ' + esc(g.shop) + '</button>';
     if (vap) h += '<p class="muted small" style="margin:8px 0 0">Opens Vapable and adds each item in turn, 1.5 seconds apart, then shows the basket. Use your points at checkout.</p>' +
       '<details data-bstepsbox' + (desk ? (ui.stepsOpen ? ' open' : '') : ' data-box="shop:steps"' + (openBox['shop:steps'] ? ' open' : '')) + '><summary class="small">Or open them one at a time</summary><div data-bsteps>' + basketStepsHtml(b.ok, b.miss, 0) + '</div></details>';
