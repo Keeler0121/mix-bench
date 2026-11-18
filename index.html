@@ -451,6 +451,10 @@ html.mixing,html.mixing body{overflow:hidden}
 @keyframes dvdcol{0%{filter:none}25%{filter:hue-rotate(140deg)}50%{filter:hue-rotate(220deg)}75%{filter:hue-rotate(300deg)}}
 @keyframes tear{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(5px);opacity:0}}
 @media (prefers-reduced-motion: reduce){.dvdy,.dvdface,.tear{animation:none!important}}
+
+/* In use */
+.inuse{border-color:var(--sel)}
+.inuse .tline .ttext{line-height:1.35}
 </style>
 </head>
 <body>
@@ -1145,7 +1149,8 @@ function todayLines(){
   var out = [], list = steeping(), nb = nextBatch(), nm = function(b){ return b.name || (recById[b.recipe] || {}).name || 'Batch'; };
   if (shakeDue()) out.push({k:'act', t:'Shake your ' + (list.length === 1 ? 'steeping bottle' : list.length + ' steeping bottles') + ', 2 min 30 sec each.', b:[['Shaken today', 'data-shaken'], ['Shake timer', 'data-gosteep']]});
   if (batchDueNow() && !batchSnoozedToday()) out.push({k:'act', t:'Time to mix your next batch. It was due ' + dayText(nb.due) + '.', b:[['Not today', 'data-batchsnooze']]});
-  readyBatches().filter(function(b){ return !hasTaste(b.taste); }).slice(0, 3).forEach(function(b){ out.push({k:'ok', t:nm(b) + ' is ready to try.', b:[['Rate it', 'data-bdetail="' + b.id + '"']]}); });
+  readyBatches().slice(0, 3).forEach(function(b){ out.push({k:'ok', t:nm(b) + ' is ready to try. Tap Done on Steeping when you start it.', b:[['Steeping', 'data-gosteep']]}); });
+  inUseList().forEach(function(b){ var end = runsOutAt(b); if (end && end - Date.now() < 3 * DAY) out.push({k:'act', t:nm(b) + (end > Date.now() ? ' runs out in about ' + Math.max(1, Math.round((end - Date.now()) / DAY)) + (Math.round((end - Date.now()) / DAY) > 1 ? ' days.' : ' day.') : ' should be about finished.'), b:[['Finished?', 'data-finish="' + b.id + '"']]}); });
   list.forEach(function(b){ var c = checkDue(b); if (c) out.push({k:'act', t:(c === 'd3' ? 'Day 3' : 'Day 7') + ' taste check: ' + nm(b) + '.', b:[['Taste check', 'data-gosteep']]}); });
   var ns = nextBatchStock(), L = shopList();
   if (ns) {
@@ -1177,6 +1182,52 @@ document.addEventListener('click', function(e){
   if (v === 'learn') { var c = document.querySelector('.learn'); if (c) c.scrollIntoView({behavior:'smooth', block:'center'}); return; }
   goView(v);
 });
+
+/* ---------- shared: In use, the bottles you're vaping now ----------
+   Done on Steeping moves a batch here. Finished? asks for the rating, then the batch goes to History.
+   The days between the two teach Mix Bench how long a bottle of each recipe lasts you. */
+function inUseList(){
+  var st = steeping();
+  return state.batches.filter(function(b){
+    if (b.finished || st.indexOf(b) >= 0) return false;
+    if (b.inUseAt) return true;
+    /* a batch nobody cleared from Steeping that has timed out of it, made in the last 60 days */
+    return !b.done && batchTime(b) !== null && Date.now() - b.t < 60 * DAY;
+  }).sort(function(a, b){ return (a.inUseAt || readyAt(a)) - (b.inUseAt || readyAt(b)); });
+}
+function moveToInUse(b){ b.done = true; b.inUseAt = Date.now(); }
+function finishBatch(b){ b.done = true; b.finished = Date.now(); if (!b.inUseAt) b.inUseAt = Math.min(b.finished, readyAt(b)); }
+/* days a bottle lasts you: that recipe's own finished bottles first, then all of them (scaled by size) */
+function lastsInfo(b){
+  var done = state.batches.filter(function(x){ return x.finished && x.inUseAt && x.finished > x.inUseAt && +x.ml > 0; });
+  var mine = done.filter(function(x){ return x.recipe === b.recipe; }).slice(-3);
+  var use = mine.length ? mine : done.slice(-6); if (!use.length) return null;
+  var perMlDays = use.reduce(function(a, x){ return a + (x.finished - x.inUseAt) / DAY / x.ml; }, 0) / use.length;
+  return {days:Math.max(1, Math.round(perMlDays * (+b.ml || 0))), own:!!mine.length, n:use.length};
+}
+function runsOutAt(b){ var L = lastsInfo(b); return L ? (b.inUseAt || readyAt(b)) + L.days * DAY : 0; }
+function inUseHtml(){
+  var list = inUseList(); if (!list.length) return '';
+  var nm = function(b){ return b.name || (recById[b.recipe] || {}).name || 'Batch'; };
+  return '<section class="card inuse"><div class="today-h"><span>In use</span><span class="small muted">' + list.length + (list.length === 1 ? ' bottle' : ' bottles') + '</span></div>' +
+    list.map(function(b){
+      var L = lastsInfo(b), since = b.inUseAt ? Math.max(0, Math.floor((Date.now() - b.inUseAt) / DAY)) : null, end = runsOutAt(b);
+      var info = (since === null ? 'Ready since ' + dayText(readyAt(b)) : (since === 0 ? 'Opened today' : 'Opened ' + since + (since === 1 ? ' day' : ' days') + ' ago')) +
+        (L ? ' · ' + (end > Date.now() ? 'should last until about ' + dayText(end) : 'usually finished by now') : ' · tap Finished? when it’s empty and Mix Bench learns how long a bottle lasts you');
+      return '<div class="tline"><span class="tdot" style="background:' + esc(((ingById[(b.parts && b.parts[0] || [])[0]] || {}).col) || 'var(--sel)') + '"></span><span class="ttext"><b>' + esc(nm(b)) + '</b> <span class="muted">' + mlShort(b.ml) + 'ml</span><br><span class="small muted">' + esc(info) + '</span></span>' +
+        '<span class="tbtns"><button type="button" class="btn sm sel" data-finish="' + b.id + '">Finished?</button></span></div>';
+    }).join('') + '</section>';
+}
+function openFinish(id){
+  var b = batchById(id); if (!b) return;
+  var nm = b.name || (recById[b.recipe] || {}).name || 'Batch', box;
+  var body = '<p class="muted small" style="margin-top:0">Made ' + esc(dayText(b.t)) + ', ' + mlShort(b.ml) + 'ml. How was it? Your rating shapes the next batch. You can also just press Submit.</p>' + tasteFormHtml(b);
+  var done = function(){ var n = box.querySelector('[data-tnotes]'); if (n) tasteApply(n); var x = batchById(id) || b; finishBatch(x); save(); render(); toast(nm + ' moved to History.' + (hasTaste(x.taste) ? ' Thanks for rating it.' : '')); };
+  var o = {title:'Finished ' + nm + '?', body:body, confirm:'Submit', onConfirm:function(){ done(); }};
+  box = (typeof modal === 'function') ? modal(o) : sheet(o);
+  box.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; var lb = tasteApply(el); if (lb) { save(); var f = box.querySelector('[data-taste]'); if (f) f.outerHTML = tasteFormHtml(lb); } });
+}
+document.addEventListener('click', function(e){ var t = e.target.closest && e.target.closest('[data-finish]'); if (!t) return; e.preventDefault(); openFinish(t.getAttribute('data-finish')); });
 /* ---------- shared: what Mix Bench learns about each flavour ----------
    Every "too weak" or "too strong" you tap on a batch is a vote for that flavour. Once a flavour gets two more votes
    one way than the other (across any of your recipes), Mix Bench offers to change it in every recipe that uses it.
@@ -2614,7 +2665,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-18-15';
+var APP_VERSION_PHONE = '2026-11-18-16';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
@@ -2895,10 +2946,7 @@ function bindSteep(){
   box.onclick = function(e){
     var b = e.target.closest && e.target.closest('[data-steepdone]'); if (!b) return;
     var x = state.batches.filter(function(y){ return y.id === b.getAttribute('data-steepdone'); })[0]; if (!x) return;
-    var w = sheet({title:'Finished the bottle?', body:'<p class="muted" style="margin-top:0">' + esc(x.name || 'This batch') + ' comes off Steeping either way. If you\u2019ve finished it, History records today as the date.</p><button class="btn secondary" data-hideonly>No, just remove it from Steeping</button>', confirm:'Yes, I\u2019ve finished it', onConfirm:function(){
-      x.done = true; x.finished = Date.now(); save(); render(); toast('Marked as finished.');
-    }});
-    w.querySelector('[data-hideonly]').onclick = function(){ x.done = true; w.remove(); save(); render(); toast('Removed from Steeping.'); };
+    moveToInUse(x); save(); render(); toast((x.name || (recById[x.recipe] || {}).name || 'Batch') + ' moved to In use on Plan. Tap Finished? when the bottle is empty.');
   };
 }
 function viewSteepTab(){
@@ -2971,7 +3019,7 @@ function viewPlan(){
   var banner = coming.map(function(o){
     return '<section class="card"><div class="row between"><div style="font-weight:700">Parcel on its way</div><div class="small muted">' + (o.ref ? 'Order ' + esc(o.ref) : esc(when(o.t))) + '</div></div>' + parcelHtml(o, true) + '</section>';
   }).join('');
-  return '<h1>Plan</h1><p class="lede">Set what you want to make. Shop and Stock update as you go.</p>' + todayHtml() +
+  return '<h1>Plan</h1><p class="lede">Set what you want to make. Shop and Stock update as you go.</p>' + inUseHtml() + todayHtml() +
     nextBatchCardHtml(true) + learnHtml() + settings +
     cards +
     '<div class="card"><div class="row between"><span class="muted">Total planned</span><span class="num" style="font-weight:800;font-size:17px" data-total>' + mlShort(total) + ' ml</span></div></div>';
