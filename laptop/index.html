@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mix Bench</title>
-<meta name="mb-version" content="2026-11-19-1">
+<meta name="mb-version" content="2026-11-19-2">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -501,7 +501,7 @@ details.setcard[open] > summary.sethead::after{transform:rotate(-135deg);margin-
 <script>
 (function(){
 'use strict';
-var APP_VERSION = "2026-11-19-1";
+var APP_VERSION = "2026-11-19-2";
 var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
 var SHOPS = ['Vapable','Vape and Go'];
 var COURIERS = {
@@ -1131,7 +1131,10 @@ function mixModePaint(slide){
   var M = MIXMODE, r = recById[M.rid], n = M.steps.length, i = M.i, done = ticksOf(M.rid), body;
   var pct = Math.round(Math.min(n, i) / n * 100);
   if (i < n) {
-    var st = M.steps[i], shake = isShakeStep(st.t), started = shake && done[i];
+    var st = M.steps[i], shake = isShakeStep(st.t);
+    /* reaching the shake step starts the 2 minute timer straight away */
+    if (shake && !done[i]) { setTick(M.rid, i, true); mixTimerStart(M.rid); done = ticksOf(M.rid); }
+    var started = shake && done[i];
     body = '<div class="mm-step' + (slide ? ' in' : '') + '"><div class="mm-n">Step ' + (i + 1) + ' of ' + n + '</div><div class="mm-t">' + st.t + '</div>' +
       (shake ? mixTimerHtml(M.rid) : '') + '</div>' +
       '<div class="mm-nav"><button type="button" class="btn secondary" data-mm="back"' + (i === 0 ? ' disabled' : '') + '>Back</button>' +

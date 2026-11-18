@@ -1142,7 +1142,10 @@ function mixModePaint(slide){
   var M = MIXMODE, r = recById[M.rid], n = M.steps.length, i = M.i, done = ticksOf(M.rid), body;
   var pct = Math.round(Math.min(n, i) / n * 100);
   if (i < n) {
-    var st = M.steps[i], shake = isShakeStep(st.t), started = shake && done[i];
+    var st = M.steps[i], shake = isShakeStep(st.t);
+    /* reaching the shake step starts the 2 minute timer straight away */
+    if (shake && !done[i]) { setTick(M.rid, i, true); mixTimerStart(M.rid); done = ticksOf(M.rid); }
+    var started = shake && done[i];
     body = '<div class="mm-step' + (slide ? ' in' : '') + '"><div class="mm-n">Step ' + (i + 1) + ' of ' + n + '</div><div class="mm-t">' + st.t + '</div>' +
       (shake ? mixTimerHtml(M.rid) : '') + '</div>' +
       '<div class="mm-nav"><button type="button" class="btn secondary" data-mm="back"' + (i === 0 ? ' disabled' : '') + '>Back</button>' +
@@ -2807,7 +2810,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-19-1';
+var APP_VERSION_PHONE = '2026-11-19-2';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
