@@ -1961,15 +1961,20 @@ function nextBatchCardHtml(withStock){
   var ns = withStock ? nextBatchStock() : null, body = '';
   if (ns) {
     var what = ns.from === 'plan' ? 'your plan' : 'a batch like your last one (' + ns.list.map(function(p){ return mlShort(p.ml) + 'ml ' + recById[p.rid].name; }).join(', ') + ')';
-    body = ns.short.length ? '<p class="small" style="margin:8px 0 4px;color:var(--low);font-weight:600">Not enough stock for ' + esc(what) + ', even counting what’s on order. Short of:</p><ul class="small" style="margin:0;padding-left:18px">' +
-        ns.short.map(function(x){ return '<li>' + esc(ingById[x.id].name) + ': need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + ' (order ' + x.bottles + ' × ' + (isNicId(x.id) ? '10ml shot' : sizeLabel(x.id)) + ')</li>'; }).join('') + '</ul>' +
-        (ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '') + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add these to the Shop list</button>'
+    /* anything already on the Shop list (enough of it) isn't asked for again */
+    var listed = ns.short.filter(function(x){ return listQty(x.id) * sizeOf(x.id) >= x.lack - 1e-6; }), need = ns.short.filter(function(x){ return listed.indexOf(x) < 0; });
+    var orderByTxt = ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '';
+    var listedTxt = listed.length ? '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">' + (need.length ? 'Already on your Shop list: ' : 'Not enough stock yet for ' + esc(what) + ', but everything missing is on your Shop list: ') + esc(listed.map(function(x){ return ingById[x.id].name; }).join(', ')) + '.</p>' : '';
+    if (ns.short.length && !need.length) body = listedTxt + orderByTxt;
+    else body = need.length ? '<p class="small" style="margin:8px 0 4px;color:var(--low);font-weight:600">Not enough stock for ' + esc(what) + ', even counting what’s on order. Short of:</p><ul class="small" style="margin:0;padding-left:18px">' +
+        need.map(function(x){ return '<li>' + esc(ingById[x.id].name) + ': need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + ' (order ' + x.bottles + ' × ' + (isNicId(x.id) ? '10ml shot' : sizeLabel(x.id)) + ')</li>'; }).join('') + '</ul>' +
+        listedTxt + orderByTxt + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add these to the Shop list</button>'
       : '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough stock for ' + esc(what) + '.</p>';
   }
   return '<div class="card nextbatch"><b>' + esc(nextBatchHead()) + '</b><p class="small muted" style="margin:4px 0 0">' + esc(nextBatchText()) + '</p>' + body +
     '<details data-box="nb:set"' + ((typeof openBox !== 'undefined' && openBox['nb:set']) || ((typeof ui !== 'undefined') && (ui.prevOpen || {})['nb:set']) ? ' open' : '') + '><summary class="small">Usage settings</summary>' + batchSettingsHtml() + '</details></div>';
 }
-function addShortToCart(){ var ns = nextBatchStock(); if (!ns) return 0; state.cart = state.cart || {}; ns.short.forEach(function(x){ var cur = +state.cart[x.id] || 0; state.cart[x.id] = Math.max(cur, x.bottles); }); return ns.short.length; }
+function addShortToCart(){ var ns = nextBatchStock(); if (!ns) return 0; state.cart = state.cart || {}; ns.short = ns.short.filter(function(x){ return listQty(x.id) * sizeOf(x.id) < x.lack - 1e-6; }); ns.short.forEach(function(x){ var cur = +state.cart[x.id] || 0; state.cart[x.id] = Math.max(cur, x.bottles); }); return ns.short.length; }
 /* free delivery helper: items you'll need for your next two batches, not already in stock, on order or on the list */
 /* every ingredient (by ID) your recipes use, with the ml one 100ml batch of each recipe takes */
 function recipeUse(){
