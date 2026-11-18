@@ -446,8 +446,8 @@ html.mixing,html.mixing body{overflow:hidden}
 .dvdx > .dvdy{animation:dvdx 2.3s linear infinite alternate}
 .dvdy > .dvdface{animation:dvdy 3.1s linear infinite alternate, dvdcol 4.6s step-end infinite}
 .dvdface .tear{animation:tear 1.6s ease-in infinite}
-@keyframes dvdx{from{transform:translateX(0)}to{transform:translateX(23px)}}
-@keyframes dvdy{from{transform:translateY(0)}to{transform:translateY(60px)}}
+@keyframes dvdx{from{transform:translateX(0)}to{transform:translateX(17px)}}
+@keyframes dvdy{from{transform:translateY(0)}to{transform:translateY(54px)}}
 @keyframes dvdcol{0%{filter:none}25%{filter:hue-rotate(140deg)}50%{filter:hue-rotate(220deg)}75%{filter:hue-rotate(300deg)}}
 @keyframes tear{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(5px);opacity:0}}
 @media (prefers-reduced-motion: reduce){.dvdy,.dvdface,.tear{animation:none!important}}
@@ -1550,7 +1550,7 @@ function bottleSvg(id, s){
       '<path class="wave bwave" d="' + wave + '" fill="url(#g' + c + ')"/>' +
       (has ? '<circle class="bub" cx="22" cy="108" r="1.4" fill="#fff"/><circle class="bub b2" cx="34" cy="110" r="1" fill="#fff"/><circle class="bub b3" cx="40" cy="107" r="1.2" fill="#fff"/>' : '') +
     '</g></g></g>' +
-    (s.out ? '<g clip-path="url(#' + c + ')"><g class="dvdx" transform="translate(11.5 36)"><g class="dvdy"><g class="dvdface"><circle cx="7" cy="7" r="7" fill="var(--sel)"/><circle cx="4.6" cy="5.6" r="1.15" fill="#0A0A0B"/><circle cx="9.4" cy="5.6" r="1.15" fill="#0A0A0B"/><path d="M4.2 10.8q2.8-2.8 5.6 0" stroke="#0A0A0B" stroke-width="1.2" fill="none" stroke-linecap="round"/><path class="tear" d="M3.6 7.4q-.7 1.3 0 1.9q.7-.6 0-1.9z" fill="#7FD4F2"/></g></g></g></g>' : '') +
+    (s.out || s.none ? '<g clip-path="url(#' + c + ')"><g class="dvdx" transform="translate(11.5 36)"><g class="dvdy"><g class="dvdface"><g transform="scale(1.43)"><circle cx="7" cy="7" r="7" fill="var(--sel)"/><circle cx="4.6" cy="5.6" r="1.15" fill="#0A0A0B"/><circle cx="9.4" cy="5.6" r="1.15" fill="#0A0A0B"/><path d="M4.2 10.8q2.8-2.8 5.6 0" stroke="#0A0A0B" stroke-width="1.2" fill="none" stroke-linecap="round"/><path class="tear" d="M3.6 7.4q-.7 1.3 0 1.9q.7-.6 0-1.9z" fill="#7FD4F2"/></g></g></g></g></g>' : '') +
     '<rect x="10" y="34" width="40" height="78" rx="10" fill="url(#s' + c + ')" pointer-events="none"/>' +
     '<rect x="14.5" y="40" width="3.5" height="50" rx="1.75" fill="#fff" opacity=".22"/><rect x="14.5" y="94" width="3.5" height="6" rx="1.75" fill="#fff" opacity=".14"/></svg>';
 }
@@ -2614,7 +2614,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-18-14';
+var APP_VERSION_PHONE = '2026-11-18-15';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
