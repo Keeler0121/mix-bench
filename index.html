@@ -382,6 +382,32 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 @keyframes mixtShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
 @keyframes mixtPulse{to{transform:scale(1.12);color:var(--sel)}}
 @keyframes mixtPop{0%{transform:scale(.9)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* Mixing mode */
+html.mixing,html.mixing body{overflow:hidden}
+.mixmode{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;padding:max(16px,env(safe-area-inset-top)) max(18px,calc((100vw - 760px) / 2)) max(18px,env(safe-area-inset-bottom));overflow-y:auto}
+.mm-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mm-title{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.mm-sub{color:var(--muted);font-size:13px}
+.mm-x{border:0;background:var(--soft);color:var(--ink);width:44px;height:44px;border-radius:12px;font-size:26px;line-height:1;cursor:pointer;flex:none}
+.mm-bar{height:6px;border-radius:3px;background:var(--line);margin:14px 0 6px;overflow:hidden}
+.mm-bar span{display:block;height:100%;background:var(--sel);border-radius:3px;transition:width .35s ease}
+.mm-step{flex:1;display:flex;flex-direction:column;justify-content:center;padding:18px 0}
+.mm-n{color:var(--muted);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.mm-t{font-size:clamp(26px,6.5vw,40px);line-height:1.25;font-weight:600;letter-spacing:-.01em}
+.mm-t b{font-weight:800;color:var(--ink)}
+.mm-t .muted{font-size:.6em;display:block;margin-top:6px}
+.mm-step .mixt{margin-top:22px}
+.mm-nav{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.mm-nav .btn{padding:18px 14px;font-size:17px;border-radius:14px}
+.mm-nav .btn[disabled]{opacity:.4}
+.mm-hint{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+.mmbtn{margin-top:10px}
+@media (prefers-reduced-motion: no-preference){
+  .mixmode{animation:checkIn .25s ease-out both}
+  .mm-step.in{animation:mmIn .32s cubic-bezier(.2,.8,.2,1) both}
+}
+@keyframes mmIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -1005,6 +1031,69 @@ document.addEventListener('click', function(e){
   if (MIXT.run) { MIXT.left = Math.max(0, MIXT.end - Date.now()); MIXT.run = false; }
   else { MIXT.end = Date.now() + MIXT.left; MIXT.run = true; }
   mixTimerPaint();
+});
+
+/* ---------- shared: Mixing mode, one big step at a time ---------- */
+var MIXMODE = null, mixWake = null;
+function mixWakeOn(){ try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request('screen').then(function(l){ mixWake = l; }).catch(function(){}); } catch (e) {} }
+function mixWakeOff(){ try { if (mixWake) mixWake.release(); } catch (e) {} mixWake = null; }
+document.addEventListener('visibilitychange', function(){ if (MIXMODE && document.visibilityState === 'visible') mixWakeOn(); });
+function mixModeOpen(rid){
+  var r = recById[rid], ml = state.plan[rid] || 0; if (!r || !ml || !r.parts.length || !fits(rid)) return;
+  var steps = howSteps(r, ml).filter(function(s){ return s.tick; }), done = ticksOf(rid), i = 0;
+  while (i < steps.length && done[i]) i++;
+  MIXMODE = {rid:rid, ml:ml, steps:steps, i:i};
+  var el = document.createElement('div'); el.className = 'mixmode'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Mixing ' + r.name);
+  document.body.appendChild(el); document.documentElement.classList.add('mixing');
+  mixWakeOn(); mixModePaint(true);
+  if (!TM.audio) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) TM.audio = new AC(); } catch (x) {} }
+}
+function mixModeClose(){
+  var el = document.querySelector('.mixmode'); if (el) el.remove();
+  document.documentElement.classList.remove('mixing'); mixWakeOff();
+  var rid = MIXMODE && MIXMODE.rid; MIXMODE = null; render(); return rid;
+}
+function mixModePaint(slide){
+  var el = document.querySelector('.mixmode'); if (!el || !MIXMODE) return;
+  var M = MIXMODE, r = recById[M.rid], n = M.steps.length, i = M.i, done = ticksOf(M.rid), body;
+  var pct = Math.round(Math.min(n, i) / n * 100);
+  if (i < n) {
+    var st = M.steps[i], shake = isShakeStep(st.t), started = shake && done[i];
+    body = '<div class="mm-step' + (slide ? ' in' : '') + '"><div class="mm-n">Step ' + (i + 1) + ' of ' + n + '</div><div class="mm-t">' + st.t + '</div>' +
+      (shake ? mixTimerHtml(M.rid) : '') + '</div>' +
+      '<div class="mm-nav"><button type="button" class="btn secondary" data-mm="back"' + (i === 0 ? ' disabled' : '') + '>Back</button>' +
+      (shake && !started ? '<button type="button" class="btn sel" data-mm="shake">Start the 2 minute shake</button>' : '<button type="button" class="btn sel" data-mm="next">' + (i === n - 1 ? 'Done' : (shake ? 'Next' : 'Done, next')) + '</button>') + '</div>';
+  } else {
+    body = '<div class="mm-step' + (slide ? ' in' : '') + '"><div class="mm-n">All ' + n + ' steps done</div><div class="mm-t">Lovely. Now record the batch so Steeping starts its timer and Stock takes the ingredients off.</div></div>' +
+      '<div class="mm-nav"><button type="button" class="btn secondary" data-mm="back">Back</button><button type="button" class="btn sel" data-mm="made">I’ve made this</button></div>';
+  }
+  el.innerHTML = '<div class="mm-top"><div><div class="mm-title">' + esc(r.name) + '</div><div class="mm-sub">' + mlShort(M.ml) + ' ml · Mixing mode</div></div><button type="button" class="mm-x" data-mm="close" aria-label="Close mixing mode">×</button></div>' +
+    '<div class="mm-bar"><span style="width:' + pct + '%"></span></div>' + body +
+    '<div class="mm-hint">' + (('ontouchstart' in window) ? 'The screen stays on while you mix.' : 'Enter or → for the next step, ← to go back, Esc to close.') + '</div>';
+  if (MIXT.rid) mixTimerPaint();
+  if (i >= n && slide) { var b = el.querySelector('[data-mm="made"]'); if (b) setTimeout(function(){ confetti(b); }, 250); }
+}
+function mixModeAct(a){
+  var M = MIXMODE; if (!M) return;
+  if (a === 'close') { mixModeClose(); return; }
+  if (a === 'made') { var rid = mixModeClose(); setTimeout(function(){ confirmMade(rid); }, 30); return; }
+  if (a === 'back') { if (M.i > 0) { M.i--; mixModePaint(true); } return; }
+  if (a === 'shake') { setTick(M.rid, M.i, true); mixTimerStart(M.rid); mixModePaint(false); return; }
+  if (a === 'next' && M.i < M.steps.length) { setTick(M.rid, M.i, true); M.i++; mixModePaint(true); }
+}
+document.addEventListener('click', function(e){
+  var t = e.target.closest && e.target.closest('[data-mm],[data-mixmode]'); if (!t) return;
+  if (t.hasAttribute('data-mixmode')) { e.preventDefault(); e.stopPropagation(); mixModeOpen(t.getAttribute('data-mixmode')); return; }
+  e.preventDefault(); mixModeAct(t.getAttribute('data-mm'));
+});
+document.addEventListener('keydown', function(e){
+  if (!MIXMODE) return;
+  if (e.key === 'Escape') { e.preventDefault(); mixModeAct('close'); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); mixModeAct('back'); }
+  else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+    if (e.target && e.target.closest && e.target.closest('[data-mixt-act]')) return;
+    e.preventDefault(); var b = document.querySelector('.mixmode .mm-nav .btn.sel'); if (b) mixModeAct(b.getAttribute('data-mm'));
+  }
 });
 /* ---------- shared: what Mix Bench learns about each flavour ----------
    Every "too weak" or "too strong" you tap on a batch is a vote for that flavour. Once a flavour gets two more votes
@@ -2749,6 +2838,7 @@ function viewPlan(){
       '<input class="num" data-ml type="number" inputmode="decimal" min="0" step="1" value="' + (ml||'') + '" placeholder="0" aria-label="ml of ' + esc(r.name) + '">' +
       '<button data-inc aria-label="More">+</button></div><span class="unit">ml</span></div></div>' +
       (ml && !empty && fits(r.id) ? '<div class="small costline" data-cost-rec="' + r.id + '">' + esc(costLine(mlFor(r.id, ml), ml)) + '</div>' : '<div class="small costline" data-cost-rec="' + r.id + '"></div>') +
+      (ml && !empty && fits(r.id) ? '<button type="button" class="btn sel mmbtn" data-mixmode="' + r.id + '">Start mixing mode</button>' : '') +
       '<details' + (ml?' open':'') + '><summary>How to make</summary><div data-howto>' + (empty ? '<p class="muted small" style="margin:4px 0 0">Tick at least one flavour above.</p>' : (fits(r.id) ? howTo(r, ml) : '<p class="muted small" style="margin:4px 0 0">Pick a lower nic strength to see the measurements.</p>')) + '</div></details>' +
       (empty ? '' : '<div><button class="btn" data-made="' + r.id + '" style="margin-top:12px"' + (fits(r.id) && progress(r).n && progress(r).d === progress(r).n ? '' : ' disabled') + '>I\u2019ve made this</button><p class="muted small" data-madehint style="text-align:center;margin:6px 0 0"' + (progress(r).n && progress(r).d === progress(r).n ? ' hidden' : '') + '>Tick every step above to unlock this.</p></div>') +
       (r.custom && !empty ? '<button class="btn secondary" data-mixsave style="margin-top:12px">Save as one of my recipes</button>' : '') +
