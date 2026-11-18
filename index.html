@@ -455,6 +455,8 @@ html.mixing,html.mixing body{overflow:hidden}
 /* In use */
 .inuse{border-color:var(--sel)}
 .inuse .tline .ttext{line-height:1.35}
+.reopen{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border-radius:10px;background:var(--soft)}
+.reopen .btn{width:auto}
 
 /* Money */
 .mhero{background:var(--ink);color:var(--card);border-color:var(--ink)}
@@ -909,6 +911,9 @@ function newBatch(rec, ml, nb, vgr, t, mg, boost){
     amounts:m, mg:nb === 'zero' ? 0 : mg, ratio:i ? {pg:Math.round(i.pg * 10) / 10, vg:Math.round(i.vg * 10) / 10} : null};
 }
 function batchDetailHtml(b){
+  return (b.finished ? '<div class="reopen"><span class="small">Finished ' + esc(dayText(b.finished)) + '.</span> <button type="button" class="btn secondary sm" data-reopen="' + b.id + '">Not finished? Put it back in use</button></div>' : '') + batchDetailCore(b);
+}
+function batchDetailCore(b){
   var i = batchInfo(b);
   if (!i) return '<p class="muted" style="margin:0">This batch’s recipe no longer exists, so its amounts can’t be worked out.</p>';
   var row = function(a, ml, extra){ return '<tr><td style="padding:6px 0">' + a + '</td><td class="num" style="text-align:right;padding:6px 0 6px 12px">' + mlShort(ml) + ' ml' + (extra || '') + '</td><td class="num muted" style="text-align:right;padding:6px 0 6px 12px">' + mlShort(Math.round(ml / i.total * 1000) / 10) + '%</td></tr>'; };
@@ -1237,7 +1242,20 @@ function lastsInfo(b){
   var perMlDays = use.reduce(function(a, x){ return a + (x.finished - x.inUseAt) / DAY / x.ml; }, 0) / use.length;
   return {days:Math.max(1, Math.round(perMlDays * (+b.ml || 0))), own:!!mine.length, n:use.length};
 }
-function runsOutAt(b){ var L = lastsInfo(b); return L ? (b.inUseAt || readyAt(b)) + L.days * DAY : 0; }
+/* ml a day this bottle goes down by: from your finished bottles, or your overall rate shared across the bottles in use */
+function bottleRate(b){
+  var L = lastsInfo(b); if (L && L.days > 0 && +b.ml > 0) return +b.ml / L.days;
+  var r = usageRate().perDay, n = Math.max(1, inUseList().length); return r > 0 && isFinite(r) ? r / n : 0;
+}
+function mlLeft(b){
+  var from = +b.leftAt > 0 ? +b.leftAt : (b.inUseAt || readyAt(b)), start = +b.leftAt > 0 ? +b.leftMl : +b.ml, r = bottleRate(b);
+  return Math.max(0, start - (r > 0 ? r * Math.max(0, Date.now() - from) / DAY : 0));
+}
+function runsOutAt(b){
+  var r = bottleRate(b); if (!(r > 0)) return 0;
+  if (+b.leftAt > 0) return +b.leftAt + (+b.leftMl || 0) / r * DAY;
+  var L = lastsInfo(b); return L ? (b.inUseAt || readyAt(b)) + L.days * DAY : 0;
+}
 function inUseHtml(){
   var list = inUseList(); if (!list.length) return '';
   var nm = function(b){ return b.name || (recById[b.recipe] || {}).name || 'Batch'; };
@@ -1245,9 +1263,10 @@ function inUseHtml(){
     list.map(function(b){
       var L = lastsInfo(b), since = b.inUseAt ? Math.max(0, Math.floor((Date.now() - b.inUseAt) / DAY)) : null, end = runsOutAt(b);
       var info = (since === null ? 'Ready since ' + dayText(readyAt(b)) : (since === 0 ? 'Opened today' : 'Opened ' + since + (since === 1 ? ' day' : ' days') + ' ago')) +
-        (L ? ' · ' + (end > Date.now() ? 'should last until about ' + dayText(end) : 'usually finished by now') : ' · tap Finished? when it’s empty and Mix Bench learns how long a bottle lasts you');
+        (end ? ' · ' + (end > Date.now() ? 'should last until about ' + dayText(end) : 'should be about finished') : (L ? '' : ' · tap Finished? when it’s empty and Mix Bench learns how long a bottle lasts you'));
+      var left = Math.round(mlLeft(b));
       return '<div class="tline"><span class="tdot" style="background:' + esc(((ingById[(b.parts && b.parts[0] || [])[0]] || {}).col) || 'var(--sel)') + '"></span><span class="ttext"><b>' + esc(nm(b)) + '</b> <span class="muted">' + mlShort(b.ml) + 'ml</span><br><span class="small muted">' + esc(info) + '</span></span>' +
-        '<span class="tbtns"><button type="button" class="btn sm sel" data-finish="' + b.id + '">Finished?</button></span></div>';
+        '<span class="tbtns"><button type="button" class="btn sm secondary" data-leftml="' + b.id + '" title="Update how much is left">About ' + left + 'ml left</button><button type="button" class="btn sm sel" data-finish="' + b.id + '">Finished?</button></span></div>';
     }).join('') + '</section>';
 }
 function openFinish(id){
@@ -1260,6 +1279,23 @@ function openFinish(id){
   box.addEventListener('click', function(ev){ var el = ev.target.closest && ev.target.closest('[data-tstar],[data-tflav],[data-tsweet],[data-tharsh]'); if (!el) return; var lb = tasteApply(el); if (lb) { save(); var f = box.querySelector('[data-taste]'); if (f) f.outerHTML = tasteFormHtml(lb); } });
 }
 document.addEventListener('click', function(e){ var t = e.target.closest && e.target.closest('[data-finish]'); if (!t) return; e.preventDefault(); openFinish(t.getAttribute('data-finish')); });
+/* how much is left in a bottle you're vaping: your estimate keeps the running-out date honest */
+function openLeft(id){
+  var b = batchById(id); if (!b) return;
+  var nm = b.name || (recById[b.recipe] || {}).name || 'Batch', box;
+  var o = {title:'How much ' + nm + ' is left?', body:'<p class="muted small" style="margin-top:0">A rough guess is fine. The bottle started with ' + mlShort(b.ml) + 'ml.</p><label class="f" for="left-ml">About how many ml are left</label><input id="left-ml" class="field num" type="number" min="0" max="' + (+b.ml || 100) + '" step="1" inputmode="decimal" value="' + Math.round(mlLeft(b)) + '">',
+    confirm:'Save', onConfirm:function(){ var v = +box.querySelector('#left-ml').value; if (!(v >= 0)) return false; var x = batchById(id) || b; x.leftMl = Math.min(+x.ml || v, Math.round(v * 10) / 10); x.leftAt = Date.now(); if (!x.inUseAt) x.inUseAt = Date.now(); x.done = true; save(); render(); toast('Saved: about ' + mlShort(x.leftMl) + 'ml of ' + nm + ' left.'); }};
+  box = (typeof modal === 'function') ? modal(o) : sheet(o);
+}
+document.addEventListener('click', function(e){
+  var t = e.target.closest && e.target.closest('[data-leftml],[data-reopen]'); if (!t) return; e.preventDefault();
+  if (t.hasAttribute('data-leftml')) { openLeft(t.getAttribute('data-leftml')); return; }
+  var b = batchById(t.getAttribute('data-reopen')); if (!b) return;
+  delete b.finished; b.done = true; if (!b.inUseAt) b.inUseAt = Date.now();
+  var dlg = t.closest('dialog'); if (dlg) { try { dlg.close(); } catch (x) {} dlg.remove(); }
+  var sw = t.closest('.sheet-wrap'); if (sw) sw.remove();
+  save(); render(); toast((b.name || (recById[b.recipe] || {}).name || 'Batch') + ' is back in In use on Plan.');
+});
 
 /* ---------- shared: Money, what it all costs and what you save ----------
    Orders count at what you paid: the amount you type, or the total Order now saved, or an estimate from today's prices.
@@ -2771,7 +2807,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-18-17';
+var APP_VERSION_PHONE = '2026-11-19-1';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
