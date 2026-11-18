@@ -2055,26 +2055,22 @@ function nextBatchCardHtml(withStock){
     /* anything already on the Shop list (enough of it) isn't asked for again */
     var listed = ns.short.filter(function(x){ return listQty(x.id) * sizeOf(x.id) >= x.lack - 1e-6; }), need = ns.short.filter(function(x){ return listed.indexOf(x) < 0; });
     var orderByTxt = ns.orderBy ? '<p class="small" style="margin:6px 0 0;font-weight:600">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' to allow ' + DELIVERY_DAYS + ' days for delivery.' : 'Order as soon as you can: delivery takes about ' + DELIVERY_DAYS + ' days and the batch is due now.') + '</p>' : '';
-    /* each short item: what you can make with what you have now, and whether it's already on your Shop list */
-    var canMake = function(x){
-      var f = x.need > 0 ? Math.max(0, Math.min(1, x.have / x.need)) : 1, users = ns.list.filter(function(p){ return (mlFor(p.rid, p.ml)[x.id] || 0) > 0; });
-      var and = function(l, w){ return l.length > 1 ? l.slice(0, -1).join(', ') + ' ' + (w || 'and') + ' ' + l[l.length - 1] : l.join(''); };
-      var some = users.filter(function(p){ return Math.floor(p.ml * f) > 0; }), none = users.filter(function(p){ return !(Math.floor(p.ml * f) > 0); });
-      var t = some.length ? 'Right now you could make ' + and(some.map(function(p){ return mlShort(Math.floor(p.ml * f)) + 'ml of ' + recById[p.rid].name + ' (not ' + mlShort(p.ml) + 'ml)'; })) : '';
-      if (none.length) t += (t ? ', and no ' : 'Right now you can\u2019t make any ') + and(none.map(function(p){ return recById[p.rid].name; }), 'or');
-      return t;
-    };
-    var lineOf = function(x){
-      var q = listQty(x.id), unit = isNicId(x.id) ? '10ml shot' : sizeLabel(x.id), cm = canMake(x);
-      return '<li style="margin:4px 0"><b>' + esc(ingById[x.id].name) + '</b>: need ' + esc(amtText(x.id, x.need)) + ', have ' + esc(amtText(x.id, x.have)) + '.' +
-        (cm ? ' ' + esc(cm) + '.' : '') +
-        (listed.indexOf(x) >= 0 ? ' <span style="color:var(--ok);font-weight:600">I can see ' + q + ' × ' + esc(unit) + ' already in your Shop list, so you’re covered once it arrives.</span>'
-          : ' <span style="color:var(--low);font-weight:600">' + (q > 0 ? 'Your Shop list has ' + q + ' × ' + esc(unit) + ', but you need ' + x.bottles + '.' : 'Not in your Shop list yet.') + '</span>') + '</li>';
-    };
-    if (ns.short.length) body = '<p class="small" style="margin:8px 0 4px;font-weight:600;color:' + (need.length ? 'var(--low)' : 'var(--ink)') + '">Not enough stock yet for ' + esc(what) + ':</p>' +
-        '<ul class="small" style="margin:0;padding-left:18px">' + ns.short.map(lineOf).join('') + '</ul>' +
-        (need.length ? orderByTxt + '<button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add the missing ' + (need.length === 1 ? 'item' : need.length + ' items') + ' to the Shop list</button>'
-          : '<p class="small" style="margin:6px 0 0;color:var(--ok);font-weight:600">Everything you’re short of is already in your Shop list.</p>' + orderByTxt.replace('Order by', 'Order your Shop list by'));
+    /* short and simple: one line per recipe you can't fully make, then whether the missing items are already in your basket */
+    if (ns.short.length) {
+      var and = function(l){ return l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : l.join(''); };
+      var lines = ns.list.map(function(p){
+        var m = mlFor(p.rid, p.ml), f = 1, outOf = [], lowOn = [];
+        ns.short.forEach(function(x){ if (!((m[x.id] || 0) > 0)) return; var g = x.need > 0 ? Math.max(0, Math.min(1, x.have / x.need)) : 1; f = Math.min(f, g); (g <= 0.0001 ? outOf : lowOn).push(ingById[x.id].name); });
+        if (f >= 1) return '';
+        var can = Math.floor(p.ml * f), nm = recById[p.rid].name;
+        return '<li>' + (can > 0 ? 'You can only make <b>' + mlShort(can) + 'ml</b> of ' + esc(nm) + ', not ' + mlShort(p.ml) + 'ml (low on ' + esc(and(lowOn.concat(outOf))) + ').' : 'You can’t make any more <b>' + esc(nm) + '</b>: you’re out of ' + esc(and(outOf.length ? outOf : lowOn)) + '.') + '</li>';
+      }).filter(Boolean);
+      var names = function(l){ return and(l.map(function(x){ return ingById[x.id].name; })); };
+      body = '<ul class="small" style="margin:8px 0 0;padding-left:18px">' + lines.join('') + '</ul>' +
+        (listed.length ? '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">' + esc(names(listed)) + (listed.length === 1 ? ' is' : ' are') + ' already in your basket, ready to order.</p>' : '') +
+        (need.length ? '<p class="small" style="margin:6px 0 0;color:var(--low);font-weight:600">Not in your basket yet: ' + esc(names(need)) + '.</p><button type="button" class="btn sm sel" data-batchshop style="margin-top:8px">Add ' + (need.length === 1 ? 'it' : 'them') + ' to the basket</button>' : '') +
+        (ns.orderBy ? '<p class="small muted" style="margin:6px 0 0">' + (ns.orderBy > Date.now() ? 'Order by ' + esc(dayText(ns.orderBy)) + ' so it arrives in time.' : 'Order as soon as you can, the batch is due now.') + '</p>' : '');
+    }
     else body = '<p class="small" style="margin:8px 0 0;color:var(--ok);font-weight:600">You have enough stock for ' + esc(what) + '.</p>';
 
   }
@@ -2618,7 +2614,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-18-13';
+var APP_VERSION_PHONE = '2026-11-18-14';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
