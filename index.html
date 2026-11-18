@@ -353,6 +353,9 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 /* the 2 minute shake timer */
 .mixt{display:flex;align-items:center;gap:14px;margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
 .mixt[hidden]{display:none}
+.listbtns{display:grid;gap:6px;margin-top:10px}
+.listbtns .btn{width:100%}
+.listtag{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:999px;background:var(--sel);color:var(--sel-ink);font-size:11px;font-weight:700}
 .mixt-ring{position:relative;width:84px;height:84px;flex:none}
 .mixt-ring svg{width:84px;height:84px;transform:rotate(-90deg)}
 .mixt-bg{fill:none;stroke:var(--line);stroke-width:7}
@@ -1474,6 +1477,17 @@ function shopList(){
     return {shop:shop, rows:rs, sub:sub, d:d, post:post, st:st2};
   });
   return {rows:rows, shops:shops, total:Math.round(total * 100) / 100, sh:sh};
+}
+/* Stock: put a bottle on the shopping list by hand (one more each tap), or take it back off */
+function listQty(id){ var r = shopList().rows.filter(function(x){ return x.id === id; })[0]; return r ? r.n : 0; }
+function onList(id){ return Object.prototype.hasOwnProperty.call(state.cart || {}, id) && listQty(id) > 0; }
+function cartAdd(id){ var n = listQty(id); state.cart = state.cart || {}; state.cart[id] = n + 1; return n + 1; }
+function cartOff(id){ if (state.cart) delete state.cart[id]; }
+function listBtnsHtml(id, attr){
+  var n = listQty(id), mine = onList(id), unit = isNicId(id) ? 'shot' : 'bottle';
+  return '<div class="listbtns">' + (n > 0 ? '<div class="small" style="font-weight:600;color:var(--ok)">' + n + ' ' + unit + (n === 1 ? '' : 's') + ' on your shopping list</div>' : '') +
+    '<button type="button" class="btn sm" ' + attr + '="add:' + id + '">' + (n > 0 ? 'Add one more' : 'Add to shopping list') + '</button>' +
+    (mine ? '<button type="button" class="linkbtn" ' + attr + '="off:' + id + '">Take off the list</button>' : '') + '</div>';
 }
 /* items the shop has run out of (you mark them, or the laptop reads it from the product page): kept on the list, left out of the order */
 function isOosKey(key){ return !!(state.oos && state.oos[key]); }
@@ -2958,7 +2972,7 @@ function viewStock(){
   var cards = ING.map(function(i){
     var b = stockBar(i.id, st), open = stockAll || stockOpen[i.id];
     return '<div class="bcard" role="button" tabindex="0" data-sopen="' + i.id + '" aria-expanded="' + (open ? 'true' : 'false') + '" aria-label="' + esc(i.name) + ': ' + esc(b.text) + '">' + bottleInnerHtml(i.id, b) +
-      (open ? '<div class="bdet num">Ordered ' + mlShort(st.ordered[i.id]) + ' ml<br>used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? '<br>adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '<br><button class="linkbtn" data-adj="' + i.id + '">Spill or extra</button></div>' : '') + '</div>';
+      (open ? '<div class="bdet num">Ordered ' + mlShort(st.ordered[i.id]) + ' ml<br>used ' + mlShort(st.used[i.id]) + ' ml' + (st.adj[i.id] ? '<br>adjusted ' + (st.adj[i.id] > 0 ? '+' : '') + mlShort(st.adj[i.id]) + ' ml' : '') + '<br><button class="linkbtn" data-adj="' + i.id + '">Spill or extra</button>' + listBtnsHtml(i.id, 'data-slist') + '</div>' : (listQty(i.id) > 0 ? '<div class="listtag">On shopping list</div>' : '')) + '</div>';
   }).join('');
   var any = ING.some(function(i){ return !stockBar(i.id, st).none; });
   return '<div class="row between" style="align-items:flex-start"><div><h1>Stock</h1><p class="lede">What you have left. Tap a bottle for ordered and used.</p></div><button class="linkbtn" data-sall style="margin-top:14px;white-space:nowrap">' + (stockAll ? 'Hide details' : 'Show details') + '</button></div>' +
@@ -2991,6 +3005,9 @@ function adjustSheet(ingId){
 }
 function bindStock(){
   Array.prototype.forEach.call(document.querySelectorAll('[data-adj]'), function(b){ b.onclick = function(e){ e.stopPropagation(); adjustSheet(b.getAttribute('data-adj')); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-slist]'), function(b){ b.onclick = function(e){ e.stopPropagation(); var p = b.getAttribute('data-slist').split(':'), nm = ingById[p[1]].name;
+    if (p[0] === 'add') { var n = cartAdd(p[1]); confetti(b); save(); var y = window.scrollY; render(); window.scrollTo(0, y); toast(nm + ': ' + n + ' on your shopping list.'); }
+    else { cartOff(p[1]); save(); var y2 = window.scrollY; render(); window.scrollTo(0, y2); toast(nm + ' taken off the shopping list.'); } }; });
   Array.prototype.forEach.call(document.querySelectorAll('[data-sopen]'), function(row){
     var flip = function(){ var id = row.getAttribute('data-sopen'); stockOpen[id] = !stockOpen[id]; var y = window.scrollY; render(); window.scrollTo(0, y); };
     row.onclick = function(e){ if (e.target.closest && e.target.closest('.sheet-wrap')) return; flip(); }; row.onkeydown = function(e){ if (e.target !== row) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
