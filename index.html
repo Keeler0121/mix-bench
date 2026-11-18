@@ -2516,6 +2516,11 @@ function recipeLights(){
       if (m < max) { max = m; limit = id; }
     }
     max = Math.floor(max + 1e-6);
+    /* the measured amounts are rounded (10.08ml of a 10ml bottle becomes 10ml), so a few more ml can still fit */
+    if (isFinite(max) && r.parts.length) {
+      var fitsAt = function(ml){ var m2 = mlFor(r.id, ml); for (var k in m2) if (m2[k] > 0 && m2[k] > Math.max(0, st.left[k] - (need[k] - (mine[k] || 0))) + 1e-6) return false; return true; };
+      for (var step = 0; step < 5 && fitsAt(max + 1); step++) max++;
+    }
     var name = limit ? ingById[limit].name : '';
     var col, text;
     if (!fits(r.id)) { col = 'red'; text = 'Nic strength too high for this recipe'; }
