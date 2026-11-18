@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mix Bench</title>
-<meta name="mb-version" content="2026-11-18-8">
+<meta name="mb-version" content="2026-11-18-9">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -406,7 +406,7 @@ details[data-bstepsbox] > summary{cursor:pointer;text-decoration:underline;text-
 <script>
 (function(){
 'use strict';
-var APP_VERSION = "2026-11-18-8";
+var APP_VERSION = "2026-11-18-9";
 var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
 var SHOPS = ['Vapable','Vape and Go'];
 var COURIERS = {
@@ -2133,7 +2133,9 @@ function howSteps(rec, ml){
   });
   if (hasNic) {
     var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
-    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe' + gramsSep(m.nicvg ? 'nicvg' : 'nic', rem) + ')</span>' : ''));
+    /* name the exact shots: the ones picked in Mix settings */
+    var nid = m.nicvg ? 'nicvg' : 'nic', nname = '<b>' + esc(ingById[nid].name) + '</b>';
+    steps.push('Add ' + (whole ? '<b>' + whole + ' shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' <span class="muted">(' + syr(rem) + ' syringe' + gramsSep(nid, rem) + ')</span>' : '') + ' of ' + nname);
   }
   ['pg','vg'].forEach(function(id){
     var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe' + gramsSep(id, a) + ')</span>');

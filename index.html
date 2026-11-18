@@ -2675,7 +2675,9 @@ function howSteps(rec, ml){
   });
   if (hasNic) {
     var whole = Math.floor(nicMl / 10 + 1e-9), rem = Math.round((nicMl - whole * 10) * 100) / 100;
-    steps.push('Add ' + (whole ? '<b>' + whole + ' nic shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' nic <span class="muted">(' + syr(rem) + ' syringe' + gramsSep(m.nicvg ? 'nicvg' : 'nic', rem) + ')</span>' : ''));
+    /* name the exact shots: the ones picked in Mix settings */
+    var nid = m.nicvg ? 'nicvg' : 'nic', nname = '<b>' + esc(ingById[nid].name) + '</b>';
+    steps.push('Add ' + (whole ? '<b>' + whole + ' shot' + (whole === 1 ? '' : 's') + '</b> <span class="muted">(pour)</span>' : '') + (whole && rem > 0 ? ' + ' : '') + (rem > 0 ? n(rem) + ' <span class="muted">(' + syr(rem) + ' syringe' + gramsSep(nid, rem) + ')</span>' : '') + ' of ' + nname);
   }
   ['pg','vg'].forEach(function(id){
     var a = m[id]; if (a > 0) steps.push('Add ' + n(a) + ' ' + (id === 'pg' ? 'PG' : 'VG') + ' <span class="muted">(' + syr(a) + ' syringe' + gramsSep(id, a) + ')</span>');
