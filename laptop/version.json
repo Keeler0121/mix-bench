@@ -1,7 +1,7 @@
 {
-  "version": "2026-11-18-11",
+  "version": "2026-11-18-12",
   "files": {
-    "index.html": "f1e28481bb86c7a3b714a9014cca7b26c9e99eea3e1c295d5f5c9336b623e495",
+    "index.html": "39b56ddb2605f2116f9dca9e8070b7fe374bb244745e84d6a50764ac1fbae976",
     "server.py": "4c563ae7c6f710c781da2efacb4ab8ca5609cd470aaaf61e09967db88a332efb"
   }
 }
