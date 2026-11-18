@@ -1579,7 +1579,8 @@ function setSize(id, size){
   if (!hasSizes(id) || (size !== 10 && size !== 100)) return false;
   var old = sizeOf(id); if (old === size) return false;
   var cart = state.cart || {};
-  if (Object.prototype.hasOwnProperty.call(cart, id) && +cart[id] > 0) cart[id] = Math.min(999, Math.max(1, Math.ceil(cart[id] * old / size - 1e-9)));
+  /* to the big bottle: 10 small ones become 1 big one. Back to the small bottle: the number of bottles stays as it was (1 stays 1) */
+  if (Object.prototype.hasOwnProperty.call(cart, id) && +cart[id] > 0 && size > old) cart[id] = Math.min(999, Math.max(1, Math.ceil(cart[id] * old / size - 1e-9)));
   state.sizes = state.sizes || {}; state.sizes[id] = size; return true;
 }
 function setQty(id, v){
