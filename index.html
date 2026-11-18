@@ -353,6 +353,9 @@ nav.tabs button[aria-current="page"]{color:var(--sel-ink);background:var(--sel);
 /* the 2 minute shake timer */
 .mixt{display:flex;align-items:center;gap:14px;margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
 .mixt[hidden]{display:none}
+.obox{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px}
+.obox-h{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px;margin-bottom:2px}
+.obox .disc{max-width:140px}
 .listbtns{display:grid;gap:6px;margin-top:10px}
 .listbtns .btn{width:100%}
 .listtag{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:999px;background:var(--sel);color:var(--sel-ink);font-size:11px;font-weight:700}
@@ -512,7 +515,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, showGrams:false, learnSeen:{}, flavTune:{}, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, showGrams:false, discount:{}, learnSeen:{}, flavTune:{}, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
 }
 function migrate(s){
   var b = blank();
@@ -531,7 +534,7 @@ function migrate(s){
   if (s.ship && typeof s.ship === 'object') b.ship = s.ship;
   if (s.zero && typeof s.zero === 'object') b.zero = s.zero;
   if (s.ticks && typeof s.ticks === 'object') b.ticks = s.ticks;
-  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes','learnSeen','flavTune'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
+  ['mgs','recipeEdits','fbSeen','syncTimes','cart','cartIds','oos','pricesUpdated','steeps','sizes','learnSeen','flavTune','discount'].forEach(function(k){ if (s[k] && typeof s[k] === 'object') b[k] = s[k]; });
   if (s.usage && +s.usage.ml > 0 && +s.usage.days > 0) b.usage = {ml:+s.usage.ml, days:+s.usage.days};
   if (+s.batchSteep >= 0 && +s.batchSteep <= 30) b.batchSteep = +s.batchSteep;
   if (+s.flavBoost === 1 || +s.flavBoost === 1.25 || +s.flavBoost === 1.5) b.flavBoost = +s.flavBoost;
@@ -814,7 +817,7 @@ function batchDetailHtml(b){
 
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
-var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes','learnSeen','flavTune'];
+var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes','learnSeen','flavTune','discount'];
 var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavBoost','showGrams'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
@@ -1473,8 +1476,9 @@ function shopList(){
     rs.forEach(function(r){ sub += r.cost; }); sub = Math.round(sub * 100) / 100;
     var d = delOf(shop), post = 0, st2 = 'none';
     if (sub > 0) { if (sub >= d.free - 0.001) st2 = 'free'; else if (d.fee !== null) { post = d.fee; st2 = 'fee'; } else st2 = 'unknown'; }
-    total += sub + post;
-    return {shop:shop, rows:rs, sub:sub, d:d, post:post, st:st2};
+    var disc = sub > 0 ? Math.min(discOf(shop), Math.round((sub + post) * 100) / 100) : 0, pay = Math.round((sub + post - disc) * 100) / 100;
+    total += pay;
+    return {shop:shop, rows:rs, sub:sub, d:d, post:post, st:st2, disc:disc, pay:pay};
   });
   return {rows:rows, shops:shops, total:Math.round(total * 100) / 100, sh:sh};
 }
@@ -1489,6 +1493,31 @@ function listBtnsHtml(id, attr){
     '<button type="button" class="btn sm" ' + attr + '="add:' + id + '">' + (n > 0 ? 'Add one more' : 'Add to shopping list') + '</button>' +
     (mine ? '<button type="button" class="linkbtn" ' + attr + '="off:' + id + '">Take off the list</button>' : '') + '</div>';
 }
+/* each shop is its own basket: its own discount (points or a voucher, in £) and its own Order now */
+var VG_BASKET = 'https://www.vapeandgo.co.uk/cart';
+function discOf(shop){ var v = +((state.discount || {})[shop]); return v > 0 ? Math.round(v * 100) / 100 : 0; }
+function shopCanOrder(g, desk){ return g.rows.some(function(r){ return r.n > 0 && !r.oos && !(desk && r.onOrder); }); }
+function shopLineText(g){ return 'Items ' + gbp(g.sub) + ' · postage ' + (g.post ? gbp(g.post) : (g.st === 'free' ? 'free' : (g.st === 'unknown' ? 'not known' : gbp(0)))) + (g.disc ? ' · discount −' + gbp(g.disc) : ''); }
+function shopOrderHtml(L, b, desk){
+  return L.shops.filter(function(g){ return g.rows.length; }).map(function(g){
+    var vap = g.shop === 'Vapable', can = shopCanOrder(g, desk), nic = vap ? 0 : nicOnList(L), d = discOf(g.shop);
+    var h = '<div class="obox"><div class="obox-h"><span>' + esc(g.shop) + ' basket</span><span class="num" data-shoppay="' + esc(g.shop) + '">' + gbp(g.pay) + '</span></div>' +
+      '<div class="small muted" data-oline="' + esc(g.shop) + '">' + esc(shopLineText(g)) + '</div>' +
+      '<label class="f" for="disc-' + (vap ? 'v' : 'g') + '">Discount or points to use (£)</label><input id="disc-' + (vap ? 'v' : 'g') + '" class="field num disc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" data-disc="' + esc(g.shop) + '" value="' + (d ? d.toFixed(2) : '') + '">' +
+      '<button class="btn sel' + (desk ? ' block' : '') + '" style="margin-top:10px" ' + (desk ? 'data-act="ordernow" ' : '') + 'data-ordernow="' + esc(g.shop) + '"' + (can ? '' : ' disabled') + '>Order now on ' + esc(g.shop) + '</button>';
+    if (vap) h += '<p class="muted small" style="margin:8px 0 0">Opens Vapable and adds each item in turn, 1.5 seconds apart, then shows the basket. Use your points at checkout.</p>' +
+      '<details data-bstepsbox' + (desk ? (ui.stepsOpen ? ' open' : '') : ' data-box="shop:steps"' + (openBox['shop:steps'] ? ' open' : '')) + '><summary class="small">Or open them one at a time</summary><div data-bsteps>' + basketStepsHtml(b.ok, b.miss, 0) + '</div></details>';
+    else h += '<p class="small" style="margin:8px 0 0" data-vgnote>' + (nic ? 'Opens the Nic Nic page. Set the quantity to <b data-vgqty>' + nic + '</b>, tap Add to basket, then check out with your points.' : 'Nothing from Vape and Go on the list.') + '</p>' +
+      '<p class="muted small" style="margin:6px 0 0">Vape and Go has no add-to-basket links like Vapable, so the quantity is set by you. <a href="' + VG_BASKET + '" target="_blank" rel="noopener">Open the Vape and Go basket</a></p>';
+    return h + '</div>';
+  }).join('') + '<p class="muted small" style="margin:8px 2px 0">Neither one logs in or checks out: you do that yourself. Nothing is added to stock until you press Delivered.</p>';
+}
+document.addEventListener('input', function(e){
+  var t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute('data-disc')) return;
+  var v = Math.max(0, Math.round((+t.value || 0) * 100) / 100); state.discount = state.discount || {};
+  if (v > 0) state.discount[t.getAttribute('data-disc')] = v; else delete state.discount[t.getAttribute('data-disc')];
+  save(); paintShopList(document);
+});
 /* items the shop has run out of (you mark them, or the laptop reads it from the product page): kept on the list, left out of the order */
 function isOosKey(key){ return !!(state.oos && state.oos[key]); }
 function setOosKey(key, on){ state.oos = state.oos || {}; if (on) state.oos[key] = true; else delete state.oos[key]; }
@@ -1565,13 +1594,16 @@ function paintShopList(root){
   L.shops.forEach(function(g){
     var s = q('[data-sub="' + g.shop + '"]'); if (s) s.textContent = gbp(g.sub);
     var d = q('[data-del="' + g.shop + '"]'); if (d) { d.textContent = shopDelText(g); d.style.color = g.st === 'free' ? 'var(--ok)' : (g.st === 'none' ? '' : 'var(--low)'); }
-    var l = q('[data-shopline="' + g.shop + '"]'); if (l) l.textContent = gbp(g.sub + g.post);
+    var l = q('[data-shopline="' + g.shop + '"]'); if (l) l.textContent = gbp(g.pay);
+    var py = q('[data-shoppay="' + g.shop + '"]'); if (py) py.textContent = gbp(g.pay);
+    var ol = q('[data-oline="' + g.shop + '"]'); if (ol) ol.textContent = shopLineText(g);
+    var ob = q('[data-ordernow="' + g.shop + '"]'); if (ob) ob.disabled = !shopCanOrder(g, typeof ui !== 'undefined');
+    if (g.shop === 'Vape and Go') { var vq = q('[data-vgqty]'); if (vq) vq.textContent = nicOnList(L); }
   });
   var tt = q('[data-total]'); if (tt) tt.textContent = gbp(L.total);
   /* only redraw a box when its contents change, so a button in it still gets the click that moved focus off a quantity box */
   var fp = q('[data-freepost]'); if (fp) { var fi = freePostInner(L, listShop(L, 'Vapable')); if (fp.__html !== fi) { fp.innerHTML = fi; fp.__html = fi; } fp.hidden = !fi; }
-  var b = basketItems(L), st = q('[data-bsteps]'); if (st) { var sh = basketStepsHtml(b.ok, b.miss, nicOnList(L)); if (st.__html !== sh) { st.innerHTML = sh; st.__html = sh; } }
-  var fb = q('[data-ordernow]'); if (fb) fb.disabled = !L.rows.some(function(r){ return r.n > 0 && !r.oos; });
+  var b = basketItems(L), st = q('[data-bsteps]'); if (st) { var sh = basketStepsHtml(b.ok, b.miss, 0); if (st.__html !== sh) { st.innerHTML = sh; st.__html = sh; } }
   return L;
 }
 /* pick 10ml or 100ml for a flavour: what you typed is converted so the same amount of liquid stays on the list */
@@ -1613,7 +1645,7 @@ function orderSnapshot(L){
   L.shops.forEach(function(g){
     var q = {}, sz = {}, any = false, sub = 0;
     g.rows.forEach(function(r){ if (r.n > 0 && !r.oos) { q[r.id] = r.buy; sz[r.id] = r.size; sub += r.cost; any = true; } });
-    if (any) snap.shops[g.shop] = {q:q, sz:sz, total:Math.round((g.sub + g.post) * 100) / 100};
+    if (any) snap.shops[g.shop] = {q:q, sz:sz, total:g.pay, disc:g.disc || 0};
   });
   return snap;
 }
@@ -1626,9 +1658,12 @@ function snapLines(snap){
     out.push({shop:shop, text:parts.join(', '), total:x.total}); }
   return out;
 }
-function orderNow(onBlocked){
+function orderNow(onBlocked, shop){
   var L = shopList(), snap = orderSnapshot(L), b = basketItems(L), nic = nicOnList(L), blocked = false;
+  if (shop) { var one = {}; if (snap.shops[shop]) one[shop] = snap.shops[shop]; snap.shops = one; if (shop !== 'Vapable') b = {ok:[], miss:[]}; if (shop !== 'Vape and Go') nic = 0; }
   if (!Object.keys(snap.shops).length) { toast('Nothing to order yet. Type how many you want first.'); return; }
+  /* ordering from the other shop as well, before answering "Ordered?": keep both */
+  var prev = getAsk(); if (prev && prev.shops) for (var ps in prev.shops) if (!snap.shops[ps]) snap.shops[ps] = prev.shops[ps];
   setAsk(snap);
   if (b.ok.length) {
     if (!fillBasket(b.ok, function(i, n){
@@ -1637,7 +1672,7 @@ function orderNow(onBlocked){
       else toast('Adding ' + i + ' of ' + n + ' to the Vapable basket…');
     })) blocked = true;
   }
-  if (nic) { var w = null; try { w = window.open(ingById.nic.url, 'mixbench-vapeandgo'); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} } else blocked = true; }
+  if (nic) { var w = null; try { w = window.open(ingById.nic.url, 'mixbench-vapeandgo'); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} toast('On Vape and Go: set the quantity to ' + nic + ' and tap Add to basket.'); } else blocked = true; }
   if (blocked) { var d = document.querySelector('details[data-bstepsbox]'); if (d) d.open = true; if (onBlocked) onBlocked(); toast('Your browser blocked a new tab. Tap the links under Order now instead.'); }
 }
 /* back in Mix Bench after Order now: ask whether the order went through */
@@ -1658,6 +1693,8 @@ function saveOrders(snap, refs){
     var o = {id:uid(), t:Date.now(), items:items, qty:qty, sz:sz, total:x.total, ref:String(refs[shop] || '').trim().slice(0, 80), status:'ordered', shops:[shop], pending:true}, cart = state.cart || {};
     /* the typed amounts are now on order, so they leave the list (and come back if the order is cancelled) */
     o.cartWas = {}; for (var c in qty) if (Object.prototype.hasOwnProperty.call(cart, c)) { o.cartWas[c] = cart[c]; delete cart[c]; }
+    /* points or a voucher are used once: the box empties when the order is saved */
+    if (state.discount) delete state.discount[shop];
     state.orders.push(o); made.push(o);
   }
   setAsk(null); return made;
@@ -2896,11 +2933,9 @@ function viewShop(){
   var add = spare.length ? '<section class="card"><label class="f" for="additem" style="margin-top:0">Add something else to the list</label><select id="additem" class="field" data-additem><option value="">Choose an item</option>' + spare.map(function(i){ return '<option value="' + i.id + '">' + esc(i.name) + ' (' + esc(i.shop) + ')</option>'; }).join('') + '</select></section>' : '';
   var anyTyped = L.rows.some(function(r){ return r.typed; }), toOrder = L.rows.some(function(r){ return r.n > 0 && !r.oos; });
   var total = L.rows.length ? '<section class="card"><div class="total"><span>Total to order</span><span class="num" data-total>' + gbp(L.total) + '</span></div>' +
-    '<div class="stat" style="margin-top:10px">' + L.shops.filter(function(g){ return g.rows.length; }).map(function(g){ return '<span class="muted">' + esc(g.shop) + ', with postage</span><span class="v num" data-shopline="' + esc(g.shop) + '">' + gbp(g.sub + g.post) + '</span>'; }).join('') + '</div>' +
+    '<div class="stat" style="margin-top:10px">' + L.shops.filter(function(g){ return g.rows.length; }).map(function(g){ return '<span class="muted">' + esc(g.shop) + ', to pay' + '</span><span class="v num" data-shopline="' + esc(g.shop) + '">' + gbp(g.pay) + '</span>'; }).join('') + '</div>' +
     (anyTyped ? '<button class="linkbtn" data-cartreset>Go back to the suggested amounts</button>' : '') +
-    '<button class="btn sel" data-ordernow' + (toOrder ? '' : ' disabled') + '>Order now</button>' +
-    '<p class="muted small" style="margin:8px 0 0">Opens Vapable and adds each item in turn, 1.5 seconds apart, then shows the basket' + (nic ? '. Also opens the Nic Nic page on Vape and Go' : '') + '. It never logs in or checks out: you do that yourself. Nothing is added to stock until you press Delivered.</p>' +
-    '<details data-bstepsbox data-box="shop:steps"' + (openBox['shop:steps'] ? ' open' : '') + '><summary>Or open them one at a time</summary><div data-bsteps>' + basketStepsHtml(b.ok, b.miss, nic) + '</div></details>' +
+    shopOrderHtml(L, b, false) +
     (toOrder ? '<button class="linkbtn" data-recordorder>Already ordered? Record it</button>' : '') + '</section>' : '';
   var cost = sh.planned ? '<section class="card"><div class="stat">' +
       '<span class="muted">Liquid planned</span><span class="v num">' + mlShort(sh.planned) + ' ml</span>' +
@@ -2947,8 +2982,7 @@ function bindShop(){
   var cr = root.querySelector('[data-cartreset]');
   if (cr) cr.onclick = function(){ state.cart = {}; save(); keepY(); toast('Back to the suggested amounts.'); };
   Array.prototype.forEach.call(root.querySelectorAll('[data-oos]'), function(b){ b.onclick = function(){ var id = b.getAttribute('data-oos'), on = !isOos(id); setOos(id, on); save(); keepY(); toast(on ? ingById[id].name + ' marked out of stock. It\u2019s left out of the order.' : ingById[id].name + ' is back on the order.'); }; });
-  var on = root.querySelector('[data-ordernow]');
-  if (on) on.onclick = function(){ orderNow(function(){ openBox['shop:steps'] = true; }); };
+  Array.prototype.forEach.call(root.querySelectorAll('[data-ordernow]'), function(on){ on.onclick = function(){ orderNow(function(){ openBox['shop:steps'] = true; }, on.getAttribute('data-ordernow')); }; });
   var ro = root.querySelector('[data-recordorder]');
   if (ro) ro.onclick = function(){ var snap = orderSnapshot(shopList()); if (Object.keys(snap.shops).length) orderNumberSheet(snap); };
   Array.prototype.forEach.call(root.querySelectorAll('[data-delivered]'), function(b){ b.onclick = function(){
