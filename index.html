@@ -661,7 +661,22 @@ function ratioNote(recId){
     ? 'At ' + planMg(recId) + 'mg, Vapable 20mg (100 VG) shots make up ' + mlShort(planMg(recId) / SETTINGS.shotNic * 100) + '% of the bottle, all VG, so the thinnest this can be is about ' + real + ', not ' + pgvg(v) + '.'
     : 'Not enough room for ' + pgvg(v) + ' with this much flavour. It will come out lower in VG (higher in PG), at about ' + real + '.') + '</p>';
 }
-function mlFor(recId, ml, nb, vgr, mg){ var o={}, rt=RT(recId, nb, vgr, mg); for (var k in rt) o[k]=r4(rt[k]*ml); return o; }
+/* flavourings are measured to 0.1ml (2.88 becomes 2.9). Just over a full bottle (10.08ml from a 10ml bottle) rounds down to the bottle,
+   so you never open a new one for a drop. Whatever that changes goes to the PG, so the batch still comes out the same size. */
+function tidyAmounts(m){
+  var diff = 0, k;
+  for (k in m) {
+    if (k === 'pg' || k === 'vg' || isNicId(k) || !(m[k] > 0)) continue;
+    var x = m[k], r = Math.round(x * 10 + 1e-9) / 10, size = ingById[k] ? sizeOf(k) : 10, full = Math.floor(x / size + 1e-9) * size;
+    if (full > 0 && x - full < 0.15) r = full;
+    if (r <= 0) r = 0.1;
+    diff += x - r; m[k] = r;
+  }
+  if (diff && m.pg > 0) m.pg = r4(Math.max(0, m.pg + diff));
+  else if (diff && m.vg > 0) m.vg = r4(Math.max(0, m.vg + diff));
+  return m;
+}
+function mlFor(recId, ml, nb, vgr, mg){ var o={}, rt=RT(recId, nb, vgr, mg); for (var k in rt) o[k]=r4(rt[k]*ml); return tidyAmounts(o); }
 function planNeed(){
   var need = {}; ING.forEach(function(i){ need[i.id]=0; });
   RECIPES.forEach(function(r){ var ml=state.plan[r.id]||0; if(!ml || !r.parts.length || !fits(r.id)) return; var m=mlFor(r.id,ml); for (var k in m) need[k]+=m[k]; });
@@ -749,6 +764,8 @@ function newBatch(rec, ml, nb, vgr, t, mg, boost){
   mg = nb === 'zero' ? 0 : (mg || SETTINGS.finalNic);
   var rt = rates({id:'b_new', parts:rec.parts}, nb, vgr, nb === 'zero' ? undefined : mg, boost === undefined ? flavMul() : boost), m = {}, k;
   for (k in rt) if (rt[k] > 0) m[k] = r4(rt[k] * ml);
+  /* a batch made now is made with the tidied amounts; one added from earlier keeps the exact ones */
+  if (boost === undefined) m = tidyAmounts(m);
   var i = mixInfo(m);
   return {id:uid(), t:t, recipe:rec.id, name:rec.name, parts:rec.parts.map(function(p){ return [p[0], p[1]]; }), ml:ml, nb:nb, vgr:vgr,
     amounts:m, mg:nb === 'zero' ? 0 : mg, ratio:i ? {pg:Math.round(i.pg * 10) / 10, vg:Math.round(i.vg * 10) / 10} : null};
