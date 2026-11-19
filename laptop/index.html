@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mix Bench</title>
-<meta name="mb-version" content="2026-11-19-2">
+<meta name="mb-version" content="2026-11-19-3">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -501,7 +501,7 @@ details.setcard[open] > summary.sethead::after{transform:rotate(-135deg);margin-
 <script>
 (function(){
 'use strict';
-var APP_VERSION = "2026-11-19-2";
+var APP_VERSION = "2026-11-19-3";
 var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
 var SHOPS = ['Vapable','Vape and Go'];
 var COURIERS = {
@@ -2647,7 +2647,7 @@ function render(){
   ING.forEach(function(i){ var s = status(i.id, st)[1]; if (s === 'low' || s === 'out') lowN++; });
   var toBuy = shopList().rows.filter(function(r){ return r.n > 0; }).length;
   $('#side').innerHTML = '<div class="brand">' + logoSvg() + '<span>Mix Bench</span></div>' + NAV.map(function(n){
-    var b = n[0] === 'shop' ? toBuy : (n[0] === 'stock' ? lowN : (n[0] === 'steep' ? readyBatches().length + (shakeDue() ? 1 : 0) : 0));
+    var b = n[0] === 'shop' ? toBuy : (n[0] === 'steep' ? steeping().length : 0);
     return '<button class="nav" data-act="nav" data-v="' + n[0] + '"' + (ui.view === n[0] ? ' aria-current="page"' : '') + '>' + n[1] + (b ? '<span class="badge">' + b + '</span>' : '') + '</button>';
   }).join('') + '<div class="side-foot"><div id="savestat"></div><div class="side-ver">Version ' + esc(versionText(APP_VERSION)) + '</div></div>';
   var y = $('main').scrollTop, html = '<div class="wrap">' + updateHtml() + (ui.view === 'plan' ? '' : batchBannerHtml() + shakeBannerHtml()) + '</div>' + ({plan:viewPlan, steep:viewSteepTab, shop:viewShop, stock:viewStock, money:function(){ return '<div class="wrap money">' + viewMoney() + '</div>'; }, log:viewLog})[ui.view]();

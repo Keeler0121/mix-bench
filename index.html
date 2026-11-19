@@ -2810,7 +2810,7 @@ function vial(rec){
 function shortName(id){ return {nic:'Nic shot', nicvg:'Nic shot (VG)', pg:'PG', vg:'VG', sweet:'Sweetener'}[id] || ingById[id].name; }
 
 /* the version, so you can tell at a glance whether this copy is the newest (set by tools/set_version.py) */
-var APP_VERSION_PHONE = '2026-11-19-2';
+var APP_VERSION_PHONE = '2026-11-19-3';
 function appVersionText(){ var m = APP_VERSION_PHONE.match(/^(\d{4})-(\d\d)-(\d\d)-(\d+)$/); return m ? 'Version ' + new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' (' + m[4] + ')' : ''; }
 /* ---------- tabs ---------- */
 var ICONS = {
@@ -2830,7 +2830,8 @@ function renderTabs(){
   ING.forEach(function(i){ var s=status(i.id,st)[1]; if (s==='low'||s==='out') lowN++; });
   var toBuy = shopList().rows.filter(function(r){ return r.n > 0 && !r.oos; }).length;
   document.getElementById('tabs').innerHTML = TABS.map(function(t){
-    var n = t[0]==='shop' ? toBuy : (t[0]==='stock' ? lowN : (t[0]==='steep' ? readyBatches().length + (shakeDue() ? 1 : 0) : 0));
+    /* Steeping: how many batches are steeping. Shop: what's on the list. No count on the other tabs. */
+    var n = t[0]==='shop' ? toBuy : (t[0]==='steep' ? steeping().length : 0);
     return '<button data-tab="' + t[0] + '"' + (current===t[0]?' aria-current="page"':'') + '><span class="badge" data-n="' + n + '">' + ICONS[t[0]] + '</span>' + t[1] + '</button>';
   }).join('');
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function(b){
