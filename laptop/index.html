@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mix Bench</title>
-<meta name="mb-version" content="2026-11-19-3">
+<meta name="mb-version" content="2026-11-19-4">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -283,6 +283,7 @@ html.mixing,html.mixing body{overflow:hidden}
 /* the 2 minute shake timer */
 .mixt{display:flex;align-items:center;gap:14px;margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
 .mixt[hidden]{display:none}
+.voicebtn{font-size:12.5px;margin-top:6px}
 .obox{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px}
 .obox-h{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px;margin-bottom:2px}
 .disc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
@@ -501,7 +502,7 @@ details.setcard[open] > summary.sethead::after{transform:rotate(-135deg);margin-
 <script>
 (function(){
 'use strict';
-var APP_VERSION = "2026-11-19-3";
+var APP_VERSION = "2026-11-19-4";
 var SETTINGS = { finalNic:10, shotNic:20, vg:50, pg:50 };
 var SHOPS = ['Vapable','Vape and Go'];
 var COURIERS = {
@@ -614,7 +615,7 @@ function syncRecipes(){
 var LS_KEY = 'mixbench.v1';
 function blank(){
   var plan = {}; RECIPES.forEach(function(r){ plan[r.id]=0; });
-  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, showGrams:false, ready:{}, discount:{}, learnSeen:{}, flavTune:{}, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
+  return {v:1, savedAt:0, plan:plan, prices:{}, orders:[], batches:[], adjust:[], nicBase:'5050', split:true, ship:{}, zero:{}, ticks:{}, vgr:50, mix:{name:'My mix', picks:{}, strength:'med', main:{}}, myRecipes:[], stamps:{}, deleted:{}, mgs:{}, recipeEdits:{}, fbSeen:{}, syncTimes:{}, cart:{}, cartIds:{}, oos:{}, steeps:{}, usage:{ml:100, days:10}, batchSteep:5, showGrams:false, voice:true, ready:{}, discount:{}, learnSeen:{}, flavTune:{}, lastsDays:0, sizes:{}, trash:[], flavBoost:1};
 }
 function migrate(s){
   var b = blank();
@@ -640,6 +641,7 @@ function migrate(s){
   if (Array.isArray(s.trash)) b.trash = s.trash.filter(function(x){ return x && x.rec && x.rec.id && x.kind; }).slice(-30);
   if (+s.lastsDays >= 1 && +s.lastsDays <= 180) b.lastsDays = Math.round(+s.lastsDays);
   b.showGrams = !!s.showGrams;
+  if (s.voice === false) b.voice = false;
   if ([40,45,50,55,60,70].indexOf(s.vgr) >= 0) b.vgr = s.vgr;
   if (s.stamps && typeof s.stamps === 'object') b.stamps = s.stamps;
   if (s.deleted && typeof s.deleted === 'object') b.deleted = s.deleted;
@@ -919,7 +921,7 @@ function batchDetailCore(b){
 /* ---------- shared: change tracking and two-way merge ---------- */
 var SYNC_COLS = ['orders','batches','adjust','myRecipes'];
 var SYNC_MAPS = ['plan','prices','ship','zero','ticks','mgs','recipeEdits','fbSeen','cart','cartIds','oos','steeps','sizes','learnSeen','flavTune','discount','ready'];
-var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavBoost','showGrams'];
+var SYNC_VALS = ['nicBase','vgr','mix','pricesUpdated','usage','batchSteep','lastsDays','flavBoost','showGrams','voice'];
 function jcopy(x){ return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
 function bare(r){ var o = {}; for (var k in r) if (k !== 'u') o[k] = r[k]; return JSON.stringify(o); }
 /* stamp what changed since the last save: edited records get a time, removed records leave a tombstone, settings get a time per key */
@@ -1060,6 +1062,32 @@ function acceptSuggestion(rid){
 function ignoreSuggestion(rid){ var s = suggestFor(rid); if (!s) return; state.fbSeen = state.fbSeen || {}; state.fbSeen[rid] = s.b.id; }
 
 
+/* ---------- shared: the shake timers talk: every 30 seconds they say how long is left ---------- */
+function voiceOn(){ return state.voice !== false; }
+function say(text){
+  if (!voiceOn()) return;
+  try {
+    var S = window.speechSynthesis; if (!S || typeof SpeechSynthesisUtterance === 'undefined') return;
+    S.cancel(); var u = new SpeechSynthesisUtterance(text), vs = S.getVoices() || [];
+    var v = vs.filter(function(x){ return /en-GB/i.test(x.lang); })[0] || vs.filter(function(x){ return /^en/i.test(x.lang); })[0];
+    if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.rate = 1.02; u.pitch = 1.05; S.speak(u);
+  } catch (e) {}
+}
+/* what to say with this many whole seconds left, on each 30 second mark */
+var SHAKE_LINES = {150:'Two and a half minutes. Start shaking!', 120:'Two minutes to go.', 90:'One and a half minutes left. Keep going!', 60:'One minute left, you\u2019re doing great!', 30:'Thirty seconds left, come on!', 10:'Ten seconds!', 0:'Done! Great shaking.'};
+var MIX_LINES = {120:'Two minutes. Shake it!', 90:'One and a half minutes left.', 60:'One minute left, keep going!', 30:'Thirty seconds left, come on!', 10:'Ten seconds!', 0:'Done! Stop shaking.'};
+/* speaks once per mark: said holds the marks already spoken for this run */
+function voiceTick(leftMs, lines, said){
+  var s = Math.ceil(Math.max(0, leftMs) / 1000);
+  for (var k in lines) { k = +k; if (!said[k] && s <= k && s > k - 3) { said[k] = true; say(lines[k]); return; } }
+}
+function voiceBtnHtml(){ return '<button type="button" class="linkbtn voicebtn" data-voice aria-pressed="' + (voiceOn() ? 'true' : 'false') + '">' + (voiceOn() ? '🔊 Voice on' : '🔇 Voice off') + '</button>'; }
+document.addEventListener('click', function(e){
+  var t = e.target.closest && e.target.closest('[data-voice]'); if (!t) return; e.preventDefault(); e.stopPropagation();
+  state.voice = !voiceOn(); save();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-voice]'), function(b){ b.outerHTML = voiceBtnHtml(); });
+  if (voiceOn()) say('Voice on.'); else try { window.speechSynthesis.cancel(); } catch (x) {}
+});
 /* ---------- shared: 2 minute shake timer, started by ticking "Cap it and shake" ---------- */
 var MIXT = {rid:null, end:0, dur:120000, left:0, run:false, done:false, shown:0};
 function isShakeStep(t){ return /^Cap it and shake/.test(t); }
@@ -1067,17 +1095,18 @@ function mixTimerHtml(rid){
   var C = 2 * Math.PI * 34;
   return '<div class="mixt" data-mixt="' + rid + '" hidden><div class="mixt-ring"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34" class="mixt-bg"/><circle cx="40" cy="40" r="34" class="mixt-fg" data-mixt-fg stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="0"/></svg>' +
     '<span class="mixt-t num" data-mixt-t role="timer" aria-live="off">02:00</span></div><div class="mixt-side"><div class="mixt-msg" data-mixt-msg>Shake it!</div>' +
-    '<div class="mixt-btns"><button type="button" class="btn secondary sm" data-mixt-act="pause">Pause</button><button type="button" class="btn secondary sm" data-mixt-act="reset">Restart</button><button type="button" class="linkbtn" data-mixt-act="close">Close</button></div></div></div>';
+    '<div class="mixt-btns"><button type="button" class="btn secondary sm" data-mixt-act="pause">Pause</button><button type="button" class="btn secondary sm" data-mixt-act="reset">Restart</button><button type="button" class="linkbtn" data-mixt-act="close">Close</button>' + voiceBtnHtml() + '</div></div></div>';
 }
 function mixTimerStart(rid){
   if (!TM.audio) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) TM.audio = new AC(); } catch (x) {} }
   try { if (TM.audio && TM.audio.state === 'suspended') TM.audio.resume(); } catch (x) {}
-  MIXT = {rid:rid, end:Date.now() + 120000, dur:120000, left:120000, run:true, done:false, shown:Date.now()};
+  MIXT = {rid:rid, end:Date.now() + 120000, dur:120000, left:120000, run:true, done:false, shown:Date.now(), said:{}};
   mixTimerPaint();
 }
 function mixTimerStop(rid){ if (!rid || MIXT.rid === rid) { MIXT.rid = null; MIXT.run = false; mixTimerPaint(); } }
 function mixTimerPaint(){
   var left = MIXT.run ? Math.max(0, MIXT.end - Date.now()) : MIXT.left, C = 2 * Math.PI * 34;
+  if (MIXT.run && MIXT.said) voiceTick(left, MIX_LINES, MIXT.said);
   if (MIXT.run && left <= 0 && !MIXT.done) {
     MIXT.run = false; MIXT.done = true; MIXT.left = 0; MIXT.finished = Date.now(); beep();
     var box = document.querySelector('[data-mixt="' + MIXT.rid + '"]'); if (box && typeof confetti === 'function') confetti(box);
@@ -1532,7 +1561,7 @@ function timerCardsHtml(){
   return '<div class="card"><h2>Shake timer</h2><div class="led led-sm" data-tmshake role="timer" aria-label="Shake timer">' + mmss(Math.ceil(shakeLeft() / 1000) * 1000) + '</div>' +
     '<div class="tm-done" data-tmdone' + (TM.shake.done ? '' : ' hidden') + '>Done, stop shaking</div>' +
     '<div class="tbtns"><button type="button" class="btn" data-tm="shake-start">Start</button><button type="button" class="btn secondary" data-tm="shake-pause">Pause</button><button type="button" class="btn secondary" data-tm="shake-reset">Reset</button></div>' +
-    '<p class="muted small" style="margin:8px 0 0">2 min 30 sec. It beeps (and vibrates where the device allows) when it’s done.</p></div>';
+    '<p class="muted small" style="margin:8px 0 0">2 min 30 sec. Every 30 seconds it says how long is left, and it beeps (and vibrates where the device allows) when it’s done.</p>' + voiceBtnHtml() + '</div>';
 }
 /* on iPhone home-screen apps notifications must go through the service worker; elsewhere a plain Notification works */
 var NOTIFY_HINT = '';
@@ -1568,6 +1597,7 @@ function paintTimers(){
   set('[data-tm="shake-start"]', TM.shake.run); set('[data-tm="shake-pause"]', !TM.shake.run); set('[data-tm="shake-reset"]', !TM.shake.run && TM.shake.left === TM.shake.dur && !TM.shake.done);
 }
 function timerTick(){
+  if (TM.shake.run) voiceTick(TM.shake.end - Date.now(), SHAKE_LINES, TM.shake.said = TM.shake.said || {});
   if (TM.shake.run && Date.now() >= TM.shake.end) { TM.shake.run = false; TM.shake.left = 0; TM.shake.done = true; beep(); toast('Done, stop shaking.'); var a = document.querySelector('[data-tmshake]'); paintTimers(); confetti(a); replay(a, 'glow'); }
   paintTimers();
 }
@@ -1615,9 +1645,9 @@ function initSteepTools(){
     var a = t.getAttribute('data-tm');
     if (!TM.audio) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) TM.audio = new AC(); } catch (x) {} }
     if (TM.audio && TM.audio.state === 'suspended') { try { TM.audio.resume(); } catch (x) {} }
-    if (a === 'shake-start') { if (TM.shake.left <= 0) TM.shake.left = TM.shake.dur; TM.shake.done = false; TM.shake.end = Date.now() + TM.shake.left; TM.shake.run = true; }
+    if (a === 'shake-start') { if (TM.shake.left <= 0) TM.shake.left = TM.shake.dur; if (TM.shake.left >= TM.shake.dur) TM.shake.said = {}; TM.shake.done = false; TM.shake.end = Date.now() + TM.shake.left; TM.shake.run = true; voiceTick(TM.shake.left, SHAKE_LINES, TM.shake.said = TM.shake.said || {}); }
     else if (a === 'shake-pause') { TM.shake.left = Math.max(0, TM.shake.end - Date.now()); TM.shake.run = false; }
-    else if (a === 'shake-reset') { TM.shake.run = false; TM.shake.left = TM.shake.dur; TM.shake.done = false; }
+    else if (a === 'shake-reset') { TM.shake.run = false; TM.shake.left = TM.shake.dur; TM.shake.done = false; TM.shake.said = {}; }
     paintTimers();
   });
   document.addEventListener('change', function(e){
